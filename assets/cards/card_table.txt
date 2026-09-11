@@ -1,0 +1,9 @@
+id;rnc;color;type;subtype
+ac19;-2;red;movement;-
+ac20;-2;red;movement;-
+ac21;-3;red;movement;ford
+ac22;1;black;terrain;woods
+ac23;-4;red;movement;flank
+ac24;-4;red;movement;-
+ac25;0;red;terrain;woods
+ac26;-5;red;movement;-

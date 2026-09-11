@@ -1,5 +1,5 @@
 """
-Bridge: Server
+UpFront: Server
 """
 
 import socket
@@ -7,27 +7,45 @@ import threading
 import pickle
 import time
 import random
+import pandas as pd
 
 
 # ──[ Parameter ]──────────────────────────────────────────────────────────────
 
 FPS = 20
-FULL_TABLE = 2
+FULL_TABLE = 1
 
 
 # ──[ Classes ]────────────────────────────────────────────────────────────────
 
-class ServerCard:
-    """ Simplified card for server logics """
+class Card:
+    """ Card for server logics """
     
-    def __init__(self, card_id, card_type, value, owner, location):
+    def __init__(self, card_id, rnc, color, card_type, card_subtype, owner, location, group_id):
 
         self.id = card_id
+        self.rnc = rnc
+        self.color = color
         self.type = card_type
-        self.value = value
+        self.subtype = card_subtype
         self.owner = owner # player_name
-        self.location = location # deck, discarded, removed, hand, table
+        self.location = location # deck, discard, void, hand, table
+        self.group_id = group_id
         
+        
+        
+class Group:
+    """ Group for server logics"""
+    
+    def __init__(self, group_id, owner):
+        # Attribute
+        self.id = group_id
+        self.owner = owner
+        self.range = 0
+        self.fp = [0, 0, 0, 0, 0, 0]
+        self.moving = False
+        self.terrain = None
+
         
         
 class Client:
@@ -47,14 +65,22 @@ class GameServer:
     def __init__(self):
         
         # Game variables
-        self.game_phase = "assembling"
+        self.game_phase = "assignment"
         self.broadcast_timer = 0.0
         self.client_list = []
-        self.current_turn = "north"
+        self.current_turn = None
         self.current_sound = None
+        self.action_deck_counter = 0
         
-        # Sprite list with all the cards
+        # List with all the cards
         self.card_list = []
+        
+        # List with all the groups
+        self.group_list = []
+        
+        # Tables
+        self.card_table = pd.read_csv("assets/cards/card_table.txt", sep=";")
+        self.card_table.set_index("id", inplace=True)
         
         # Thread lock (to avoid race conditions)
         self.lock = threading.Lock()
@@ -76,12 +102,6 @@ class GameServer:
         s.settimeout(5.0)
         
         print(f'Server runs on {host}:{port}')
-        
-        # Create every card
-        for i in range(19,27):
-            card_id = f"ac{i:02d}"
-            card = ServerCard(card_id, None, None, None, "deck")
-            self.card_list.append(card)
         
         # Start update loop in seperate thread
         threading.Thread(target=self.update_loop, daemon=True).start()
@@ -167,22 +187,57 @@ class GameServer:
         if len(self.client_list) < FULL_TABLE:
             return
         
-        if self.game_phase == "assembling":
-            self.assembling_logic()
+        # Call respective game phase logic
+        if self.game_phase == "assignment":
+            self.assignment_logic()
+        elif self.game_phase == "setup":
+            self.setup_logic()
+        elif self.game_phase == "gameplay":
+            self.gameplay_logic()
             
-        if self.game_phase == "playing":
-            self.playing_logic()
             
             
-            
-    def assembling_logic(self):
+    def assignment_logic(self):
         
         # missing
-        pass
+        
+        self.game_phase = "setup"
         
         
+    
+    def setup_logic(self):
         
-    def playing_logic(self):
+        # Create every card
+        for i in range(19, 27):
+            card_id = f"ac{i:02d}"
+            row = self.card_table.loc[card_id]
+            card = Card(card_id, row["rnc"], row["color"], row["type"],
+                        row["subtype"], None, "deck", None)
+            self.card_list.append(card)
+            
+        # Create every group
+        for group_id in ["A", "B", "C", "D"]:
+            for client in self.client_list:
+                group = Group(group_id, client.name)
+                self.group_list.append(group)
+        
+        # Set first turn
+        first_client = random.choice(self.client_list)
+        self.current_turn = first_client.name
+        
+        # Shuffle cards
+        self.shuffle_cards()
+        
+        # Distribute cards
+        for client in self.client_list:
+            self.draw_cards(4, client)
+            
+        # Start playing phase
+        self.game_phase = "gameplay"
+                
+    
+    
+    def gameplay_logic(self):
         
         # missing
         pass
@@ -221,18 +276,59 @@ class GameServer:
         
         # Get action type
         action_type = action.get("type")
-        
+
         # Play card action
         if action_type == "play_card":
             self.play_card(action, client)
+            self.current_sound = "play_card"
 
             
             
     def play_card(self, action, client):
         """Move cards from table to trick stack"""
         
-        # missing
-        pass
+        # Check game phase
+        if self.game_phase != "gameplay":
+            return
+        
+        # Check if it's this player's turn
+        if client.name != self.current_turn:
+            return
+                
+        # Get played card
+        card_id = action.get("card_id")
+        
+        # Get targeted group
+        target_group_id = action.get("group_id")
+        
+        # Find card
+        played_card = None
+        for card in self.card_list:
+            if card.id == card_id:
+                played_card = card
+                break
+            
+        # Find group
+        for group in self.group_list:
+            if group.id == target_group_id and group.owner == client.name:
+                target_group = group
+            
+        # Card not found
+        if played_card is None:
+            return
+            
+        # Check if card is in player's hand
+        if played_card.owner != client.name:
+            return
+            
+        # Set attributes
+        played_card.location = "table"
+        played_card.group_id = target_group_id
+        
+        # Alter group
+        if played_card.type == "movement":
+            target_group.range += 1
+            
         
 
 
@@ -263,18 +359,32 @@ class GameServer:
             # Create a personalized game state for this player
             game_state = {
                 "cards": [],
+                "groups": [],
                 "game_phase": self.game_phase,
                 "current_turn": self.current_turn,
+                "sound": self.current_sound
             }
             
-            # Add card information with appropriate visibility
+            # Add card information
             for card in self.card_list:
                 card_info = {
                     "card_id": card.id,
-                    "owner": card.owner,
-                    "location": card.location
+                    "owner": "player" if client.name == card.owner else "opponent",
+                    "location": card.location,
+                    "group_id": card.group_id
                 }
                 game_state["cards"].append(card_info)
+                
+            # Add group information
+            for group in self.group_list:
+                group_info = {
+                    "group_id": group.id,
+                    "owner": "player" if client.name == group.owner else "opponent",
+                    "range": group.range,
+                    "moving": group.moving,
+                    "terrain": group.terrain
+                }
+                game_state["groups"].append(group_info)
             
             # Send game state to client
             try:
@@ -284,8 +394,47 @@ class GameServer:
             except Exception:
                 print(f"Error sending to {client.name}")
                 self.remove_client(client.name)
-
-
+                
+                
+                
+    def shuffle_cards(self):
+        
+        # Indicies of all cards in action deck and discard pile
+        indices = [i for i, card in enumerate(self.card_list) 
+                   if card.location in ("deck", "discard")]
+        
+        # Extract and shuffle these cards
+        cards_to_shuffle = [self.card_list[i] for i in indices]
+        random.shuffle(cards_to_shuffle)
+        
+        # Re-insert shuffled cards
+        for i, card in zip(indices, cards_to_shuffle):
+            self.card_list[i] = card
+            card.location = "deck"
+        
+        # Increase action deck counter
+        self.action_deck_counter += 1
+        
+        
+        
+    def draw_cards(self, n_cards, client):
+        
+        # Get cards in action deck
+        deck = [card for card in self.card_list if card.location == "deck"]
+        
+        for _ in range(n_cards):
+    
+            # Reshuffle if necessary
+            if len(deck) == 0:
+                self.shuffle_cards()
+                deck = [card for card in self.card_list if card.location == "deck"]
+                            
+            # Draw top card
+            card = deck.pop()
+            card.location = "hand"
+            card.owner = client.name
+        
+    
 
 # ──[ Main ]───────────────────────────────────────────────────────────────────
 
