@@ -61,7 +61,7 @@ class Layout:
         self.height = height
         self.scale = resize
         self.card_scale = resize * CARD_SCALE
-        self.light_radius = width * 0.8
+        self.light_radius = width * 0.5
         self.card_width = 144 * resize
         self.card_height = 224 * resize
 
@@ -130,12 +130,17 @@ class Group(arcade.Sprite):
         self.range = 0
         self.moving = False
         self.terrain = None
+        self.active = True
         
         # Image
-        self.image = f'assets/tiles/tile.{self.owner}.png'
+        self.texture_inactive = arcade.load_texture(f'assets/tiles/tile.{self.owner}.inactive.png')
+        self.texture_active = arcade.load_texture(f'assets/tiles/tile.{self.owner}.active.png')
+        self.texture_inactive_moving = arcade.load_texture(f'assets/tiles/tile.{self.owner}.inactive_moving.png')
+        self.texture_active_moving = arcade.load_texture(f'assets/tiles/tile.{self.owner}.active_moving.png')
+
         
         # Call the parent
-        super().__init__(self.image, scale, hit_box_algorithm="None")
+        super().__init__(self.texture_inactive, scale, hit_box_algorithm="None")
         
     def set_position(self, layout):
 
@@ -143,6 +148,22 @@ class Group(arcade.Sprite):
         j = self.range if self.owner == "player" else 5 - self.range
         self.center_x = layout.width / 2 -  150 * layout.scale + i * 60 * layout.scale
         self.center_y = layout.height / 2 - 150 * layout.scale + j * 60 * layout.scale
+        
+    def adjust_texture(self):
+        
+        # Get new texture
+        textures = {
+        (True, True):   self.texture_active_moving,
+        (True, False):  self.texture_active,
+        (False, True):  self.texture_inactive_moving,
+        (False, False): self.texture_inactive,
+        }
+        target_texture = textures[(self.active, self.moving)]
+            
+        # Set new texture (only when needed)
+        if self.texture != target_texture:
+            self.texture = target_texture
+        
         
         
 
@@ -270,9 +291,6 @@ class Game(arcade.View):
         # Init game state
         self.current_turn = None
         
-        # Init active groups
-        self.active_groups = {"player": "A", "opponent": "A"}
-        
         # Hovered card
         self.hover_card = None
         
@@ -298,7 +316,12 @@ class Game(arcade.View):
             for owner in ["player", "opponent"]:
                 group = Group(group_id, owner, self.layout.scale)
                 group.position = (-10000, -10000)
+                if group_id == "A":
+                    group.active = True
                 self.group_list.append(group)
+                
+        # Init active groups
+        self.active_groups = {"player": self.group_list[0], "opponent": self.group_list[1]}
 
         # Create board element: Texture
         image_path =  r'assets/boardelements/board.texture.png'
@@ -308,7 +331,7 @@ class Game(arcade.View):
         # Create board element: Contour
         image_path =  r'assets/boardelements/board.contour.png'
         self.board_contour = BoardElement(image_path, self.layout.scale)
-        self.board_contour.alpha = 80
+        self.board_contour.alpha = 10
         self.board_elements.append(self.board_contour)
         
         # Create board element: Group frame (player)
@@ -451,6 +474,14 @@ class Game(arcade.View):
         # Adjust card texture
         for card in self.card_list:
             card.adjust_texture()
+            
+        # Set active group flag
+        for group in self.group_list:
+            group.active = group in self.active_groups.values()
+                
+        # Adjust group textgure
+        for group in self.group_list:
+            group.adjust_texture()
                 
         # Update dust particles
         self.dust_list.update(delta_time)
@@ -469,7 +500,7 @@ class Game(arcade.View):
             self.board_elements.draw(pixelated=True)
             
             # Draw group tiles
-            self.group_list.draw()
+            self.group_list.draw(pixelated=True)
             
             # Draw the cards
             self.card_list.draw()
@@ -510,7 +541,7 @@ class Game(arcade.View):
             held_group = groups[-1]
             
             # Switch to that group
-            self.active_groups[held_group.owner] = held_group.id
+            self.active_groups[held_group.owner] = held_group
             
             # Play sound
             self.play_sound("select")
@@ -533,13 +564,19 @@ class Game(arcade.View):
         """ Called when the user scrolls the mouse wheel. """
         
         # Select side
-        owner = "opponent" if self.ctrl_held else "player"
+        target_owner = "opponent" if self.ctrl_held else "player"
                 
         # Change active group
         if scroll_y < 0:
-            self.active_groups[owner] = chr((ord(self.active_groups[owner]) - ord('A') + 1) % 4 + ord('A'))
-        elif scroll_y > 0:
-            self.active_groups[owner] = chr((ord(self.active_groups[owner]) - ord('A') - 1) % 4 + ord('A'))
+            target_id = chr((ord(self.active_groups[target_owner].id) - ord('A') + 1) % 4 + ord('A'))
+        else:
+            target_id = chr((ord(self.active_groups[target_owner].id) - ord('A') - 1) % 4 + ord('A'))
+            
+        # Find group
+        target_group = next(group for group in self.group_list if group.id == target_id and group.owner == target_owner)
+
+        # Change active group
+        self.active_groups[target_owner] = target_group
             
         # Adjust card position
         self.adjust_card_position()
@@ -637,14 +674,14 @@ class Game(arcade.View):
             
             
             
-    def play_card(self, card, group_id):
+    def play_card(self, card, group):
         """Send play card action to server"""
 
         # Create action for server
         action = {
             "type": "play_card",
             "card_id": card.id,
-            "group_id": group_id
+            "group_id": group.id
         }
         
         # Bring card on top
@@ -797,7 +834,7 @@ class Game(arcade.View):
                 continue
             
             # Check if its group id is active
-            if card.group_id != self.active_groups["player"]:
+            if card.group_id != self.active_groups["player"].id:
                 card.position = (-10000, -10000)
                 continue
             
@@ -829,7 +866,7 @@ class Game(arcade.View):
             
     def adjust_group_position(self):
         
-        # Group tiles
+        # Adjust group tiles
         for group in self.group_list:
             group.set_position(self.layout)
             
@@ -838,14 +875,14 @@ class Game(arcade.View):
     def annotate(self):
         
         # Player's active group
-        label = "Group " + str(self.active_groups["player"])
+        label = "Group " + str(self.active_groups["player"].id)
         x = 70*self.layout.scale
         y = 625*self.layout.scale
         text = self.annotate_text(label, x, y, 0, 18)
         text.draw()
         
         # Opponent's active group
-        label = "Group " + str(self.active_groups["opponent"])
+        label = "Group " + str(self.active_groups["opponent"].id)
         x = self.window.width - 70*self.layout.scale
         y = self.window.height - 625*self.layout.scale
         text = self.annotate_text(label, x, y, 0, 18)

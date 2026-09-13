@@ -328,6 +328,7 @@ class GameServer:
         # Alter group
         if played_card.type == "movement":
             target_group.range += 1
+            target_group.moving = True
             
         
 
