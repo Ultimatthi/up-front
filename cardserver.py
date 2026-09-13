@@ -37,9 +37,10 @@ class Card:
 class Group:
     """ Group for server logics"""
     
-    def __init__(self, group_id, owner):
+    def __init__(self, group_id, label, owner):
         # Attribute
         self.id = group_id
+        self.label = label
         self.owner = owner
         self.range = 0
         self.fp = [0, 0, 0, 0, 0, 0]
@@ -216,9 +217,11 @@ class GameServer:
             self.card_list.append(card)
             
         # Create every group
-        for group_id in ["A", "B", "C", "D"]:
-            for client in self.client_list:
-                group = Group(group_id, client.name)
+        for label in ["A", "B", "C", "D"]:
+            for section in [0, 1]:
+                group_id = label + str(section+1)
+                owner = self.client_list[section].name if section < len(self.client_list) else "bot"
+                group = Group(group_id, label, owner)
                 self.group_list.append(group)
         
         # Set first turn
@@ -310,7 +313,7 @@ class GameServer:
             
         # Find group
         for group in self.group_list:
-            if group.id == target_group_id and group.owner == client.name:
+            if group.id == target_group_id:
                 target_group = group
             
         # Card not found
@@ -320,15 +323,26 @@ class GameServer:
         # Check if card is in player's hand
         if played_card.owner != client.name:
             return
+        
+        # Remove any cards from the group (if necessary)
+        if played_card.type == "terrain":
+            for card in self.card_list:
+                if card.group_id == target_group.id:
+                    card.group_id = None
+                    card.location = "discard"
+                    card.owner = None
             
-        # Set attributes
+        # Add card to the group
         played_card.location = "table"
         played_card.group_id = target_group_id
         
-        # Alter group
+        # Alter group attributes
         if played_card.type == "movement":
             target_group.range += 1
             target_group.moving = True
+        elif played_card.type == "terrain":
+            target_group.terrain = played_card.subtype
+            target_group.moving = False
             
         
 
