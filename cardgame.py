@@ -33,6 +33,7 @@ from arcade.future.light import Light, LightLayer
 CARD_SCALE = 144/675
 CARD_ENLARGE = 1.05
 GROUP_ENLARGE = 1.1
+BUTTON_ENLARGE = 1.1
 
 # Lobby parameters
 LOBBY_WIDTH = 1280
@@ -167,13 +168,29 @@ class Group(arcade.Sprite):
         if self.texture != target_texture:
             self.texture = target_texture
             
+            
+
+class Button(arcade.Sprite):
+    """ Board element sprite """
+
+    def __init__(self, name, image_path, scale):
+        
+        # Attribute
+        self.name = name
+
+        # Image to use for the sprite
+        self.image_file_name = image_path
+
+        # Call the parent
+        super().__init__(self.image_file_name, scale, hit_box_algorithm = "None")
+            
 
 
 class BoardElement(arcade.Sprite):
     """ Board element sprite """
 
     def __init__(self, image_path, scale):
-        
+
         # Image to use for the sprite
         self.image_file_name = image_path
 
@@ -284,6 +301,9 @@ class Game(arcade.View):
         # Sprite list with all the group tile elements
         self.group_list = arcade.SpriteList()
         
+        # Board element list with all the buttons
+        self.button_list = arcade.SpriteList()
+        
         # Board element list with all the board elements
         self.board_elements = arcade.SpriteList()
         
@@ -298,6 +318,9 @@ class Game(arcade.View):
         
         # Hovered group tile
         self.hover_group = None
+        
+        # Hovered button
+        self.hover_button = None
         
         # Thread
         self.running = True
@@ -357,6 +380,16 @@ class Game(arcade.View):
         self.board_piles = BoardElement(image_path, self.layout.scale)
         self.board_elements.append(self.board_piles)
         
+        # Create button: End turn
+        image_path =  r'assets/boardelements/button.endturn.png'
+        self.button_endturn = Button("endturn", image_path, self.layout.scale)
+        self.button_list.append(self.button_endturn)
+        
+        # Create button: Surrender
+        image_path =  r'assets/boardelements/button.surrender.png'
+        self.button_surrender = Button("surrender", image_path, self.layout.scale)
+        self.button_list.append(self.button_surrender)
+        
         # Layout elements
         self.layout_elements()
         
@@ -407,6 +440,17 @@ class Game(arcade.View):
         self.board_piles.scale = self.layout.scale
         self.board_piles.left = (20 - 1) * self.layout.scale
         self.board_piles.top = self.window.height - (20 - 1) * self.layout.scale
+        
+        
+        # Button: End turn
+        self.button_endturn.scale = self.layout.scale
+        self.button_endturn.right = self.window.width - 20 * self.layout.scale
+        self.button_endturn.bottom = 20 * self.layout.scale
+        
+        # Button: Surrender
+        self.button_surrender.scale = self.layout.scale
+        self.button_surrender.right = self.window.width - 120 * self.layout.scale
+        self.button_surrender.bottom = 20 * self.layout.scale
 
             
         
@@ -473,6 +517,15 @@ class Game(arcade.View):
         # Enlarge group tile we are hovering above
         if (self.hover_group != None):
             self.hover_group.scale = self.layout.scale*GROUP_ENLARGE
+            
+        # Shrink previous enlarged button
+        for button in self.button_list:
+            if button != self.hover_button and button.scale != self.layout.scale:
+                button.scale = self.layout.scale
+        
+        # Enlarge group tile we are hovering above
+        if (self.hover_button != None):
+            self.hover_button.scale = self.layout.scale*BUTTON_ENLARGE
                 
         # Adjust card texture
         for card in self.card_list:
@@ -500,7 +553,10 @@ class Game(arcade.View):
         with self.light_layer:
             
             # Draw board elements
-            self.board_elements.draw(pixelated=True)
+            self.board_elements.draw()
+            
+            # Draw buttons
+            self.button_list.draw()
             
             # Draw group tiles
             self.group_list.draw(pixelated=True)
@@ -549,8 +605,24 @@ class Game(arcade.View):
             # Play sound
             self.play_sound("select")
             
+        # Get list of buttons we've clicked on
+        buttons = arcade.get_sprites_at_point((x, y), self.button_list)
+            
+        # Have we clicked on a button?
+        if len(buttons) > 0:
+            
+            # Might be a stack of tiles, get the top one
+            held_button = buttons[-1]
+            
+            # Play sound
+            self.play_sound("select")
+            
+            # End turn
+            if held_button.name == "endturn":
+                self.end_turn()
+            
         # Have we clicked on the empty board?
-        if len(cards) == 0 and len(groups) == 0:
+        if len(cards) == 0 and len(groups) == 0 and len(buttons) == 0:
             
             # Generatge dust
             for _ in range(24):
@@ -600,6 +672,10 @@ class Game(arcade.View):
         self.mouse_x = x
         self.mouse_y = y
         
+        # Set cursor type to default
+        cursor_type = self.window.CURSOR_DEFAULT
+        
+        
         # Get list of cards we'are hovering above
         cards = arcade.get_sprites_at_point((x, y), self.card_list)
         
@@ -609,6 +685,12 @@ class Game(arcade.View):
         else:
             self.hover_card = None
             
+        # Set cursor type to "hand" if hovering above hand card
+        if len(cards) > 0 and self.current_turn == self.player_name:
+            if cards[-1].location == "hand" and cards[-1].owner == "player":
+                cursor_type = self.window.CURSOR_HAND
+            
+            
         # Get list of group tiles we'are hovering above
         groups = arcade.get_sprites_at_point((x, y), self.group_list)
         
@@ -617,18 +699,25 @@ class Game(arcade.View):
             self.hover_group = groups[-1]
         else:
             self.hover_group = None
-        
-        # Set cursor type to default
-        cursor_type = self.window.CURSOR_DEFAULT
-                
-        # Set cursor type to "hand" if hovering above hand card
-        if len(cards) > 0 and self.current_turn == self.player_name:
-            if cards[-1].location == "hand" and cards[-1].owner == "player":
-                cursor_type = self.window.CURSOR_HAND
-                
+            
         # Set cursor type to "hand" if hovering above group tile
         if len(groups) > 0:
             cursor_type = self.window.CURSOR_HAND
+            
+        
+        # Get list of group tiles we'are hovering above
+        buttons = arcade.get_sprites_at_point((x, y), self.button_list)
+        
+        # Declare top button as hovered button
+        if len(buttons) > 0:
+            self.hover_button = buttons[-1]
+        else:
+            self.hover_button = None
+            
+        # Set cursor type to "hand" if hovering above group tile
+        if len(buttons) > 0:
+            cursor_type = self.window.CURSOR_HAND
+            
                      
         # Set cursor
         self.window.set_mouse_cursor(self.window.get_system_mouse_cursor(cursor_type))
@@ -694,6 +783,22 @@ class Game(arcade.View):
         # Bring card on top
         self.card_list.remove(card)
         self.card_list.append(card)
+        
+        # Send action to server
+        try:
+            self.socket.sendall(pickle.dumps(action))
+        except Exception as e:
+            print(f"Error sending to server: {e}")
+            
+            
+            
+    def end_turn(self):
+        """Send end_turn action to server"""
+
+        # Create action for server
+        action = {
+            "type": "end_turn"
+        }
         
         # Send action to server
         try:

@@ -284,6 +284,10 @@ class GameServer:
         if action_type == "play_card":
             self.play_card(action, client)
             self.current_sound = "play_card"
+            
+        # End player's turn
+        if action_type == "end_turn":
+            self.end_turn(action, client)
 
             
             
@@ -344,6 +348,26 @@ class GameServer:
             target_group.terrain = played_card.subtype
             target_group.moving = False
             
+            
+            
+    def end_turn(self, action, client):
+        
+        # Check game phase
+        if self.game_phase != "gameplay":
+            return
+        
+        # Check if it's this player's turn
+        if client.name != self.current_turn:
+            return
+        
+        # Get cards in player's hand
+        hand = [card for card in self.card_list if card.location == "hand" and card.owner == client.name]
+        
+        # Calculate number of cards to be drawn
+        n_cards = 6 - len(hand)
+        
+        # Refill player's hand
+        self.draw_cards(n_cards, client)
         
 
 
