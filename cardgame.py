@@ -31,14 +31,16 @@ from arcade.future.light import Light, LightLayer
 
 # General
 CARD_SCALE = 144/675
+UNIT_SCALE = 144/600
 CARD_ENLARGE = 1.05
+UNIT_ENLARGE = 1.5
 GROUP_ENLARGE = 1.1
 BUTTON_ENLARGE = 1.1
 
 # Lobby parameters
 LOBBY_WIDTH = 1280
 LOBBY_HEIGHT = 720
-LOBBY_TITLE = "Bridge: Lobby"
+LOBBY_TITLE = "Up Front: Lobby"
 LOBBY_SCALE = min(LOBBY_HEIGHT/1080, LOBBY_WIDTH/1920)
 
 # Visual appearance
@@ -62,6 +64,7 @@ class Layout:
         self.height = height
         self.scale = resize
         self.card_scale = resize * CARD_SCALE
+        self.unit_scale = resize * UNIT_SCALE
         self.light_radius = width * 0.5
         self.card_width = 144 * resize
         self.card_height = 224 * resize
@@ -82,11 +85,9 @@ class Card(arcade.Sprite):
         self.group_id = None
 
         # Image to use for the sprite when face up
-        # self.texture_front = arcade.load_texture(f'assets/cards/{self.id}.jpg')
         self.texture_front = self.load_texture(f'assets/cards/{self.id}.jpg')
         
         # Image to use for the sprite when face down
-        # self.texture_back = arcade.load_texture(r'assets/cards/cardback.jpg')
         self.texture_back = self.load_texture(r'assets/cards/cardback.jpg')
         
         # Call the parent
@@ -117,6 +118,42 @@ class Card(arcade.Sprite):
         # Apply mask
         image.putalpha(mask)
         return arcade.Texture(image)
+    
+    
+    
+class Unit(arcade.Sprite):
+    """ Card sprite """
+
+    def __init__(self, unit_id, nation, group_id, scale=1):
+
+        # Attributes
+        self.id = unit_id
+        self.nation = nation
+        self.group = group_id
+        self.pinned = False
+
+        base = f'assets/units/{nation}s/{unit_id}'
+
+        # Image to use for the sprite when face up
+        self.texture_front = arcade.load_texture(f'{base}.jpg')
+
+        # Image to use for the sprite when face down
+        self.texture_back = arcade.load_texture(f'{base}b.jpg')
+        
+        # Call the parent
+        super().__init__(self.texture_front, scale*UNIT_SCALE, hit_box_algorithm="None")
+        
+    def adjust_texture(self):
+        
+        # Get new texture
+        if self.pinned == False:
+            target_texture = self.texture_front
+        else:
+            target_texture = self.texture_back
+            
+        # Set new texture (only when needed)
+        if self.texture != target_texture:
+            self.texture = target_texture
 
 
         
@@ -298,6 +335,9 @@ class Game(arcade.View):
         # Sprite list with all the cards, no matter what pile they are in
         self.card_list = arcade.SpriteList()
         
+        # Sprite list with all the cards, no matter what pile they are in
+        self.unit_list = arcade.SpriteList()
+        
         # Sprite list with all the group tile elements
         self.group_list = arcade.SpriteList()
         
@@ -316,6 +356,9 @@ class Game(arcade.View):
         # Hovered card
         self.hover_card = None
         
+        # Hovered unit
+        self.hover_unit = None
+        
         # Hovered group tile
         self.hover_group = None
         
@@ -333,8 +376,16 @@ class Game(arcade.View):
             card_id = f"ac{i:02d}"
             row = self.card_table.loc[card_id]
             card = Card(card_id, row["type"], self.layout.scale)
-            card.position = (400, 400)
+            card.position = (-10000, -10000)
             self.card_list.append(card)
+            
+        # Create every unit
+        for i in range(1,6):
+            unit_id = f"ge{i:02d}"
+            group_id = "A1"
+            unit = Unit(unit_id, "german", group_id, self.layout.scale)
+            unit.position = (-10000, -10000)
+            self.unit_list.append(unit)
                 
         # Create every group tile
         for label in ["A", "B", "C", "D"]:
@@ -492,6 +543,9 @@ class Game(arcade.View):
         # Reposition cards
         self.adjust_card_position()
         
+        # Reposition cards
+        self.adjust_unit_position()
+        
         # Reposition group tiles
         self.adjust_group_position()
         
@@ -500,32 +554,8 @@ class Game(arcade.View):
     def on_update(self, delta_time):
         """Update sprites. """
         
-        # Shrink previous enlarged card
-        for card in self.card_list:
-            if card != self.hover_card and card.scale != self.layout.card_scale:
-                card.scale = self.layout.card_scale
-        
-        # Enlarge card we are hovering above
-        if (self.hover_card != None):
-            self.hover_card.scale = self.layout.card_scale*CARD_ENLARGE
-            
-        # Shrink previous enlarged group tile
-        for group in self.group_list:
-            if group != self.hover_group and group.scale != self.layout.scale:
-                group.scale = self.layout.scale
-        
-        # Enlarge group tile we are hovering above
-        if (self.hover_group != None):
-            self.hover_group.scale = self.layout.scale*GROUP_ENLARGE
-            
-        # Shrink previous enlarged button
-        for button in self.button_list:
-            if button != self.hover_button and button.scale != self.layout.scale:
-                button.scale = self.layout.scale
-        
-        # Enlarge group tile we are hovering above
-        if (self.hover_button != None):
-            self.hover_button.scale = self.layout.scale*BUTTON_ENLARGE
+        # Adjust hovered elements
+        self.adjust_hovered_elements()
                 
         # Adjust card texture
         for card in self.card_list:
@@ -564,6 +594,13 @@ class Game(arcade.View):
             # Draw the cards
             self.card_list.draw()
             
+            # Draw the units
+            self.unit_list.draw()
+            
+            # Draw hovered unit
+            if self.hover_unit is not None:
+                arcade.draw_sprite(self.hover_unit)
+            
             # Annotations
             self.annotate()
             
@@ -589,7 +626,7 @@ class Game(arcade.View):
             # Play card
             if held_card.location == "hand":
                 self.play_card(held_card, self.active_groups["player"])
-                        
+        
         # Get list of group tiles we've clicked on
         groups = arcade.get_sprites_at_point((x, y), self.group_list)
         
@@ -620,9 +657,12 @@ class Game(arcade.View):
             # End turn
             if held_button.name == "endturn":
                 self.end_turn()
+                
+        # Get list of unit cards we've clicked on
+        units = arcade.get_sprites_at_point((x, y), self.unit_list)
             
         # Have we clicked on the empty board?
-        if len(cards) == 0 and len(groups) == 0 and len(buttons) == 0:
+        if len(cards) == 0 and len(groups) == 0 and len(buttons) == 0 and len(units) == 0:
             
             # Generatge dust
             for _ in range(24):
@@ -632,6 +672,9 @@ class Game(arcade.View):
         
         # Adjust card position
         self.adjust_card_position()
+        
+        # Update unit position
+        self.adjust_unit_position()
         
     
     
@@ -659,6 +702,9 @@ class Game(arcade.View):
             
         # Adjust card position
         self.adjust_card_position()
+        
+        # Adjust card position
+        self.adjust_unit_position()
         
         # Play sound
         self.play_sound("select")
@@ -689,7 +735,16 @@ class Game(arcade.View):
         if len(cards) > 0 and self.current_turn == self.player_name:
             if cards[-1].location == "hand" and cards[-1].owner == "player":
                 cursor_type = self.window.CURSOR_HAND
-            
+                
+                
+        # Get list of cards we'are hovering above
+        units = arcade.get_sprites_at_point((x, y), self.unit_list)
+                
+        # Declare top unit as hovered unit
+        if len(units) > 0:
+            self.hover_unit = units[-1]
+        else:
+            self.hover_unit = None
             
         # Get list of group tiles we'are hovering above
         groups = arcade.get_sprites_at_point((x, y), self.group_list)
@@ -705,7 +760,7 @@ class Game(arcade.View):
             cursor_type = self.window.CURSOR_HAND
             
         
-        # Get list of group tiles we'are hovering above
+        # Get list of buttons we'are hovering above
         buttons = arcade.get_sprites_at_point((x, y), self.button_list)
         
         # Declare top button as hovered button
@@ -714,7 +769,7 @@ class Game(arcade.View):
         else:
             self.hover_button = None
             
-        # Set cursor type to "hand" if hovering above group tile
+        # Set cursor type to "hand" if hovering above button
         if len(buttons) > 0:
             cursor_type = self.window.CURSOR_HAND
             
@@ -872,6 +927,9 @@ class Game(arcade.View):
         # Update card position
         self.adjust_card_position()
         
+        # Update card position
+        self.adjust_unit_position()
+        
         # Update group position
         self.adjust_group_position()
         
@@ -889,6 +947,49 @@ class Game(arcade.View):
         elif sound == 'select':
             arcade.play_sound(self.sound_select)
             
+            
+    
+    def adjust_hovered_elements(self):
+        
+        # Shrink previous enlarged card
+        for card in self.card_list:
+            if card != self.hover_card and card.scale != self.layout.card_scale:
+                card.scale = self.layout.card_scale
+        
+        # Enlarge card we are hovering above
+        if (self.hover_card != None):
+            self.hover_card.scale = self.layout.card_scale*CARD_ENLARGE
+            
+        # Shrink previous enlarged group tile
+        for group in self.group_list:
+            if group != self.hover_group and group.scale != self.layout.scale:
+                group.scale = self.layout.scale
+        
+        # Enlarge group tile we are hovering above
+        if (self.hover_group != None):
+            self.hover_group.scale = self.layout.scale*GROUP_ENLARGE
+            
+        # Shrink previous enlarged button
+        for button in self.button_list:
+            if button != self.hover_button and button.scale != self.layout.scale:
+                button.scale = self.layout.scale
+        
+        # Enlarge group tile we are hovering above
+        if (self.hover_button != None):
+            self.hover_button.scale = self.layout.scale*BUTTON_ENLARGE
+            
+            
+        # Shrink previous enlarged unit
+        for unit in self.unit_list:
+            if unit != self.hover_unit and unit.scale != self.layout.unit_scale:
+                unit.scale = self.layout.unit_scale
+                self.adjust_unit_position()
+        
+        # Enlarge unit we are hovering above
+        if (self.hover_unit != None):
+            self.hover_unit.scale = self.layout.unit_scale*UNIT_ENLARGE
+            self.keep_sprite_within_window(self.hover_unit)
+
             
         
     def adjust_card_position(self):
@@ -989,12 +1090,42 @@ class Game(arcade.View):
             card.position = (-10000, -10000)
             
             
+    def adjust_unit_position(self):
+        
+        # Get units of active group
+        group = [unit for unit in self.unit_list if unit.group == self.active_groups["player"].id]
+        
+        # Get units of inactive groups
+        inactive_groups = set(self.unit_list) - set(group)
+        
+        # Adjust active unit cards
+        for i, unit in enumerate(group):
+            x = (100 + 150 * (i % 4)) * self.layout.scale
+            y = (120 + 192 * int(i/4)) * self.layout.scale
+            unit.position = (x, y)
+            
+        # Adjust inactive unit cards
+        for unit in inactive_groups:
+            unit.position = (-10000, -10000)
+            
+            
             
     def adjust_group_position(self):
         
         # Adjust group tiles
         for group in self.group_list:
             group.set_position(self.layout)
+            
+            
+            
+    def keep_sprite_within_window(self, sprite):
+        
+        offset = 10 * self.layout.scale
+        
+        sprite.left = max(sprite.left, offset)
+        sprite.right = min(sprite.right, self.window.height - offset)
+        sprite.bottom = max(sprite.bottom, offset)
+        sprite.top = min(sprite.top, self.window.width - offset)
             
         
             
