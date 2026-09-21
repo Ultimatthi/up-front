@@ -1,116 +1,106 @@
 # Up Front
 
-**Up Front** is a two-player card game published in 1983 by Avalon Hill, designed by Courtney F. Allen. It simulates infantry combat (with some AFV support) at the squad level in WWII. The game became a cult classic in wargaming circles and spawned two expansions extending it to the North African and Pacific Theater.
+**Up Front** is a two-player card game published in 1983 by Avalon Hill, designed by Courtney F. Allen. It simulates WWII infantry combat (with some armored fighting vehicle support) at the squad level. The game became a cult classic in wargaming circles and spawned two expansions extending it to the North African and Pacific Theaters.
 
-This Projects aims for a truthful digital adapation of the game. It is designed as a peer-to-peer experience without a central online lobby or matchmaking system. Instead, one player hosts a session locally, while the remaining players connect directly as clients, enabling private games among friends.
+Existing digital adaptations either lack rule enforcement or provide limited visual presentation. This project aims to combine a visually appealing UI with a faithful and complete implementation of the game rules for a smooth, satisfying Up Front experience.
 
-Launcher:
+It is designed as a peer-to-peer experience without a central online lobby or matchmaking system. Instead, one player hosts a session locally, while the other player connects directly as a client, enabling private games among friends.
 
-!\[launcher interface](sources/readme/launcher.png)
+**Launcher:**
 
-Gameplay:
+![launcher interface](sources/readme/launcher.png)
 
-!\[gameplay view](sources/readme/gameplay.png)
+**Gameplay:**
 
-## Motivation
+![gameplay view](sources/readme/gameplay.png)
 
-Existing digital adaptations either lack rule enforcement (e.g. VASSAL) or provide limited visual presentation (e.g. Battlegrounds). This project aims to combine a visually appealing UI with a complete and accurate implementation of the game rules for a smooth, satisfying Up Front experience.
+## Status
+
+This project is in early development and not yet fully playable.
+Currently, work is focused on implementing Scenario A of the base game.
+
+Expect missing rules and bugs until the first stable release.
 
 ## Project Structure
 
-```
-bridge/
-├── assets/          # Finalized images, sounds, and media files used directly in the game
-├── logic/           # Game logic and core functionality
-├── sources/         # Working files (e.g. SVG files and other editable sources)
-└── cardgame.py      # Main script (Client)
-├── cardserver.py    # Main script (Server)
-├── start\_game.bat   # Launcher (Windows Client)
-└── start\_server.bat # Launcher (Windows Server)
+```text
+up-front/
+├── assets/            # Finalized images, sounds, and media files used directly in the game
+├── logic/             # Game logic and core functionality
+├── sources/           # Working files (e.g. SVG files and other editable sources)
+├── cardgame.py        # Main script (Client)
+├── cardserver.py      # Main script (Server)
+├── requirements.txt   # Python dependencies
+├── LICENSE            # MIT License
+└── README.md
 ```
 
 ## Getting Started
 
-Open terminal (Linux/macOS) or command prompt (Windows) in the directory where you want to clone the project. Then:
-
-### Installation (Windows)
+Open a terminal (Linux/macOS) or command prompt (Windows) in the directory where you want to clone the project. Then:
 
 1. Clone the repository:
 
-```bash
-   git clone https://github.com/Ultimatthi/bridge-delta-null
-   cd bridge-delta-null
+   ```bash
+   git clone https://github.com/Ultimatthi/up-front
+   cd up-front
    ```
 
-2. Start either of the provided batch files:
+2. Install a Python runtime environment (version 3.11 or newer): <https://www.python.org/>
 
-   * `start\_server.bat`
-   * `start\_game.bat`
-
-   The scripts automatically create a local Python virtual environment and install all required dependencies. Once the setup is complete, they launch the server or the game, respectively (see section "Running the Game").
-
-### Installation (Linux / macOS / manual installation):
-
-1. Clone the repository:
-
-```bash
-   git clone https://github.com/Ultimatthi/bridge-delta-null
-   cd bridge-delta-null
-   ```
-
-2. Install a Python runtime environment (version 3.10 or newer): [https://www.python.org/](https://www.python.org/)
 3. Install required dependencies:
 
-```bash
+   ```bash
    pip install -r requirements.txt
    ```
 
-### Network Setup
+   On Linux/macOS you may need to use `python3` and `pip3` instead of `python` and `pip`.
+
+## Network Setup
 
 * **Local network (LAN)**: Players can connect directly using the host's local IP address
-* **Online play**: The host must configure port forwarding on their router (default port: 55556)
-* **Alternative**: Use virtual LAN solutions like Hamachi or ZeroTier
+* **Online play**: The host must configure port forwarding on their router (default port: 52000) and allow the port in their firewall
+* **Alternative**: Use virtual LAN solutions like [ZeroTier](https://www.zerotier.com)
 
-### Running the Game
+## Running the Game
 
 1. Start the server (only 1 player, acting as host):
 
-```bash
+   ```bash
    python cardserver.py
-```
+   ```
 
-2. Start the client (all 4 players, including the host):
+2. Start the client (both players, including the host):
 
-```bash
+   ```bash
    python cardgame.py
-```
+   ```
 
 3. Join the game session by connecting to the server at `<host-ip>:<port>`
 
-   * For online play: Use the host's public IP address (e.g., "88.214.164.224:55556")
-   * For local network: Use the host's local IP address (e.g., "192.168.1.50:55556")
-   * For singleplayer (and 3 bots): Use localhost (e.g., "localhost:55556")
+   * For online play: Use the host's public IP address (e.g., `203.0.113.42:52000`)
+   * For local network: Use the host's local IP address (e.g., `192.168.1.10:52000`)
+   * For singleplayer, or as the host yourself: Use localhost (e.g., `localhost:52000`)
 
 ## License
 
-This project is licensed under the MIT License — see the LICENSE file for details.
+The source code of this project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Credits
 
-This project uses or builds upon the following open-source projects:
+This project uses or builds upon the following:
 
-* **Arcade** – Python game development library  
-https://api.arcade.academy/en/stable/
-* **Endplay** – Bridge toolkit with Double Dummy Solver support  
-https://github.com/dominicprice/endplay
-* **SAYCBridge** – Standard American Yellow Card (SAYC) bidding engine  
-https://github.com/eseidel/saycbridge
+* **Arcade** – Open-source Python game development library.
+
+* **Up Front** – Original card game by Courtney F. Allen, published by
+  Avalon Hill (1983). This project is an unofficial, non-commercial
+  fan adaptation and is not affiliated with or endorsed by Avalon Hill
+  or Hasbro. All rights to the original game belong to their respective owners.
 
 ## Contributing
 
 Contributions, bug reports, and feature suggestions are welcome!
 
-\---
+---
 
 *Made with ❤️ using Python and Arcade.*
-
