@@ -82,7 +82,7 @@ class Card(arcade.Sprite):
         self.facing = "down" # up, down
         self.owner = None # player_name
         self.location = "deck" # deck, discard, void, hand, table
-        self.group_id = None
+        self.group = None
 
         # Image to use for the sprite when face up
         self.texture_front = self.load_texture(f'assets/cards/{self.id}.jpg')
@@ -122,17 +122,17 @@ class Card(arcade.Sprite):
     
     
 class Unit(arcade.Sprite):
-    """ Card sprite """
+    """ Unit card sprite """
 
-    def __init__(self, unit_id, nation, group_id, scale=1):
+    def __init__(self, unit_id, nation, scale=1):
 
         # Attributes
         self.id = unit_id
         self.nation = nation
-        self.group = group_id
+        self.group = None
         self.pinned = False
 
-        base = f'assets/units/{nation}s/{unit_id}'
+        base = f'assets/units/{nation}/{unit_id}'
 
         # Image to use for the sprite when face up
         self.texture_front = arcade.load_texture(f'{base}.jpg')
@@ -304,6 +304,8 @@ class Game(arcade.View):
         # Tables
         self.card_table = pd.read_csv("assets/cards/card_table.txt", sep=";")
         self.card_table.set_index("id", inplace=True)
+        self.unit_table = pd.read_csv("assets/units/unit_table.txt", sep=";")
+        self.unit_table.set_index("id", inplace=True)
     
 
 
@@ -380,10 +382,9 @@ class Game(arcade.View):
             self.card_list.append(card)
             
         # Create every unit
-        for i in range(1,6):
-            unit_id = f"ge{i:02d}"
-            group_id = "A1"
-            unit = Unit(unit_id, "german", group_id, self.layout.scale)
+        for unit_id in self.unit_table.index:
+            row = self.unit_table.loc[unit_id]
+            unit = Unit(unit_id, row["nation"], self.layout.scale)
             unit.position = (-10000, -10000)
             self.unit_list.append(unit)
                 
@@ -393,7 +394,7 @@ class Game(arcade.View):
                 group_id = label + str(section+1)
                 group = Group(group_id, label, self.layout.scale)
                 group.position = (-10000, -10000)
-                if group_id == "A":
+                if "A" in group_id:
                     group.active = True
                 self.group_list.append(group)
                 
@@ -892,6 +893,7 @@ class Game(arcade.View):
         # Play sound
         sound = game_state.get("sound")
         self.play_sound(sound)
+        
             
         # Get logical card variables
         logical_card_list = game_state.get("cards")
@@ -906,7 +908,22 @@ class Game(arcade.View):
                 card = card_map[key]
                 card.owner = logical_card["owner"]
                 card.location = logical_card["location"]
-                card.group_id = logical_card["group_id"]
+                card.group = logical_card["group"]
+                
+                
+        # Get logical card variables
+        logical_unit_list = game_state.get("units")
+        
+        # Setup map for fast access
+        unit_map = {unit.id: unit for unit in self.unit_list}
+        
+        # Update card variables
+        for logical_unit in logical_unit_list:
+            key = logical_unit["unit_id"]
+            if key in unit_map:
+                unit = unit_map[key]
+                unit.group = logical_unit["group"]
+                        
                 
         # Get logical group variables
         logical_group_list = game_state.get("groups")
@@ -1054,7 +1071,7 @@ class Game(arcade.View):
                 continue
             
             # Check if its group id is active
-            if card.group_id != self.active_groups["player"].id:
+            if card.group != self.active_groups["player"].id:
                 card.position = (-10000, -10000)
                 continue
             
@@ -1063,7 +1080,7 @@ class Game(arcade.View):
             
             # Set position
             if card.type in ["movement", "terrain"]:
-                key = (card.owner, card.group_id)
+                key = (card.owner, card.group)
                 stack_counts[key] += 1
                 card.position = (598*self.layout.scale, 544*self.layout.scale)
             else:
@@ -1092,16 +1109,25 @@ class Game(arcade.View):
             
     def adjust_unit_position(self):
         
-        # Get units of active group
-        group = [unit for unit in self.unit_list if unit.group == self.active_groups["player"].id]
+        # Get units of active group (player)
+        group_player = [unit for unit in self.unit_list if unit.group == self.active_groups["player"].id]
+        
+        # Get units of active group (player)
+        group_opponent = [unit for unit in self.unit_list if unit.group == self.active_groups["opponent"].id]
         
         # Get units of inactive groups
-        inactive_groups = set(self.unit_list) - set(group)
+        inactive_groups = set(self.unit_list) - set(group_player) - set(group_opponent)
         
-        # Adjust active unit cards
-        for i, unit in enumerate(group):
+        # Adjust active unit cards (player)
+        for i, unit in enumerate(group_player):
             x = (100 + 150 * (i % 4)) * self.layout.scale
             y = (120 + 192 * int(i/4)) * self.layout.scale
+            unit.position = (x, y)
+            
+        # Adjust active unit cards (opponent)
+        for i, unit in enumerate(group_opponent):
+            x = self.window.width - (100 + 150 * (i % 4)) * self.layout.scale
+            y = self.window.height - (120 + 192 * int(i/4)) * self.layout.scale
             unit.position = (x, y)
             
         # Adjust inactive unit cards
@@ -1123,9 +1149,9 @@ class Game(arcade.View):
         offset = 10 * self.layout.scale
         
         sprite.left = max(sprite.left, offset)
-        sprite.right = min(sprite.right, self.window.height - offset)
+        sprite.right = min(sprite.right, self.window.width - offset)
         sprite.bottom = max(sprite.bottom, offset)
-        sprite.top = min(sprite.top, self.window.width - offset)
+        sprite.top = min(sprite.top, self.window.height - offset)
             
         
             
@@ -1169,12 +1195,32 @@ class Game(arcade.View):
         text = self.annotate_text(label, x, y, 0, 18)
         text.draw()
         
+        # Unit count on group tiles
+        for group in self.group_list:
+            units = [unit for unit in self.unit_list if unit.group == group.id and not unit.pinned]
+            label = len(units)
+            x = group.center_x - 11 * self.layout.scale
+            y = group.center_y + 6 * self.layout.scale
+            color = arcade.color.BLACK if group.owner == "player" else arcade.color.WHITE
+            text = self.annotate_text(label, x, y, 0, 18, color, True)
+            text.draw()
+            
+        # Pinned count on group tiles
+        for group in self.group_list:
+            units = [unit for unit in self.unit_list if unit.group == group.id and unit.pinned]
+            label = len(units)
+            x = group.center_x + 11 * self.layout.scale
+            y = group.center_y + 6 * self.layout.scale
+            color = arcade.color.RED
+            text = self.annotate_text(label, x, y, 0, 18, color, True)
+            text.draw()
+        
         # Terrain on group tiles
         for group in self.group_list:
             label = group.terrain
             x = group.center_x
-            y = group.center_y - 10 * self.layout.scale
-            color = arcade.color.BLACK
+            y = group.center_y - 12 * self.layout.scale
+            color = arcade.color.BLACK if group.owner == "player" else arcade.color.WHITE
             text = self.annotate_text(label, x, y, 0, 10, color, False)
             text.draw()
             

@@ -21,7 +21,7 @@ FULL_TABLE = 1
 class Card:
     """ Card for server logics """
     
-    def __init__(self, card_id, rnc, color, card_type, card_subtype, owner, location, group_id):
+    def __init__(self, card_id, rnc, color, card_type, card_subtype, owner, location, group):
 
         self.id = card_id
         self.rnc = rnc
@@ -30,7 +30,20 @@ class Card:
         self.subtype = card_subtype
         self.owner = owner # player_name
         self.location = location # deck, discard, void, hand, table
-        self.group_id = group_id
+        self.group = group
+        
+        
+        
+class Unit:
+    """ Unit card for server logics """
+
+    def __init__(self, unit_id, nation):
+
+        # Attributes
+        self.id = unit_id
+        self.nation = nation
+        self.group = None
+        self.pinned = False
         
         
         
@@ -76,12 +89,17 @@ class GameServer:
         # List with all the cards
         self.card_list = []
         
+        # List with all the unit cards
+        self.unit_list = []
+        
         # List with all the groups
         self.group_list = []
         
         # Tables
         self.card_table = pd.read_csv("assets/cards/card_table.txt", sep=";")
         self.card_table.set_index("id", inplace=True)
+        self.unit_table = pd.read_csv("assets/units/unit_table.txt", sep=";")
+        self.unit_table.set_index("id", inplace=True)
         
         # Thread lock (to avoid race conditions)
         self.lock = threading.Lock()
@@ -216,6 +234,12 @@ class GameServer:
                         row["subtype"], None, "deck", None)
             self.card_list.append(card)
             
+        # Create every unit
+        for unit_id in self.unit_table.index:
+            row = self.unit_table.loc[unit_id]
+            unit = Unit(unit_id, row["nation"])
+            self.unit_list.append(unit)
+            
         # Create every group
         for label in ["A", "B", "C", "D"]:
             for section in [0, 1]:
@@ -234,6 +258,13 @@ class GameServer:
         # Distribute cards
         for client in self.client_list:
             self.draw_cards(4, client)
+            
+        # Distribute units
+        for unit in self.unit_list:
+            if unit.nation == "german":
+                unit.group = random.choice(["A1", "B1"])
+            else:
+                unit.group = random.choice(["A2", "B2"])
             
         # Start playing phase
         self.game_phase = "gameplay"
@@ -331,14 +362,14 @@ class GameServer:
         # Remove any cards from the group (if necessary)
         if played_card.type == "terrain":
             for card in self.card_list:
-                if card.group_id == target_group.id:
-                    card.group_id = None
+                if card.group == target_group.id:
+                    card.group = None
                     card.location = "discard"
                     card.owner = None
             
         # Add card to the group
         played_card.location = "table"
-        played_card.group_id = target_group_id
+        played_card.group = target_group_id
         
         # Alter group attributes
         if played_card.type == "movement":
@@ -398,6 +429,7 @@ class GameServer:
             # Create a personalized game state for this player
             game_state = {
                 "cards": [],
+                "units": [],
                 "groups": [],
                 "game_phase": self.game_phase,
                 "current_turn": self.current_turn,
@@ -410,9 +442,17 @@ class GameServer:
                     "card_id": card.id,
                     "owner": "player" if client.name == card.owner else "opponent",
                     "location": card.location,
-                    "group_id": card.group_id
+                    "group": card.group
                 }
                 game_state["cards"].append(card_info)
+                
+            # Add unit information
+            for unit in self.unit_list:
+                unit_info = {
+                    "unit_id": unit.id,
+                    "group": unit.group
+                }
+                game_state["units"].append(unit_info)
                 
             # Add group information
             for group in self.group_list:
