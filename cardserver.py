@@ -227,8 +227,8 @@ class GameServer:
     def setup_logic(self):
         
         # Create every card
-        for i in range(19, 27):
-            card_id = f"ac{i:02d}"
+        for i in range(162):
+            card_id = f"ac{i+1:02d}"
             row = self.card_table.loc[card_id]
             card = Card(card_id, row["rnc"], row["color"], row["type"],
                         row["subtype"], None, "deck", None)
@@ -332,25 +332,24 @@ class GameServer:
         # Check if it's this player's turn
         if client.name != self.current_turn:
             return
-                
-        # Get played card
-        card_id = action.get("card_id")
-        
-        # Get targeted group
-        target_group_id = action.get("group_id")
         
         # Find card
+        card_id = action.get("card_id")
         played_card = None
         for card in self.card_list:
             if card.id == card_id:
                 played_card = card
                 break
-            
-        # Find group
+                    
+        # Find groups
+        group_ids = action.get("group_ids")
+        target_groups = [None, None]
         for group in self.group_list:
-            if group.id == target_group_id:
-                target_group = group
-            
+            if group.id == group_ids[0]:
+                target_groups[0] = group
+            elif group.id == group_ids[1]:
+                target_groups[1] = group
+                    
         # Card not found
         if played_card is None:
             return
@@ -362,22 +361,27 @@ class GameServer:
         # Remove any cards from the group (if necessary)
         if played_card.type == "terrain":
             for card in self.card_list:
-                if card.group == target_group.id:
+                if card.group == target_groups[0].id:
                     card.group = None
                     card.location = "discard"
                     card.owner = None
             
         # Add card to the group
         played_card.location = "table"
-        played_card.group = target_group_id
+        played_card.group = target_groups[0].id
         
         # Alter group attributes
         if played_card.type == "movement":
-            target_group.range += 1
-            target_group.moving = True
+            target_groups[0].range += 1
+            target_groups[0].moving = True
         elif played_card.type == "terrain":
-            target_group.terrain = played_card.subtype
-            target_group.moving = False
+            target_groups[0].terrain = played_card.subtype
+            target_groups[0].moving = False
+            
+        # Attack
+        if played_card.type == "movement":
+            
+            pass
             
             
             

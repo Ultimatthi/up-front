@@ -65,7 +65,7 @@ class Layout:
         self.scale = resize
         self.card_scale = resize * CARD_SCALE
         self.unit_scale = resize * UNIT_SCALE
-        self.light_radius = width * 0.5
+        self.light_radius = width * 0.8
         self.card_width = 144 * resize
         self.card_height = 224 * resize
 
@@ -374,8 +374,8 @@ class Game(arcade.View):
         self.dust_list = arcade.SpriteList()
 
         # Create every card
-        for i in range(19,27):
-            card_id = f"ac{i:02d}"
+        for i in range(162):
+            card_id = f"ac{i+1:02d}"
             row = self.card_table.loc[card_id]
             card = Card(card_id, row["type"], self.layout.scale)
             card.position = (-10000, -10000)
@@ -442,6 +442,11 @@ class Game(arcade.View):
         self.button_surrender = Button("surrender", image_path, self.layout.scale)
         self.button_list.append(self.button_surrender)
         
+        # Create button: RNC
+        image_path =  r'assets/boardelements/button.rnc.png'
+        self.button_rnc = Button("rng", image_path, self.layout.scale)
+        self.button_list.append(self.button_rnc)
+        
         # Layout elements
         self.layout_elements()
         
@@ -504,6 +509,10 @@ class Game(arcade.View):
         self.button_surrender.right = self.window.width - 120 * self.layout.scale
         self.button_surrender.bottom = 20 * self.layout.scale
 
+        # Button: RNC
+        self.button_rnc.scale = self.layout.scale
+        self.button_rnc.right = self.window.width - 260 * self.layout.scale
+        self.button_rnc.bottom = 20 * self.layout.scale
             
         
     def create_light(self):
@@ -517,7 +526,7 @@ class Game(arcade.View):
         # Create main light source
         self.center_light = Light(self.layout.width / 2, self.layout.height / 2,
                              radius=self.layout.light_radius,
-                             color=[200, 200, 200, 255],
+                             color=[255, 255, 255, 255],
                              mode='soft')
         
         # Add light sources to light layer
@@ -581,34 +590,34 @@ class Game(arcade.View):
         # Clear the screen
         self.clear()
         
-        with self.light_layer:
+        # with self.light_layer:
             
-            # Draw board elements
-            self.board_elements.draw()
+        # Draw board elements
+        self.board_elements.draw()
+        
+        # Draw buttons
+        self.button_list.draw()
+        
+        # Draw group tiles
+        self.group_list.draw(pixelated=True)
+        
+        # Draw the cards
+        self.card_list.draw()
+        
+        # Draw the units
+        self.unit_list.draw()
+        
+        # Draw hovered unit
+        if self.hover_unit is not None:
+            arcade.draw_sprite(self.hover_unit)
+        
+        # Annotations
+        self.annotate()
+        
+        # Dust particles
+        self.dust_list.draw()
             
-            # Draw buttons
-            self.button_list.draw()
-            
-            # Draw group tiles
-            self.group_list.draw(pixelated=True)
-            
-            # Draw the cards
-            self.card_list.draw()
-            
-            # Draw the units
-            self.unit_list.draw()
-            
-            # Draw hovered unit
-            if self.hover_unit is not None:
-                arcade.draw_sprite(self.hover_unit)
-            
-            # Annotations
-            self.annotate()
-            
-            # Dust particles
-            self.dust_list.draw()
-            
-        self.light_layer.draw()
+        # self.light_layer.draw()
 
         
 
@@ -626,7 +635,7 @@ class Game(arcade.View):
             
             # Play card
             if held_card.location == "hand":
-                self.play_card(held_card, self.active_groups["player"])
+                self.play_card(held_card, self.active_groups)
         
         # Get list of group tiles we've clicked on
         groups = arcade.get_sprites_at_point((x, y), self.group_list)
@@ -826,14 +835,14 @@ class Game(arcade.View):
             
             
             
-    def play_card(self, card, group):
+    def play_card(self, card, active_groups):
         """Send play card action to server"""
-
+    
         # Create action for server
         action = {
             "type": "play_card",
             "card_id": card.id,
-            "group_id": group.id
+            "group_ids": [group.id for group in active_groups.values()]
         }
         
         # Bring card on top
