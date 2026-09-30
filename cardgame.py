@@ -45,6 +45,7 @@ LOBBY_SCALE = min(LOBBY_HEIGHT/1080, LOBBY_WIDTH/1920)
 
 # Visual appearance
 MAIN_COLOR = (50, 59, 64, 255)
+CARD_BACK_TEXTURE = arcade.load_texture("assets/cards/cardback.png")
 
 
 
@@ -84,41 +85,31 @@ class Card(arcade.Sprite):
         self.location = "deck" # deck, discard, void, hand, table
         self.group = None
 
-        # Image to use for the sprite when face up
-        self.texture_front = self.load_texture(f'assets/cards/{self.id}.jpg')
+        # Image to use for the sprite when face up (not yet loaded)
+        self.texture_front = None
         
         # Image to use for the sprite when face down
-        self.texture_back = self.load_texture(r'assets/cards/cardback.jpg')
+        self.texture_back = CARD_BACK_TEXTURE
         
         # Call the parent
         super().__init__(self.texture_back, scale*CARD_SCALE, hit_box_algorithm="None")
         
     def adjust_texture(self):
         
-        # Get new texture
+        # Load front texture for the first time
+        if self.facing == "up" and self.texture_front is None:
+            self.texture_front = arcade.load_texture(f'assets/cards/{self.id}.png')
+            
+        # Change texture
         if self.facing == "up":
             target_texture = self.texture_front
         else:
             target_texture = self.texture_back
-            
+    
         # Set new texture (only when needed)
         if self.texture != target_texture:
             self.texture = target_texture
-            
-    def load_texture(self, image_path):
-    
-        # Load image and mask
-        image = Image.open(image_path).convert("RGBA")
-        mask = Image.open(r'assets/cards/mask.png').convert("L")
-        
-        # Adjust size if mask and image size differ
-        if mask.size != image.size:
-            mask = mask.resize(image.size)
-        
-        # Apply mask
-        image.putalpha(mask)
-        return arcade.Texture(image)
-    
+
     
     
 class Unit(arcade.Sprite):
@@ -302,7 +293,7 @@ class Game(arcade.View):
         self.layout = Layout(self.window.width, self.window.height)
         
         # Tables
-        self.card_table = pd.read_csv("assets/cards/card_table.txt", sep=";")
+        self.card_table = pd.read_csv("assets/cards/card_table.csv", sep=",")
         self.card_table.set_index("id", inplace=True)
         self.unit_table = pd.read_csv("assets/units/unit_table.txt", sep=";")
         self.unit_table.set_index("id", inplace=True)
