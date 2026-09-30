@@ -6,6 +6,7 @@ import socket
 import threading
 import pickle
 import time
+import re
 import random
 import pandas as pd
 
@@ -43,10 +44,15 @@ class Unit:
         self.id = unit_id
         self.nation = nation
         self.group = None
-        self.pinned = False
+        self.firepower = [8, 8, 8, 8, 8, 8]
+        self.morale = 2,
+        self.panic = 3,
+        self.kia = 4,
+        self.kia_pinned =5,
+        self.state = "rallied" # rallied, pinned, routed, kia
         
         
-        
+
 class Group:
     """ Group for server logics"""
     
@@ -323,7 +329,6 @@ class GameServer:
             
             
     def play_card(self, action, client):
-        """Move cards from table to trick stack"""
         
         # Check game phase
         if self.game_phase != "gameplay":
@@ -370,19 +375,72 @@ class GameServer:
         played_card.location = "table"
         played_card.group = target_groups[0].id
         
-        # Alter group attributes
+        # Resolve actions
         if played_card.type == "movement":
-            target_groups[0].range += 1
-            target_groups[0].moving = True
+            self.resolve_movement(target_groups[0], played_card)
         elif played_card.type == "terrain":
-            target_groups[0].terrain = played_card.subtype
-            target_groups[0].moving = False
+            self.resolve_terrain(target_groups[0], played_card)
+        elif played_card.type == "fire":
+            self.resolve_fire(target_groups, played_card)
             
-        # Attack
-        if played_card.type == "movement":
             
-            pass
+    def resolve_movement(self, target_group, played_card):
+        
+        target_group.range += 1
+        target_group.moving = True
+        
+        
+        
+    def resolve_terrain(self, target_group, played_card):
+        
+        target_group.terrain = played_card.subtype
+        target_group.moving = False
+        
             
+            
+    def resolve_fire(self, target_groups, played_card):
+        
+        # Get fire attributes
+        card_firestrength, card_firepower = [int(n) for n in re.findall(r"\d+", played_card.subtype)]
+        
+        # Player units
+        player_units = [unit for unit in self.unit_list if unit.group == target_groups[0].id]
+        
+        # Opponent units
+        opponent_units = [unit for unit in self.unit_list if unit.group == target_groups[1].id]
+        
+        # Relative range
+        total = target_groups[0].range + target_groups[1].range
+        relative_range = min(total, 10-total)
+        
+        # Relative range: Deduction for lateral distance
+        lateral_gap = abs(ord(target_groups[0].id[0]) - ord(target_groups[1].id[0]))
+        if lateral_gap >= 2 and relative_range > 0:
+            relative_range -= 1
+        
+        # Check firepower
+        firepower = sum(unit.firepower[relative_range] for unit in player_units if unit.state == "rallied")
+        if firepower < card_firepower:
+            return
+        
+        # Attack opponent units
+        for unit in opponent_units:
+            attack = card_firestrength + self.draw_rnc()
+            
+            if unit.state == "rallied":
+                if attack >= unit.kia:
+                    unit.state = "kia"
+                elif attack >= unit.morale:
+                    unit.state = "pinned"
+            
+            elif unit.state == "pinned":
+                if attack >= unit.kia_pinned:
+                    unit.state = "kia"
+                elif attack >= unit.panic:
+                    unit.state = "routed"
+
+            if unit.state in ["routed", "kia"]:
+                unit.group = None
             
             
     def end_turn(self, action, client):
@@ -454,7 +512,8 @@ class GameServer:
             for unit in self.unit_list:
                 unit_info = {
                     "unit_id": unit.id,
-                    "group": unit.group
+                    "group": unit.group,
+                    "state": unit.state,
                 }
                 game_state["units"].append(unit_info)
                 
@@ -516,6 +575,23 @@ class GameServer:
             card = deck.pop()
             card.location = "hand"
             card.owner = client.name
+            
+            
+    def draw_rnc(self):
+        
+        # Get cards in action deck
+        deck = [card for card in self.card_list if card.location == "deck"]
+        
+        # Reshuffle if necessary
+        if len(deck) == 0:
+            self.shuffle_cards()
+            deck = [card for card in self.card_list if card.location == "deck"]
+        
+        # Draw top card
+        card = deck.pop()
+        card.location = "discard"
+        
+        return(card.rnc)
         
     
 

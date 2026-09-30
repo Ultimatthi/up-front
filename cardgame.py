@@ -121,7 +121,7 @@ class Unit(arcade.Sprite):
         self.id = unit_id
         self.nation = nation
         self.group = None
-        self.pinned = False
+        self.state = "rallied" # rallied, pinned, routed, kia
 
         base = f'assets/units/{nation}/{unit_id}'
 
@@ -137,7 +137,7 @@ class Unit(arcade.Sprite):
     def adjust_texture(self):
         
         # Get new texture
-        if self.pinned == False:
+        if self.state != "pinned":
             target_texture = self.texture_front
         else:
             target_texture = self.texture_back
@@ -562,11 +562,19 @@ class Game(arcade.View):
         for card in self.card_list:
             card.adjust_texture()
             
+        # Adjust card texture
+        for card in self.card_list:
+            card.adjust_texture()
+            
+        # Adjust card texture
+        for unit in self.unit_list:
+            unit.adjust_texture()
+            
         # Set active group flag
         for group in self.group_list:
             group.active = group in self.active_groups.values()
                 
-        # Adjust group textgure
+        # Adjust group texture
         for group in self.group_list:
             group.adjust_texture()
                 
@@ -917,14 +925,15 @@ class Game(arcade.View):
         # Setup map for fast access
         unit_map = {unit.id: unit for unit in self.unit_list}
         
-        # Update card variables
+        # Update unit card variables
         for logical_unit in logical_unit_list:
             key = logical_unit["unit_id"]
             if key in unit_map:
                 unit = unit_map[key]
                 unit.group = logical_unit["group"]
-                        
+                unit.state = logical_unit["state"]
                 
+                        
         # Get logical group variables
         logical_group_list = game_state.get("groups")
         
@@ -1197,7 +1206,7 @@ class Game(arcade.View):
         
         # Unit count on group tiles
         for group in self.group_list:
-            units = [unit for unit in self.unit_list if unit.group == group.id and not unit.pinned]
+            units = [unit for unit in self.unit_list if unit.group == group.id and unit.state != "pinned"]
             label = len(units)
             x = group.center_x - 11 * self.layout.scale
             y = group.center_y + 6 * self.layout.scale
@@ -1207,7 +1216,7 @@ class Game(arcade.View):
             
         # Pinned count on group tiles
         for group in self.group_list:
-            units = [unit for unit in self.unit_list if unit.group == group.id and unit.pinned]
+            units = [unit for unit in self.unit_list if unit.group == group.id and unit.state != "pinned"]
             label = len(units)
             x = group.center_x + 11 * self.layout.scale
             y = group.center_y + 6 * self.layout.scale
