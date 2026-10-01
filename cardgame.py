@@ -115,11 +115,12 @@ class Card(arcade.Sprite):
 class Unit(arcade.Sprite):
     """ Unit card sprite """
 
-    def __init__(self, unit_id, nation, scale=1):
+    def __init__(self, unit_id, nation, owner, scale=1):
 
         # Attributes
         self.id = unit_id
         self.nation = nation
+        self.owner = None
         self.group = None
         self.state = "rallied" # rallied, pinned, routed, kia
 
@@ -375,7 +376,7 @@ class Game(arcade.View):
         # Create every unit
         for unit_id in self.unit_table.index:
             row = self.unit_table.loc[unit_id]
-            unit = Unit(unit_id, row["nation"], self.layout.scale)
+            unit = Unit(unit_id, row["nation"], None, self.layout.scale)
             unit.position = (-10000, -10000)
             self.unit_list.append(unit)
                 
@@ -930,6 +931,7 @@ class Game(arcade.View):
             key = logical_unit["unit_id"]
             if key in unit_map:
                 unit = unit_map[key]
+                unit.owner = logical_unit["owner"]
                 unit.group = logical_unit["group"]
                 unit.state = logical_unit["state"]
                 
@@ -1204,9 +1206,22 @@ class Game(arcade.View):
         text = self.annotate_text(label, x, y, 0, 18)
         text.draw()
         
+        # Counter: Dead units
+        for side in ["player", "opponent"]:
+            for state in ["kia", "routed"]:
+                count = [unit for unit in self.unit_list if unit.state == state and unit.owner == side]
+                label = len(count) if count else 0
+                x_offset = 60 if side == "opponent" else 20
+                x_offset += 100 if state == "routed" else 0
+                x = self.board_piles.left + x_offset*self.layout.scale
+                y = self.board_piles.bottom + 20*self.layout.scale
+                color = arcade.color.WHITE if side == "opponent" else arcade.color.ARSENIC
+                text = self.annotate_text(label, x, y, 0, 18, color)
+                text.draw()
+        
         # Unit count on group tiles
         for group in self.group_list:
-            units = [unit for unit in self.unit_list if unit.group == group.id and unit.state != "pinned"]
+            units = [unit for unit in self.unit_list if unit.group == group.id and unit.state == "rallied"]
             label = len(units)
             x = group.center_x - 11 * self.layout.scale
             y = group.center_y + 6 * self.layout.scale
@@ -1216,7 +1231,7 @@ class Game(arcade.View):
             
         # Pinned count on group tiles
         for group in self.group_list:
-            units = [unit for unit in self.unit_list if unit.group == group.id and unit.state != "pinned"]
+            units = [unit for unit in self.unit_list if unit.group == group.id and unit.state == "pinned"]
             label = len(units)
             x = group.center_x + 11 * self.layout.scale
             y = group.center_y + 6 * self.layout.scale

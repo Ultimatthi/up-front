@@ -38,7 +38,7 @@ class Card:
 class Unit:
     """ Unit card for server logics """
 
-    def __init__(self, unit_id, nation):
+    def __init__(self, unit_id, nation, owner):
 
         # Attributes
         self.id = unit_id
@@ -50,6 +50,7 @@ class Unit:
         self.kia = 4,
         self.kia_pinned =5,
         self.state = "rallied" # rallied, pinned, routed, kia
+        self.owner = owner
         
         
 
@@ -243,7 +244,7 @@ class GameServer:
         # Create every unit
         for unit_id in self.unit_table.index:
             row = self.unit_table.loc[unit_id]
-            unit = Unit(unit_id, row["nation"])
+            unit = Unit(unit_id, row["nation"], None)
             self.unit_list.append(unit)
             
         # Create every group
@@ -269,6 +270,7 @@ class GameServer:
         for unit in self.unit_list:
             if unit.nation == "german":
                 unit.group = random.choice(["A1", "B1"])
+                unit.owner = self.client_list[0]
             else:
                 unit.group = random.choice(["A2", "B2"])
             
@@ -512,6 +514,7 @@ class GameServer:
             for unit in self.unit_list:
                 unit_info = {
                     "unit_id": unit.id,
+                    "owner": "player" if client.name == unit.owner else "opponent",
                     "group": unit.group,
                     "state": unit.state,
                 }
