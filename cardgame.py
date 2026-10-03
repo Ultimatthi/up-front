@@ -166,9 +166,10 @@ class Group(arcade.Sprite):
         # Textures
         self.textures_map = {}
         for owner in ("player", "opponent"):
-            for state in ("inactive", "active", "inactive_moving", "active_moving"):
-                path = rf'assets/tiles/tile.{owner}.{state}.png'
-                self.textures_map[(owner, state)] = arcade.load_texture(path)
+            for state in ("inactive", "active"):
+                for direction in ("none", "up", "side", "down"):
+                    path = f'assets/tiles/tile.{owner}.{state}.{direction}.png'
+                    self.textures_map[(owner, state, direction)] = arcade.load_texture(path)
         
         # Call the parent
         super().__init__(None, scale, hit_box_algorithm="None")
@@ -178,25 +179,59 @@ class Group(arcade.Sprite):
         if self.owner == None:
             return
 
-        i = ord(self.label) - 65 + 1
-        j = self.range if self.owner == "player" else 5 - self.range
-        self.center_x = layout.width / 2 -  150 * layout.scale + i * 60 * layout.scale
-        self.center_y = layout.height / 2 - 150 * layout.scale + j * 60 * layout.scale
+        # Adjust group chit
+        i = ord(self.label) - 65
+        sign = 1 if self.owner == "player" else -1
+        self.center_x = layout.width / 2 - 180 * layout.scale + i * 120 * layout.scale
+        self.center_y = layout.height / 2 - sign * 180 * layout.scale
         
     def adjust_texture(self):
         
         if self.owner is None:
             return
         
+        # Find state
         state = "active" if self.active else "inactive"
-        if self.moving:
-            state += "_moving"
         
-        target_texture = self.textures_map[(self.owner, state)]
+        # Find movement direction
+        direction = "up" if self.moving else "none"
+        
+        target_texture = self.textures_map[(self.owner, state, direction)]
         
         if self.texture != target_texture:
             self.texture = target_texture
             
+            
+            
+class Chit(arcade.Sprite):
+    """ Chit sprite """
+    
+    def __init__(self, chit_type, group, scale=1):
+        
+        # Attribute
+        self.type = chit_type
+        self.group = group
+        
+        # Textures
+        if self.type == "range":
+            texture = arcade.load_texture(r'assets/chits/chit.range.0.png')
+        
+        # Call the parent
+        super().__init__(texture, scale, hit_box_algorithm="None")
+        
+    def set_position(self, layout):
+        
+        sign = 1 if self.group.owner == "player" else -1
+        
+        self.center_x = self.group.center_x
+        self.center_y = self.group.center_y + sign * 110 * layout.scale
+        
+    def adjust_texture(self):
+        
+        target_texture = arcade.load_texture(f'assets/chits/chit.range.{self.group.range}.png')
+        
+        if self.texture != target_texture:
+            self.texture = target_texture
             
 
 class Button(arcade.Sprite):
@@ -335,6 +370,9 @@ class Game(arcade.View):
         # Sprite list with all the group tile elements
         self.group_list = arcade.SpriteList()
         
+        # Sprite list with all the chit elements
+        self.chit_list = arcade.SpriteList()
+        
         # Board element list with all the buttons
         self.button_list = arcade.SpriteList()
         
@@ -390,6 +428,11 @@ class Game(arcade.View):
                     group.active = True
                 self.group_list.append(group)
                 
+        # Create every range chit
+        for group in self.group_list:
+            range_chit = Chit("range", group, self.layout.scale)
+            self.chit_list.append(range_chit)
+                
         # Init active groups
         self.active_groups = {"player": self.group_list[0], "opponent": self.group_list[1]}
 
@@ -413,11 +456,6 @@ class Game(arcade.View):
         image_path =  r'assets/boardelements/board.group.opponent.png'
         self.board_group_opponent = BoardElement(image_path, self.layout.scale)
         self.board_elements.append(self.board_group_opponent)
-        
-        # Create board element: Grid
-        image_path =  r'assets/boardelements/board.grid.png'
-        self.board_grid = BoardElement(image_path, self.layout.scale)
-        self.board_elements.append(self.board_grid)
         
         # Create board element: Piles
         image_path =  r'assets/boardelements/board.piles.png'
@@ -480,10 +518,6 @@ class Game(arcade.View):
         self.board_group_opponent.scale = self.layout.scale
         self.board_group_opponent.right = self.window.width - (20 - 1) * self.layout.scale
         self.board_group_opponent.top = self.window.height - (20 - 1) * self.layout.scale
-        
-        # Board element: Grid
-        self.board_grid.scale = self.layout.scale
-        self.board_grid.position = self.layout.width / 2, self.layout.height / 2
         
         # Board element: Piles
         self.board_piles.scale = self.layout.scale
@@ -551,6 +585,9 @@ class Game(arcade.View):
         # Reposition group tiles
         self.adjust_group_position()
         
+        # Reposition chits
+        self.adjust_chit_position()
+        
         
         
     def on_update(self, delta_time):
@@ -578,6 +615,10 @@ class Game(arcade.View):
         # Adjust group texture
         for group in self.group_list:
             group.adjust_texture()
+            
+        # Adjust group texture
+        for chit in self.chit_list:
+            chit.adjust_texture()
                 
         # Update dust particles
         self.dust_list.update(delta_time)
@@ -599,7 +640,10 @@ class Game(arcade.View):
         self.button_list.draw()
         
         # Draw group tiles
-        self.group_list.draw(pixelated=True)
+        self.group_list.draw()
+        
+        # Draw chit tiles
+        self.chit_list.draw()
         
         # Draw the cards
         self.card_list.draw()
@@ -1155,6 +1199,14 @@ class Game(arcade.View):
             
             
             
+    def adjust_chit_position(self):
+            
+        # Adjust range chit tiles
+        for chit in self.chit_list:
+            chit.set_position(self.layout)
+            
+            
+            
     def keep_sprite_within_window(self, sprite):
         
         offset = 10 * self.layout.scale
@@ -1221,31 +1273,34 @@ class Game(arcade.View):
         
         # Unit count on group tiles
         for group in self.group_list:
+            sign = 1 if group.owner == "player" else -1
             units = [unit for unit in self.unit_list if unit.group == group.id and unit.state == "rallied"]
             label = len(units)
-            x = group.center_x - 11 * self.layout.scale
-            y = group.center_y + 6 * self.layout.scale
-            color = arcade.color.BLACK if group.owner == "player" else arcade.color.WHITE
-            text = self.annotate_text(label, x, y, 0, 18, color, True)
+            x = group.center_x - 22.5 * self.layout.scale
+            y = group.center_y + sign * 22.5 * self.layout.scale
+            color = arcade.color.ARSENIC if group.owner == "player" else arcade.color.WHITE
+            text = self.annotate_text(label, x, y, 0, 24, color, True)
             text.draw()
             
         # Pinned count on group tiles
         for group in self.group_list:
+            sign = 1 if group.owner == "player" else -1
             units = [unit for unit in self.unit_list if unit.group == group.id and unit.state == "pinned"]
             label = len(units)
-            x = group.center_x + 11 * self.layout.scale
-            y = group.center_y + 6 * self.layout.scale
+            x = group.center_x + 22.5 * self.layout.scale
+            y = group.center_y + sign * 22.5 * self.layout.scale
             color = arcade.color.RED
-            text = self.annotate_text(label, x, y, 0, 18, color, True)
+            text = self.annotate_text(label, x, y, 0, 24, color, True)
             text.draw()
         
         # Terrain on group tiles
         for group in self.group_list:
+            sign = 1 if group.owner == "player" else -1
             label = group.terrain
             x = group.center_x
-            y = group.center_y - 12 * self.layout.scale
-            color = arcade.color.BLACK if group.owner == "player" else arcade.color.WHITE
-            text = self.annotate_text(label, x, y, 0, 10, color, False)
+            y = group.center_y - sign * 22.5 * self.layout.scale
+            color = arcade.color.ARSENIC if group.owner == "player" else arcade.color.WHITE
+            text = self.annotate_text(label, x, y, 0, 18, color, False)
             text.draw()
             
     
