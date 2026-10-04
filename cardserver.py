@@ -22,35 +22,56 @@ FULL_TABLE = 1
 class Card:
     """ Card for server logics """
     
-    def __init__(self, card_id, rnc, color, card_type, card_subtype, owner, location, group):
+    def __init__(self, card_id, card_type, card_subtype, rnc, breeze, color):
 
         self.id = card_id
-        self.rnc = rnc
-        self.color = color
         self.type = card_type
         self.subtype = card_subtype
-        self.owner = owner # player_name
-        self.location = location # deck, discard, void, hand, table
-        self.group = group
+        self.rnc = rnc
+        self.breeze = breeze
+        self.color = color
+        self.location = "deck" # deck, discard, void, hand, table
+        self.group = None
+        self.owner = None # player_name
         
         
         
 class Unit:
     """ Unit card for server logics """
 
-    def __init__(self, unit_id, nation, owner):
-
+    def __init__(self, unit_id, nation, rank, name, weapon, malfunction, 
+                 ccv, firepower, morale, panic, rout, kia, points):
+        
         # Attributes
         self.id = unit_id
         self.nation = nation
-        self.group = None
-        self.firepower = [8, 8, 8, 8, 8, 8]
-        self.morale = 2,
-        self.panic = 3,
-        self.kia = 4,
-        self.kia_pinned =5,
+        self.rank = rank
+        self.name = name
+        self.weapon = weapon
+        self.ccv = ccv # rallied|pinned|rallied(disarmed)|pinned(disarmed)
+        self.morale = morale
+        self.panic = panic
+        self.rout = rout
+        self.kia = kia # rallied|pinned
+        self.points = points
         self.state = "rallied" # rallied, pinned, routed, kia
-        self.owner = owner
+        self.group = None
+        self.owner = None
+        
+        # Attributes (crew related)
+        self._firepower = firepower
+        self._malfunction = malfunction
+        self.set_mode("uncrewed")
+            
+    def set_mode(self, mode):
+        
+        self.mode = mode
+        self.firepower = self._select(self._firepower)
+        self.malfunction = self._select(self._malfunction)
+    
+    def _select(self, value):
+        
+        return value[self.mode] if isinstance(value, dict) else value
         
         
 
@@ -102,10 +123,13 @@ class GameServer:
         # List with all the groups
         self.group_list = []
         
-        # Tables
+        # Card table
         self.card_table = pd.read_csv("assets/cards/card_table.csv", sep=",")
         self.card_table.set_index("id", inplace=True)
-        self.unit_table = pd.read_csv("assets/units/unit_table.txt", sep=";")
+        
+        # Unit table
+        df = pd.read_csv("assets/units/unit_table.csv", sep=",")
+        self.unit_table = df.map(self.parse_cell)
         self.unit_table.set_index("id", inplace=True)
         
         # Thread lock (to avoid race conditions)
@@ -237,16 +261,17 @@ class GameServer:
         for i in range(162):
             card_id = f"ac{i+1:02d}"
             row = self.card_table.loc[card_id]
-            card = Card(card_id, row["rnc"], row["color"], row["type"],
-                        row["subtype"], None, "deck", None)
+            card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["breeze"], row["color"])
             self.card_list.append(card)
             
         # Create every unit
         for unit_id in self.unit_table.index:
             row = self.unit_table.loc[unit_id]
-            unit = Unit(unit_id, row["nation"], None)
+            unit = Unit(unit_id, row["nation"], row["rank"], row["name"], row["weapon"], 
+                        row["malfunction"], row["ccv"], row["firepower"], row["morale"], 
+                        row["panic"], row["rout"], row["kia"], row["points"])
             self.unit_list.append(unit)
-            
+
         # Create every group
         for label in ["A", "B", "C", "D"]:
             for section in [0, 1]:
@@ -386,6 +411,7 @@ class GameServer:
             self.resolve_fire(target_groups, played_card)
             
             
+            
     def resolve_movement(self, target_group, played_card):
         
         target_group.range += 1
@@ -428,15 +454,18 @@ class GameServer:
         # Attack opponent units
         for unit in opponent_units:
             attack = card_firestrength + self.draw_rnc()
+            print(attack)
+            
+            print(type(unit.kia), unit.kia, type(unit.morale), unit.morale, type(unit.panic))
             
             if unit.state == "rallied":
-                if attack >= unit.kia:
+                if attack >= unit.kia[0]:
                     unit.state = "kia"
                 elif attack >= unit.morale:
                     unit.state = "pinned"
             
             elif unit.state == "pinned":
-                if attack >= unit.kia_pinned:
+                if attack >= unit.kia[1]:
                     unit.state = "kia"
                 elif attack >= unit.panic:
                     unit.state = "routed"
@@ -595,8 +624,24 @@ class GameServer:
         card.location = "discard"
         
         return(card.rnc)
-        
     
+    
+            
+    def parse_cell(self, cell):
+        
+        # Transform to string
+        cell = str(cell).strip()
+        
+        # Parse to values and lists
+        if "/" in cell:
+            crewed, uncrewed = (self.parse_cell(p) for p in cell.split("/"))
+            return {"crewed": crewed, "uncrewed": uncrewed}
+        elif "|" in cell:
+            return [self.parse_cell(x) for x in cell.split("|")]
+        else:
+            return int(cell) if cell.lstrip("-").isdigit() else cell
+        
+        
 
 # ──[ Main ]───────────────────────────────────────────────────────────────────
 

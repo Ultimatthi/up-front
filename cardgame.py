@@ -331,7 +331,7 @@ class Game(arcade.View):
         # Tables
         self.card_table = pd.read_csv("assets/cards/card_table.csv", sep=",")
         self.card_table.set_index("id", inplace=True)
-        self.unit_table = pd.read_csv("assets/units/unit_table.txt", sep=";")
+        self.unit_table = pd.read_csv("assets/units/unit_table.csv", sep=",")
         self.unit_table.set_index("id", inplace=True)
     
 
