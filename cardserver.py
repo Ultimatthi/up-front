@@ -285,11 +285,15 @@ class GameServer:
         self.current_turn = first_client.name
         
         # Shuffle cards
-        self.shuffle_cards()
+        self.shuffle_cards()   
         
         # Distribute cards
         for client in self.client_list:
-            self.draw_cards(4, client)
+            self.draw_cards(4, client.name)
+            
+        # Distribute cards to bot
+        if len(self.client_list) < 2:
+            self.draw_cards(4, "bot")
             
         # Distribute units
         for unit in self.unit_list:
@@ -347,7 +351,6 @@ class GameServer:
         # Play card action
         if action_type == "play_card":
             self.play_card(action, client)
-            self.current_sound = "play_card"
             
         # End player's turn
         if action_type == "end_turn":
@@ -409,6 +412,9 @@ class GameServer:
             self.resolve_terrain(target_groups[0], played_card)
         elif played_card.type == "fire":
             self.resolve_fire(target_groups, played_card)
+            
+        # Set sound
+        self.current_sound = "play_card"
             
             
             
@@ -491,7 +497,7 @@ class GameServer:
         n_cards = 6 - len(hand)
         
         # Refill player's hand
-        self.draw_cards(n_cards, client)
+        self.draw_cards(n_cards, client.name)
         
 
 
@@ -591,7 +597,7 @@ class GameServer:
         
         
         
-    def draw_cards(self, n_cards, client):
+    def draw_cards(self, n_cards, client_name):
         
         # Get cards in action deck
         deck = [card for card in self.card_list if card.location == "deck"]
@@ -606,7 +612,8 @@ class GameServer:
             # Draw top card
             card = deck.pop()
             card.location = "hand"
-            card.owner = client.name
+            card.owner = client_name
+            
             
             
     def draw_rnc(self):

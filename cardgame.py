@@ -881,6 +881,10 @@ class Game(arcade.View):
             
     def play_card(self, card, active_groups):
         """Send play card action to server"""
+        
+        # Check card owner
+        if card.owner != "player":
+            return
     
         # Create action for server
         action = {
@@ -1067,7 +1071,10 @@ class Game(arcade.View):
     def adjust_card_position(self):
         
         # Get cards in player's hand
-        hand = [card for card in self.card_list if card.location == "hand"]
+        player_hand = [card for card in self.card_list if card.location == "hand" and card.owner == "player"]
+        
+        # Get cards in opponent's hand
+        opponent_hand = [card for card in self.card_list if card.location == "hand" and card.owner != "player"]
         
         # Get cards on table
         table = [card for card in self.card_list if card.location == "table"]
@@ -1085,35 +1092,31 @@ class Game(arcade.View):
         stack_counts = defaultdict(int)
 
         # Player's hand
-        for i, card in enumerate(hand):
-            
-            # Check if owned by player
-            if card.owner != "player":
-                continue
+        for i, card in enumerate(player_hand):
+
+            # Move to top
+            self.card_list.remove(card)
+            self.card_list.append(card)
             
             # Set facing
             card.facing = "up"
             
             # Get position
-            x = (721 + i*154) * self.layout.scale
+            x = (721 + (len(player_hand)-1-i)*154) * self.layout.scale
             y = 132 * self.layout.scale
             
             # Set position
             card.position = (x, y)
             
         # Opponent's hand
-        for i, card in enumerate(hand):
-            
-            # Check if owned by opponent
-            if card.owner != "opponent":
-                continue
+        for i, card in enumerate(opponent_hand):
             
             # Set facing
             card.facing = "down"
             
             # Get position
-            x = (721 + i*154) * self.layout.scale
-            y = 632 * self.layout.scale
+            x = self.window.width - (721 + (len(opponent_hand)-1-i)*154) * self.layout.scale
+            y = self.window.height - 132 * self.layout.scale
             
             # Set position
             card.position = (x, y)
