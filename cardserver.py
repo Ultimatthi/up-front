@@ -85,7 +85,7 @@ class Group:
         self.owner = owner
         self.range = 0
         self.fp = [0, 0, 0, 0, 0, 0]
-        self.moving = False
+        self.moving = None
         self.terrain = None
 
         
@@ -405,9 +405,12 @@ class GameServer:
         played_card.location = "table"
         played_card.group = target_groups[0].id
         
+        # Get card mode
+        mode = action.get("mode")
+        
         # Resolve actions
         if played_card.type == "movement":
-            self.resolve_movement(target_groups[0], played_card)
+            self.resolve_movement(target_groups[0], played_card, mode)
         elif played_card.type == "terrain":
             self.resolve_terrain(target_groups[0], played_card)
         elif played_card.type == "fire":
@@ -418,17 +421,20 @@ class GameServer:
             
             
             
-    def resolve_movement(self, target_group, played_card):
+    def resolve_movement(self, target_group, played_card, mode):
         
-        target_group.range += 1
-        target_group.moving = True
+        if mode == "forward":
+            target_group.range += 1
+        elif mode == "backward":
+            target_group.range -= 1
+        target_group.moving = mode
         
         
         
     def resolve_terrain(self, target_group, played_card):
         
         target_group.terrain = played_card.subtype
-        target_group.moving = False
+        target_group.moving = None
         
             
             

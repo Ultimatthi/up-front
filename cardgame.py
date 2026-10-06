@@ -84,6 +84,7 @@ class Card(arcade.Sprite):
         self.owner = None # player_name
         self.location = "deck" # deck, discard, void, hand, table
         self.group = None
+        self.mode = None
 
         # Image to use for the sprite when face up (not yet loaded)
         self.texture_front = None
@@ -159,7 +160,7 @@ class Group(arcade.Sprite):
         self.label = label
         self.owner = None # player, opponent
         self.range = 0
-        self.moving = False
+        self.moving = None
         self.terrain = None
         self.active = True
         
@@ -167,7 +168,7 @@ class Group(arcade.Sprite):
         self.textures_map = {}
         for owner in ("player", "opponent"):
             for state in ("inactive", "active"):
-                for direction in ("none", "up", "side", "down"):
+                for direction in ("none", "forward", "sideways", "backward"):
                     path = f'assets/tiles/tile.{owner}.{state}.{direction}.png'
                     self.textures_map[(owner, state, direction)] = arcade.load_texture(path)
         
@@ -194,7 +195,7 @@ class Group(arcade.Sprite):
         state = "active" if self.active else "inactive"
         
         # Find movement direction
-        direction = "up" if self.moving else "none"
+        direction = self.moving if self.moving else "none"
         
         target_texture = self.textures_map[(self.owner, state, direction)]
         
@@ -323,7 +324,6 @@ class Game(arcade.View):
         self.sound_knock = arcade.load_sound(r'assets/sounds/knock.mp3')
         self.sound_play = arcade.load_sound(r'assets/sounds/play_card.mp3')
         self.sound_select = arcade.load_sound(r'assets/sounds/select.mp3')
-        
         
         # Layout
         self.layout = Layout(self.window.width, self.window.height)
@@ -667,6 +667,11 @@ class Game(arcade.View):
 
     def on_mouse_press(self, x, y, button, key_modifiers):
         """ Called when the user presses a mouse button. """
+        
+        # Check right click
+        if button == arcade.MOUSE_BUTTON_RIGHT:
+            self.switch_card_mode()
+            return
 
         # Get list of cards we've clicked on
         cards = arcade.get_sprites_at_point((x, y), self.card_list)
@@ -778,7 +783,7 @@ class Game(arcade.View):
         
         # Get list of cards we'are hovering above
         cards = arcade.get_sprites_at_point((x, y), self.card_list)
-        
+
         # Declare top card as hovered card
         if len(cards) > 0:
             self.hover_card = cards[-1]
@@ -789,6 +794,10 @@ class Game(arcade.View):
         if len(cards) > 0 and self.current_turn == self.player_name:
             if cards[-1].location == "hand" and cards[-1].owner == "player":
                 cursor_type = self.window.CURSOR_HAND
+                
+        # Set init card mode
+        if self.hover_card and self.hover_card.mode is None:
+            self.switch_card_mode()
                 
                 
         # Get list of cards we'are hovering above
@@ -878,6 +887,26 @@ class Game(arcade.View):
             self.ctrl_held = False
             
             
+    
+    def switch_card_mode(self):
+        
+        if self.hover_card is None:
+            return
+        
+        if self.hover_card.owner != "player":
+            return
+        
+        if self.hover_card.type == "movement":
+        
+            modes = ["forward", "sideways", "backward"]
+            
+            if self.hover_card.mode in modes:
+                i = (modes.index(self.hover_card.mode) + 1) % len(modes)
+                self.hover_card.mode = modes[i]
+            else:
+                self.hover_card.mode = modes[0]
+            
+            
             
     def play_card(self, card, active_groups):
         """Send play card action to server"""
@@ -890,7 +919,8 @@ class Game(arcade.View):
         action = {
             "type": "play_card",
             "card_id": card.id,
-            "group_ids": [group.id for group in active_groups.values()]
+            "group_ids": [group.id for group in active_groups.values()],
+            "mode": card.mode
         }
         
         # Bring card on top
@@ -1304,6 +1334,15 @@ class Game(arcade.View):
             y = group.center_y - sign * 22.5 * self.layout.scale
             color = arcade.color.ARSENIC if group.owner == "player" else arcade.color.WHITE
             text = self.annotate_text(label, x, y, 0, 18, color, False)
+            text.draw()
+            
+        # Card mode
+        if self.hover_card is not None and self.hover_card.mode is not None:
+            label = "[" + self.hover_card.mode + "]"
+            x = self.hover_card.center_x
+            y = self.hover_card.top + 20 * self.layout.scale
+            color = color=arcade.color.WHITE
+            text = self.annotate_text(label, x, y, 0, 16, color, False)
             text.draw()
             
     
