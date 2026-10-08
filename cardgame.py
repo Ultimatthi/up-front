@@ -33,7 +33,9 @@ from arcade.future.light import Light, LightLayer
 CARD_SCALE = 144/675
 UNIT_SCALE = 144/600
 CARD_ENLARGE = 1.05
-UNIT_ENLARGE = 1.5
+CARD_ZOOM = 1.5
+UNIT_ENLARGE = 1.05
+UNIT_ZOOM = 1.5
 GROUP_ENLARGE = 1.1
 BUTTON_ENLARGE = 1.1
 
@@ -124,6 +126,7 @@ class Unit(arcade.Sprite):
         self.owner = None
         self.group = None
         self.state = "rallied" # rallied, pinned, routed, kia
+        self.selected = False
 
         base = f'assets/units/{nation}/{unit_id}'
 
@@ -147,6 +150,13 @@ class Unit(arcade.Sprite):
         # Set new texture (only when needed)
         if self.texture != target_texture:
             self.texture = target_texture
+            
+    def draw_overlay(self, overlay):
+        
+        if self.selected:
+            overlay.position = self.position
+            overlay.scale = self.scale
+            arcade.draw_sprite(overlay)
 
 
         
@@ -361,6 +371,7 @@ class Game(arcade.View):
         
         # Set modifier
         self.ctrl_held = False
+        self.alt_held = False
         
         # Sprite list with all the cards, no matter what pile they are in
         self.card_list = arcade.SpriteList()
@@ -374,11 +385,14 @@ class Game(arcade.View):
         # Sprite list with all the chit elements
         self.chit_list = arcade.SpriteList()
         
-        # Board element list with all the buttons
+        # Sprite list with all the buttons
         self.button_list = arcade.SpriteList()
         
-        # Board element list with all the board elements
+        # Sprite list with all the board elements
         self.board_elements = arcade.SpriteList()
+        
+        # Sprite list with all the overlay elements
+        self.overlay_elements = arcade.SpriteList()
         
         # Create light
         self.create_light()
@@ -477,6 +491,9 @@ class Game(arcade.View):
         image_path =  r'assets/boardelements/button.rnc.png'
         self.button_rnc = Button("rng", image_path, self.layout.scale)
         self.button_list.append(self.button_rnc)
+        
+        # Overlay elements
+        self.unit_overlay = arcade.Sprite("assets/overlays/unit.overlay.png", self.layout.unit_scale)
         
         # Layout elements
         self.layout_elements()
@@ -658,9 +675,8 @@ class Game(arcade.View):
         # Draw the units
         self.unit_list.draw()
         
-        # Draw hovered unit
-        if self.hover_unit is not None:
-            arcade.draw_sprite(self.hover_unit)
+        # Draw overlays
+        self.draw_overlays()
         
         # Annotations
         self.annotate()
@@ -669,6 +685,8 @@ class Game(arcade.View):
         self.dust_list.draw()
             
         # self.light_layer.draw()
+        
+
 
         
 
@@ -735,7 +753,16 @@ class Game(arcade.View):
                 self.dust_list.append(DustParticle(x, y))
             # Play sound
             self.play_sound("knock")
-        
+            
+        # Have we clicked on a unit?
+        if len(units) > 0:
+
+            # Might be a stack of cards, get the top one
+            held_unit = units[-1]
+            
+            # Select/deselect unit
+            held_unit.selected = not held_unit.selected
+            
         # Adjust card position
         self.adjust_card_position()
         
@@ -856,6 +883,10 @@ class Game(arcade.View):
         if key == arcade.key.LCTRL:
             self.ctrl_held = True
             
+        # Set modifier
+        if key == arcade.key.LALT:
+            self.alt_held = True
+        
         # Advance turn
         if key == arcade.key.SPACE:
             self.advance_turn()
@@ -896,6 +927,10 @@ class Game(arcade.View):
         # Set modifier
         if key == arcade.key.LCTRL:
             self.ctrl_held = False
+            
+        # Set modifier
+        if key == arcade.key.LALT:
+            self.alt_held = False
             
             
     
@@ -1069,10 +1104,13 @@ class Game(arcade.View):
         for card in self.card_list:
             if card != self.hover_card and card.scale != self.layout.card_scale:
                 card.scale = self.layout.card_scale
+                self.adjust_card_position()
         
         # Enlarge card we are hovering above
         if (self.hover_card != None):
-            self.hover_card.scale = self.layout.card_scale*CARD_ENLARGE
+            scale = CARD_ZOOM if self.alt_held else CARD_ENLARGE
+            self.hover_card.scale = self.layout.card_scale * scale
+            self.keep_sprite_within_window(self.hover_card)
             
         # Shrink previous enlarged group tile
         for group in self.group_list:
@@ -1101,7 +1139,8 @@ class Game(arcade.View):
         
         # Enlarge unit we are hovering above
         if (self.hover_unit != None):
-            self.hover_unit.scale = self.layout.unit_scale*UNIT_ENLARGE
+            scale = UNIT_ZOOM if self.alt_held else UNIT_ENLARGE
+            self.hover_unit.scale = self.layout.unit_scale * scale
             self.keep_sprite_within_window(self.hover_unit)
 
             
@@ -1399,6 +1438,27 @@ class Game(arcade.View):
         
         # Return
         return(text)
+    
+
+    
+    def draw_overlays(self):
+        
+        # Draw hovered card
+        if self.hover_card:
+            arcade.draw_sprite(self.hover_card)
+    
+        # Draw unit overlays
+        for unit in self.unit_list:
+            unit.draw_overlay(self.unit_overlay)
+    
+        # Draw hovered unit
+        if self.hover_unit:
+            arcade.draw_sprite(self.hover_unit)
+            self.hover_unit.draw_overlay(self.unit_overlay)
+                
+        
+            
+
     
 
 
