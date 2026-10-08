@@ -16,6 +16,12 @@ import pandas as pd
 FPS = 20
 FULL_TABLE = 1
 
+MAX_HAND = {"german": 5, "american": 6, "russian": 4, "british": 5,
+            "japanese": 4, "french": 6, "italian": 4}
+
+MAX_DISCARD = {"german": 1, "american": 2, "russian": 4, "british": 2,
+               "japanese": 2, "french": 1, "italian": 2}
+
 
 # ──[ Classes ]────────────────────────────────────────────────────────────────
 
@@ -87,6 +93,7 @@ class Group:
         self.fp = [0, 0, 0, 0, 0, 0]
         self.moving = None
         self.terrain = None
+        self.has_acted = False
 
         
         
@@ -99,6 +106,8 @@ class Client:
         self.name = name
         self.nation = nation
         self.ready = ready
+        self.has_acted = False
+        self.discard_count = 0
         
 
 
@@ -108,6 +117,7 @@ class GameServer:
         
         # Game variables
         self.game_phase = "assignment"
+        self.game_subphase = None
         self.broadcast_timer = 0.0
         self.client_list = []
         self.current_turn = None
@@ -222,7 +232,7 @@ class GameServer:
         self.broadcast_timer += delta_time
         
         # Send heartbeat to all clients
-        if self.broadcast_timer > 2.0:
+        if self.broadcast_timer > 10.0:
             # Reset timer
             self.broadcast_timer = 0.0
             # Set sound to silent
@@ -289,11 +299,7 @@ class GameServer:
         
         # Distribute cards
         for client in self.client_list:
-            self.draw_cards(4, client.name)
-            
-        # Distribute cards to bot
-        if len(self.client_list) < 2:
-            self.draw_cards(4, "bot")
+            self.draw_cards(client)
             
         # Distribute units
         for unit in self.unit_list:
@@ -305,7 +311,8 @@ class GameServer:
             
         # Start playing phase
         self.game_phase = "gameplay"
-                
+        self.game_subphase = "action" # action, discard
+        self.broadcast()
     
     
     def gameplay_logic(self):
@@ -321,7 +328,7 @@ class GameServer:
             
             try:
                 # Receive data
-                data = c.recv(4096)
+                data = c.recv(1024)
                 
                 if data:
                     
@@ -353,8 +360,8 @@ class GameServer:
             self.play_card(action, client)
             
         # End player's turn
-        if action_type == "end_turn":
-            self.end_turn(action, client)
+        if action_type == "advance_turn":
+            self.advance_turn(action, client)
 
             
             
@@ -393,6 +400,37 @@ class GameServer:
         if played_card.owner != client.name:
             return
         
+        # Get card mode
+        card_mode = action.get("card_mode")
+        
+        # Resolve card
+        if self.game_subphase == "action":
+            self.execute_card(played_card, card_mode, target_groups, client)
+        else:
+            self.discard_card(played_card, client)
+        
+ 
+    
+    def execute_card(self, played_card, card_mode, target_groups, client):
+        
+        # Check if group has already acted
+        if target_groups[0].has_acted:
+            return
+        
+        # Resolve actions
+        if played_card.type == "movement":
+            success = self.resolve_movement(target_groups[0], played_card, card_mode)
+        elif played_card.type == "terrain":
+            success = self.resolve_terrain(target_groups[0], played_card)
+        elif played_card.type == "fire":
+            success = self.resolve_fire(target_groups, played_card)
+        else:
+            success = True
+            
+        # Check if card was resolved successfully
+        if not success:
+            return
+        
         # Remove any cards from the group (if necessary)
         if played_card.type == "terrain":
             for card in self.card_list:
@@ -405,36 +443,32 @@ class GameServer:
         played_card.location = "table"
         played_card.group = target_groups[0].id
         
-        # Get card mode
-        mode = action.get("mode")
+        # Set flag
+        client.has_acted = True
+        target_groups[0].has_acted = True
         
-        # Resolve actions
-        if played_card.type == "movement":
-            self.resolve_movement(target_groups[0], played_card, mode)
-        elif played_card.type == "terrain":
-            self.resolve_terrain(target_groups[0], played_card)
-        elif played_card.type == "fire":
-            self.resolve_fire(target_groups, played_card)
-            
         # Set sound
         self.current_sound = "play_card"
+    
+    
             
-            
-            
-    def resolve_movement(self, target_group, played_card, mode):
+    def resolve_movement(self, target_group, played_card, card_mode):
         
-        if mode == "forward":
+        if card_mode == "forward":
             target_group.range += 1
-        elif mode == "backward":
+        elif card_mode == "backward":
             target_group.range -= 1
-        target_group.moving = mode
+        target_group.moving = card_mode
         
+        return True
         
         
     def resolve_terrain(self, target_group, played_card):
         
         target_group.terrain = played_card.subtype
         target_group.moving = None
+        
+        return True
         
             
             
@@ -484,9 +518,12 @@ class GameServer:
 
             if unit.state in ["routed", "kia"]:
                 unit.group = None
+                
+        return True
+                
             
             
-    def end_turn(self, action, client):
+    def advance_turn(self, action, client):
         
         # Check game phase
         if self.game_phase != "gameplay":
@@ -495,17 +532,33 @@ class GameServer:
         # Check if it's this player's turn
         if client.name != self.current_turn:
             return
-        
-        # Get cards in player's hand
-        hand = [card for card in self.card_list if card.location == "hand" and card.owner == client.name]
-        
-        # Calculate number of cards to be drawn
-        n_cards = 6 - len(hand)
-        
+                
+        # Advance turn
+        if self.game_subphase == "action":
+            self.game_subphase = "discard"
+        else:
+            self.game_subphase = "action"
+            
+        # Check if player has discarded
+        if self.game_subphase == "discard":
+            return
+            
         # Refill player's hand
-        self.draw_cards(n_cards, client.name)
+        self.draw_cards(client)
         
-
+        # Reset groups
+        for group in self.group_list:
+            group.has_acted = False
+        
+        # Reset client
+        client.has_acted = False
+        client.discard_count = 0
+        
+        # End turn
+        i = (self.client_list.index(client) + 1) % len(self.client_list)
+        self.current_turn = self.client_list[i].name
+        
+        
 
     def remove_client(self, player_name):
         """Removes client from game"""
@@ -537,6 +590,7 @@ class GameServer:
                 "units": [],
                 "groups": [],
                 "game_phase": self.game_phase,
+                "game_subphase": self.game_subphase,
                 "current_turn": self.current_turn,
                 "sound": self.current_sound
             }
@@ -603,10 +657,19 @@ class GameServer:
         
         
         
-    def draw_cards(self, n_cards, client_name):
+    def draw_cards(self, client):
+        
+        # Get hand size maximum for this nation
+        max_hand = MAX_HAND[client.nation]
         
         # Get cards in action deck
         deck = [card for card in self.card_list if card.location == "deck"]
+        
+        # Get cards in player's hand
+        hand = [card for card in self.card_list if card.location == "hand" and card.owner == client.name]
+        
+        # Get number of cards to draw
+        n_cards = max(max_hand - len(hand), 0)
         
         for _ in range(n_cards):
     
@@ -618,7 +681,31 @@ class GameServer:
             # Draw top card
             card = deck.pop()
             card.location = "hand"
-            card.owner = client_name
+            card.owner = client.name
+            
+            
+    def discard_card(self, played_card, client):
+        
+        # Get discard maximum for this nation
+        max_discard = MAX_DISCARD[client.nation] - client.discard_count
+        
+        # Check if discard is legal (1)
+        if max_discard < 1:
+            return
+        
+        # Check if discard is legal (2)
+        if client.has_acted and client.nation != "german":
+            return
+                
+        # Discard cardd
+        played_card.location = "discard"
+        played_card.owner = None
+            
+        # Update discard count
+        client.discard_count += 1
+        
+        # Set sound
+        self.current_sound = "play_card"
             
             
             

@@ -307,7 +307,7 @@ class DustParticle(arcade.SpriteCircle):
 class Game(arcade.View):
     """ Main application class. """
 
-    def __init__(self, username='anonymous', server='localhost:52000', nation="Germany"):
+    def __init__(self, username='anonymous', server='localhost:52000', nation="german"):
         super().__init__()
         
         # Transfer parameters
@@ -353,6 +353,7 @@ class Game(arcade.View):
         
         # Set game phase
         self.game_phase = "assignment"
+        self.game_subphase = None
         
         # Mouse position
         self.mouse_x = 0
@@ -463,9 +464,9 @@ class Game(arcade.View):
         self.board_elements.append(self.board_piles)
         
         # Create button: End turn
-        image_path =  r'assets/boardelements/button.endturn.png'
-        self.button_endturn = Button("endturn", image_path, self.layout.scale)
-        self.button_list.append(self.button_endturn)
+        image_path =  r'assets/boardelements/button.advance.png'
+        self.button_advance = Button("advance", image_path, self.layout.scale)
+        self.button_list.append(self.button_advance)
         
         # Create button: Surrender
         image_path =  r'assets/boardelements/button.surrender.png'
@@ -525,10 +526,10 @@ class Game(arcade.View):
         self.board_piles.top = self.window.height - (20 - 1) * self.layout.scale
         
         
-        # Button: End turn
-        self.button_endturn.scale = self.layout.scale
-        self.button_endturn.right = self.window.width - 20 * self.layout.scale
-        self.button_endturn.bottom = 20 * self.layout.scale
+        # Button: Advance turn
+        self.button_advance.scale = self.layout.scale
+        self.button_advance.right = self.window.width - 20 * self.layout.scale
+        self.button_advance.bottom = 20 * self.layout.scale
         
         # Button: Surrender
         self.button_surrender.scale = self.layout.scale
@@ -539,7 +540,13 @@ class Game(arcade.View):
         self.button_rnc.scale = self.layout.scale
         self.button_rnc.right = self.window.width - 260 * self.layout.scale
         self.button_rnc.bottom = 20 * self.layout.scale
+        
+        # Rotate advance turn button
+        angle = 180 if self.current_turn == self.player_name else 0
+        angle += 90 if self.game_subphase == "discard" else 0
+        self.button_advance.angle = angle
             
+        
         
     def create_light(self):
         
@@ -713,9 +720,9 @@ class Game(arcade.View):
             # Play sound
             self.play_sound("select")
             
-            # End turn
-            if held_button.name == "endturn":
-                self.end_turn()
+            # Advance turn
+            if held_button.name == "advance":
+                self.advance_turn()
                 
         # Get list of unit cards we've clicked on
         units = arcade.get_sprites_at_point((x, y), self.unit_list)
@@ -849,6 +856,10 @@ class Game(arcade.View):
         if key == arcade.key.LCTRL:
             self.ctrl_held = True
             
+        # Advance turn
+        if key == arcade.key.SPACE:
+            self.advance_turn()
+            
         # Leave game
         if key == arcade.key.ESCAPE and self.ctrl_held == False:
             
@@ -919,14 +930,10 @@ class Game(arcade.View):
         action = {
             "type": "play_card",
             "card_id": card.id,
-            "group_ids": [group.id for group in active_groups.values()],
-            "mode": card.mode
+            "card_mode": card.mode,
+            "group_ids": [group.id for group in active_groups.values()]
         }
-        
-        # Bring card on top
-        self.card_list.remove(card)
-        self.card_list.append(card)
-        
+
         # Send action to server
         try:
             self.socket.sendall(pickle.dumps(action))
@@ -935,12 +942,12 @@ class Game(arcade.View):
             
             
             
-    def end_turn(self):
-        """Send end_turn action to server"""
+    def advance_turn(self):
+        """Send advance_turn action to server"""
 
         # Create action for server
         action = {
-            "type": "end_turn"
+            "type": "advance_turn"
         }
         
         # Send action to server
@@ -973,6 +980,7 @@ class Game(arcade.View):
         
         # Update game state variables
         self.game_phase = game_state.get("game_phase")
+        self.game_subphase = game_state.get("game_subphase")
 
         # Update game state variables
         self.current_turn = game_state.get("current_turn")
@@ -1345,9 +1353,27 @@ class Game(arcade.View):
             text = self.annotate_text(label, x, y, 0, 16, color, False)
             text.draw()
             
+        # Turn
+        if self.current_turn is not None:
+            label = "[Your Turn]" if self.current_turn == self.player_name else "[Enemy Turn]"
+            x = self.window.width - 20 * self.layout.scale
+            y = 160 * self.layout.scale
+            color = color=arcade.color.WHITE
+            text = self.annotate_text(label, x, y, 0, 18, color, True, "right")
+            text.draw()
+            
+        # Phase
+        if self.game_subphase is not None:
+            label = "[" + self.game_subphase.title() + " Phase]"
+            x = self.window.width - 20 * self.layout.scale
+            y = 130 * self.layout.scale
+            color = color=arcade.color.WHITE
+            text = self.annotate_text(label, x, y, 0, 18, color, True, "right")
+            text.draw()
+        
+            
     
-  
-    def annotate_text(self, label, x, y, angle, size, color=arcade.color.WHITE, bold=True):
+    def annotate_text(self, label, x, y, angle, size, color=arcade.color.WHITE, bold=True, anchor_x="center"):
         
         # Set to "" if None
         label = "" if label is None else label
@@ -1367,7 +1393,7 @@ class Game(arcade.View):
             x=x, y=y,
             color=color,
             font_size=size*self.layout.scale, font_name="Arial",
-            anchor_x="center", anchor_y="center",
+            anchor_x=anchor_x, anchor_y="center",
             align="center", rotation=angle, bold=bold
         )
         
