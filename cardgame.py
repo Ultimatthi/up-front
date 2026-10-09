@@ -956,17 +956,14 @@ class Game(arcade.View):
             
     def play_card(self, card, active_groups):
         """Send play card action to server"""
-        
-        # Check card owner
-        if card.owner != "player":
-            return
     
         # Create action for server
         action = {
             "type": "play_card",
             "card_id": card.id,
             "card_mode": card.mode,
-            "group_ids": [group.id for group in active_groups.values()]
+            "group_ids": [group.id for group in active_groups.values()],
+            "unit_ids": [unit.id for unit in self.unit_list if unit.selected]
         }
 
         # Send action to server
@@ -991,6 +988,10 @@ class Game(arcade.View):
         except Exception as e:
             print(f"Error sending to server: {e}")
             
+        # Reset selections
+        for unit in self.unit_list:
+            unit.selected = False
+
 
 
     def receive_state(self):

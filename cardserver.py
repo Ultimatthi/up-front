@@ -60,7 +60,7 @@ class Unit:
         self.rout = rout
         self.kia = kia # rallied|pinned
         self.points = points
-        self.state = "rallied" # rallied, pinned, routed, kia
+        self.state = "pinned" # rallied, pinned, routed, kia
         self.group = None
         self.owner = None
         
@@ -391,6 +391,13 @@ class GameServer:
                 target_groups[0] = group
             elif group.id == group_ids[1]:
                 target_groups[1] = group
+                
+        # Find units
+        unit_ids = action.get("unit_ids")
+        target_units = []
+        for unit in self.unit_list:
+            if unit.id in unit_ids:
+                target_units.append(unit)
                     
         # Card not found
         if played_card is None:
@@ -405,13 +412,13 @@ class GameServer:
         
         # Resolve card
         if self.game_subphase == "action":
-            self.execute_card(played_card, card_mode, target_groups, client)
+            self.execute_card(played_card, card_mode, target_groups, target_units, client)
         else:
             self.discard_card(played_card, client)
         
  
     
-    def execute_card(self, played_card, card_mode, target_groups, client):
+    def execute_card(self, played_card, card_mode, target_groups, target_units, client):
         
         # Check if group has already acted
         if target_groups[0].has_acted:
@@ -422,6 +429,8 @@ class GameServer:
             success = self.resolve_movement(target_groups[0], played_card, card_mode)
         elif played_card.type == "terrain":
             success = self.resolve_terrain(target_groups[0], played_card)
+        elif played_card.type == "rally":
+            success = self.resolve_rally(target_groups[0], target_units, played_card)
         elif played_card.type == "fire":
             success = self.resolve_fire(target_groups, played_card)
         else:
@@ -469,8 +478,43 @@ class GameServer:
         target_group.moving = None
         
         return True
+
+
+    
+    def resolve_rally(self, target_group, target_units, played_card):
         
+        # Restrict selected units to target group
+        target_units = [unit for unit in target_units if unit.group == target_group.id]
+        
+        # Maximum rally capacity
+        if played_card.subtype == "rally all":
+            max_capacity = 10
+        else:
+            max_capacity = int(played_card.subtype.split()[1])  
             
+        # Pinned unit in that group
+        pinned = [unit for unit in self.unit_list
+              if unit.group == target_group.id and unit.state == "pinned"]
+        
+        # Validity check: At least 1 pinned unit required
+        if not pinned:
+            return
+        
+        # Validity check: Capacity must be used fully
+        if len(target_units) != min(max_capacity, len(pinned)):
+            return
+        
+        # Validity check: Selected units must rallyable
+        for unit in target_units:
+            if unit.group != target_group.id or unit.state != "pinned":
+                return
+        
+        for unit in target_units:
+            unit.state = "rallied"
+        
+        return True
+        
+        
             
     def resolve_fire(self, target_groups, played_card):
         
