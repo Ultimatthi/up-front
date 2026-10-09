@@ -1289,9 +1289,19 @@ class Game(arcade.View):
             
             
     def keep_sprite_within_window(self, sprite):
+    
+        # Do not apply for sprites no longer in play
+        if isinstance(sprite, Card):
+            if sprite.location in ["deck", "discard", "void"]:
+                return
+        elif isinstance(sprite, Unit):
+            if sprite.state in ["routed", "kia"]:
+                return
         
+        # Define border margin
         offset = 10 * self.layout.scale
         
+        # Keep sprite in window
         sprite.left = max(sprite.left, offset)
         sprite.right = min(sprite.right, self.window.width - offset)
         sprite.bottom = max(sprite.bottom, offset)
