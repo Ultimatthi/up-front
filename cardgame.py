@@ -87,6 +87,7 @@ class Card(arcade.Sprite):
         self.location = "deck" # deck, discard, void, hand, table
         self.group = None
         self.mode = None
+        self.stack_index = 0
 
         # Image to use for the sprite when face up (not yet loaded)
         self.texture_front = None
@@ -1044,6 +1045,7 @@ class GameView(arcade.View):
                 card.owner = logical_card["owner"]
                 card.location = logical_card["location"]
                 card.group = logical_card["group"]
+                card.stack_index = logical_card["stack_index"]
                 
                 
         # Get logical card variables
@@ -1177,8 +1179,8 @@ class GameView(arcade.View):
         # Get cards in opponent's hand
         opponent_hand = [card for card in self.card_list if card.location == "hand" and card.owner != "player"]
         
-        # Get cards on table
-        table = [card for card in self.card_list if card.location == "table"]
+        # Get cards on table (sorted by stack index)
+        table = sorted((card for card in self.card_list if card.location == "table"), key=lambda card: card.stack_index)
 
         # Get cards in piles
         deck = [card for card in self.card_list if card.location == "deck"]
@@ -1189,9 +1191,6 @@ class GameView(arcade.View):
         # Get cards in removed card pile
         void = [card for card in self.card_list if card.location == "void"]
         
-        # Count terrain/movement cards per (owner, group_id)
-        stack_counts = defaultdict(int)
-
         # Player's hand
         for i, card in enumerate(player_hand):
 
@@ -1212,6 +1211,10 @@ class GameView(arcade.View):
         # Opponent's hand
         for i, card in enumerate(opponent_hand):
             
+            # Move to top
+            self.card_list.remove(card)
+            self.card_list.append(card)
+            
             # Set facing
             card.facing = "down"
             
@@ -1222,8 +1225,12 @@ class GameView(arcade.View):
             # Set position
             card.position = (x, y)
             
-        # Player's table card
+        # Table cards
         for card in table:
+            
+            # Vertically order cards
+            self.card_list.remove(card)
+            self.card_list.append(card)
             
             # Get active group
             active_group = self.active_groups[card.owner]
@@ -1238,23 +1245,21 @@ class GameView(arcade.View):
             
             # Get position (player's view)
             if card.type in ["movement", "terrain"]:
-                key = (card.owner, card.group)
-                stack_counts[key] += 1
                 x = 598 * self.layout.scale
                 y = 544 * self.layout.scale
-                if card.type == "movement" and stack_counts[key] > 1:
-                    offset = 40 * (stack_counts[key] - 1) * self.layout.scale
-                    x, y = x + offset, y - offset
-                    self.card_list.remove(card)
-                    self.card_list.append(card)
             else:
                 x = 420 * self.layout.scale
                 y = 544 * self.layout.scale
-        
+    
             # Mirror position (opponent's view)
             if card.owner == "opponent":
                 x, y = self.window.width - x, self.window.height - y
                 
+            # Add offset
+            offset = 40 * card.stack_index * self.layout.scale
+            x = x + offset if card.owner == "player" else x - offset
+            y = y - offset
+            
             # Set position
             card.position = (x, y)
                 

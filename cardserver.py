@@ -42,6 +42,7 @@ class Card:
         self.location = "deck" # deck, discard, void, hand, table
         self.group = None
         self.owner = None # player_name
+        self.stack_index = 0
         
         
         
@@ -469,6 +470,11 @@ class GameServer:
                     card.group = None
                     card.location = "discard"
                     card.owner = None
+    
+        # Set stack count
+        played_card.stack_index = sum(1 for card in self.card_list 
+                                      if card.group == target_groups[0].id 
+                                      and card.type in ["movement", "terrain"])
             
         # Add card to the group
         played_card.location = "table"
@@ -670,7 +676,8 @@ class GameServer:
                     "card_id": card.id,
                     "owner": "player" if client.name == card.owner else "opponent",
                     "location": card.location,
-                    "group": card.group
+                    "group": card.group,
+                    "stack_index": card.stack_index
                 }
                 game_state["cards"].append(card_info)
                 
