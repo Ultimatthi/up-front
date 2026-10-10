@@ -42,7 +42,7 @@ BUTTON_ENLARGE = 1.1
 # Lobby parameters
 LOBBY_WIDTH = 1280
 LOBBY_HEIGHT = 720
-LOBBY_TITLE = "Up Front: Lobby"
+LOBBY_TITLE = "Up Front"
 LOBBY_SCALE = min(LOBBY_HEIGHT/1080, LOBBY_WIDTH/1920)
 
 # Visual appearance
@@ -314,10 +314,10 @@ class DustParticle(arcade.SpriteCircle):
 
 # ──[ Game View ]─────────────────────────────────────────────────────────────
 
-class Game(arcade.View):
+class GameView(arcade.View):
     """ Main application class. """
 
-    def __init__(self, username='anonymous', server='localhost:52000', nation="german"):
+    def __init__(self, username, nation, server):
         super().__init__()
         
         # Transfer parameters
@@ -449,7 +449,7 @@ class Game(arcade.View):
             self.chit_list.append(range_chit)
                 
         # Init active groups
-        self.active_groups = {"player": self.group_list[0], "opponent": self.group_list[1]}
+        self.active_groups = {"player": None, "opponent": None}
 
         # Create board element: Texture
         image_path =  r'assets/boardelements/board.texture.png'
@@ -774,6 +774,10 @@ class Game(arcade.View):
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
         """ Called when the user scrolls the mouse wheel. """
         
+        # Check if active groups are set
+        if None in self.active_groups.values():
+            return
+        
         # Check if groups are assigned
         if any(group.owner is None for group in self.group_list):
             return
@@ -1064,7 +1068,7 @@ class Game(arcade.View):
         # Setup map for fast access
         group_map = {group.id: group for group in self.group_list}
         
-        # Update card variables
+        # Update group variables
         for logical_group in logical_group_list:
             key = logical_group["group_id"]
             if key in group_map:
@@ -1073,6 +1077,12 @@ class Game(arcade.View):
                 group.range = logical_group["range"]
                 group.moving = logical_group["moving"]
                 group.terrain = logical_group["terrain"]
+                
+                
+        # Init active groups (only once)
+        if None in self.active_groups.values():
+            player_side = game_state.get("side")
+            self.init_active_groups(player_side)
 
         # Update card position
         self.adjust_card_position()
@@ -1083,9 +1093,22 @@ class Game(arcade.View):
         # Update group position
         self.adjust_group_position()
         
+        # Update chit position
+        self.adjust_chit_position()
+        
         # Refresh layout
         self.layout_elements()
+        
+        
             
+    def init_active_groups(self, player_side):
+    
+        opponent_side = "2" if player_side == "1" else "1"
+    
+        for role, side in [("player", player_side), ("opponent", opponent_side)]:
+            group_id = "A" + side
+            self.active_groups[role] = next(group for group in self.group_list if group.id == group_id)
+                
             
 
     def play_sound(self, sound):
@@ -1202,33 +1225,38 @@ class Game(arcade.View):
         # Player's table card
         for card in table:
             
-            # Check if owned by player
-            if card.owner != "player":
-                continue
+            # Get active group
+            active_group = self.active_groups[card.owner]
             
-            # Check if its group id is active
-            if card.group != self.active_groups["player"].id:
+            # Only show cards of the active group
+            if active_group is None or card.group != active_group.id:
                 card.position = (-10000, -10000)
                 continue
             
             # Set facing
             card.facing = "up"
             
-            # Set position
+            # Get position (player's view)
             if card.type in ["movement", "terrain"]:
                 key = (card.owner, card.group)
                 stack_counts[key] += 1
-                card.position = (598*self.layout.scale, 544*self.layout.scale)
+                x = 598 * self.layout.scale
+                y = 544 * self.layout.scale
+                if card.type == "movement" and stack_counts[key] > 1:
+                    offset = 40 * (stack_counts[key] - 1) * self.layout.scale
+                    x, y = x + offset, y - offset
+                    self.card_list.remove(card)
+                    self.card_list.append(card)
             else:
-                card.position = (420*self.layout.scale, 544*self.layout.scale)
-            
-            # Adjust position of movement card other cards are present
-            if card.type == "movement" and stack_counts[key] > 1:
-                offset = 40*(stack_counts[key]-1)*self.layout.scale
-                x, y = card.position
-                card.position = (x + offset, y - offset)
-                self.card_list.remove(card)
-                self.card_list.append(card)
+                x = 420 * self.layout.scale
+                y = 544 * self.layout.scale
+        
+            # Mirror position (opponent's view)
+            if card.owner == "opponent":
+                x, y = self.window.width - x, self.window.height - y
+                
+            # Set position
+            card.position = (x, y)
                 
         # Action deck
         for card in deck:
@@ -1246,10 +1274,14 @@ class Game(arcade.View):
     def adjust_unit_position(self):
         
         # Get units of active group (player)
-        group_player = [unit for unit in self.unit_list if unit.group == self.active_groups["player"].id]
+        group_player = []
+        if self.active_groups["player"]:
+            group_player = [unit for unit in self.unit_list if unit.group == self.active_groups["player"].id]
         
         # Get units of active group (player)
-        group_opponent = [unit for unit in self.unit_list if unit.group == self.active_groups["opponent"].id]
+        group_opponent = []
+        if self.active_groups["opponent"]:
+            group_opponent = [unit for unit in self.unit_list if unit.group == self.active_groups["opponent"].id]
         
         # Get units of inactive groups
         inactive_groups = set(self.unit_list) - set(group_player) - set(group_opponent)
@@ -1278,8 +1310,8 @@ class Game(arcade.View):
         for group in self.group_list:
             group.set_position(self.layout)
             
-            
-            
+        
+        
     def adjust_chit_position(self):
             
         # Adjust range chit tiles
@@ -1312,18 +1344,20 @@ class Game(arcade.View):
     def annotate(self):
         
         # Player's active group
-        label = "Group " + str(self.active_groups["player"].label)
-        x = 70*self.layout.scale
-        y = 625*self.layout.scale
-        text = self.annotate_text(label, x, y, 0, 18)
-        text.draw()
+        if self.active_groups["player"]:
+            label = "Group " + str(self.active_groups["player"].label)
+            x = 70*self.layout.scale
+            y = 625*self.layout.scale
+            text = self.annotate_text(label, x, y, 0, 18)
+            text.draw()
         
         # Opponent's active group
-        label = "Group " + str(self.active_groups["opponent"].label)
-        x = self.window.width - 70*self.layout.scale
-        y = self.window.height - 625*self.layout.scale
-        text = self.annotate_text(label, x, y, 0, 18)
-        text.draw()
+        if self.active_groups["opponent"]:
+            label = "Group " + str(self.active_groups["opponent"].label)
+            x = self.window.width - 70*self.layout.scale
+            y = self.window.height - 625*self.layout.scale
+            text = self.annotate_text(label, x, y, 0, 18)
+            text.draw()
         
         # Counter: Action deck pile
         deck = [card for card in self.card_list if card.location == "deck"]
@@ -1467,10 +1501,51 @@ class Game(arcade.View):
             arcade.draw_sprite(self.hover_unit)
             self.hover_unit.draw_overlay(self.unit_overlay)
                 
+
+
+# ──[ Menu View ]─────────────────────────────────────────────────────────────
+
+class MenuView(arcade.View):
+
+    def __init__(self):
+        super().__init__()
+
+        # Settings (later: set by user input)
+        self.username = "Player_" + str(random.randint(1, 1000))
+        self.server = "localhost:52000"
+        self.nation = None
         
+        
+
+    def on_draw(self):
+        
+        self.clear()
+        
+        
+        
+    def on_update(self, delta_time):
+
+        self.start_game()
+        
+
+
+    def on_key_press(self, key, modifiers):
+        
+        if key == arcade.key.ENTER:
+            self.start_game()
+            
             
 
-    
+    def start_game(self):
+        
+        game_view = GameView(self.username, self.nation, self.server)
+
+        # Show game
+        if game_view.setup():
+            self.window.show_view(game_view)
+        else:
+            print("Cannot start game")
+
 
 
 # ──[ Main ]───────────────────────────────────────────────────────────────────
@@ -1478,9 +1553,7 @@ class Game(arcade.View):
 def main():
     """ Main function """
     window = arcade.Window(LOBBY_WIDTH, LOBBY_HEIGHT, LOBBY_TITLE, resizable=True, antialiasing=True, vsync=True)
-    # menu_view = MenuView()  # Start with menu view
-    menu_view = Game()        
-    menu_view.setup()     
+    menu_view = MenuView()  # Start with menu view   
     window.show_view(menu_view)
     arcade.run()
 

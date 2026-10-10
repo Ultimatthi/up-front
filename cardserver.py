@@ -13,14 +13,17 @@ import pandas as pd
 
 # ──[ Parameter ]──────────────────────────────────────────────────────────────
 
-FPS = 20
-FULL_TABLE = 1
+FPS = 30
+FULL_TABLE = 2
 
 MAX_HAND = {"german": 5, "american": 6, "russian": 4, "british": 5,
             "japanese": 4, "french": 6, "italian": 4}
 
 MAX_DISCARD = {"german": 1, "american": 2, "russian": 4, "british": 2,
                "japanese": 2, "french": 1, "italian": 2}
+
+NATIONS = ["german", "american"] # implemented nations
+SIDES = ["1", "2"]
 
 
 # ──[ Classes ]────────────────────────────────────────────────────────────────
@@ -60,7 +63,7 @@ class Unit:
         self.rout = rout
         self.kia = kia # rallied|pinned
         self.points = points
-        self.state = "pinned" # rallied, pinned, routed, kia
+        self.state = "rallied" # rallied, pinned, routed, kia
         self.group = None
         self.owner = None
         
@@ -99,12 +102,13 @@ class Group:
         
 class Client:
     
-    def __init__(self, socket, name, nation, ready):
+    def __init__(self, socket, name, nation, side, ready):
         
         # Identity
         self.socket = socket
         self.name = name
         self.nation = nation
+        self.side = side
         self.ready = ready
         self.has_acted = False
         self.discard_count = 0
@@ -132,6 +136,10 @@ class GameServer:
         
         # List with all the groups
         self.group_list = []
+        
+        # List with selected nations / sides
+        self.nation_list = []
+        self.side_list = []
         
         # Card table
         self.card_table = pd.read_csv("assets/cards/card_table.csv", sep=",")
@@ -181,9 +189,22 @@ class GameServer:
                         # Decline if table is full
                         if len(self.client_list) == FULL_TABLE:
                             continue
+                        
+                        # Decline if nation if already taken
+                        if player_nation not in NATIONS or player_nation in self.nation_list:
+                            player_nation = next(nation for nation in NATIONS if nation not in self.nation_list)
+                            
+                        # Add nation to list
+                        self.nation_list.append(player_nation)
+                        
+                        # Allocate side
+                        player_side = next(side for side in SIDES if side not in self.side_list)
+                        
+                        # Add side to list
+                        self.side_list.append(player_side)
                     
                         # Add to client list
-                        client = Client(c, player_name, player_nation, False)
+                        client = Client(c, player_name, player_nation, player_side, False)
                         self.client_list.append(client)
 
                     
@@ -277,16 +298,18 @@ class GameServer:
         # Create every unit
         for unit_id in self.unit_table.index:
             row = self.unit_table.loc[unit_id]
+            if row["nation"] not in self.nation_list:
+                continue
             unit = Unit(unit_id, row["nation"], row["rank"], row["name"], row["weapon"], 
                         row["malfunction"], row["ccv"], row["firepower"], row["morale"], 
                         row["panic"], row["rout"], row["kia"], row["points"])
             self.unit_list.append(unit)
 
         # Create every group
-        for label in ["A", "B", "C", "D"]:
-            for section in [0, 1]:
-                group_id = label + str(section+1)
-                owner = self.client_list[section].name if section < len(self.client_list) else "bot"
+        for client in self.client_list:
+            for label in ["A", "B", "C", "D"]:
+                group_id = label + client.side
+                owner = client.name
                 group = Group(group_id, label, owner)
                 self.group_list.append(group)
         
@@ -302,12 +325,11 @@ class GameServer:
             self.draw_cards(client)
             
         # Distribute units
-        for unit in self.unit_list:
-            if unit.nation == "german":
-                unit.group = random.choice(["A1", "B1"])
-                unit.owner = self.client_list[0]
-            else:
-                unit.group = random.choice(["A2", "B2"])
+        for client in self.client_list:
+            for unit in self.unit_list:
+                if unit.nation == client.nation:
+                    unit.group = random.choice(["A", "B"]) + client.side
+                    unit.owner = client.name
             
         # Start playing phase
         self.game_phase = "gameplay"
@@ -610,6 +632,8 @@ class GameServer:
         # Remove from client list
         client = next((client for client in self.client_list if client.name == player_name), None)
         self.client_list.remove(client)
+        self.nation_list.remove(client.nation)
+        self.side_list.remove(client.side)
         
         # Close socket
         try:
@@ -636,7 +660,8 @@ class GameServer:
                 "game_phase": self.game_phase,
                 "game_subphase": self.game_subphase,
                 "current_turn": self.current_turn,
-                "sound": self.current_sound
+                "sound": self.current_sound,
+                "side": client.side
             }
             
             # Add card information
@@ -741,7 +766,7 @@ class GameServer:
         if client.has_acted and client.nation != "german":
             return
                 
-        # Discard cardd
+        # Discard card
         played_card.location = "discard"
         played_card.owner = None
             
