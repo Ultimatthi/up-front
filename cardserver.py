@@ -14,7 +14,7 @@ import pandas as pd
 # ──[ Parameter ]──────────────────────────────────────────────────────────────
 
 FPS = 30
-FULL_TABLE = 2
+FULL_TABLE = 1
 
 MAX_HAND = {"german": 5, "american": 6, "russian": 4, "british": 5,
             "japanese": 4, "french": 6, "italian": 4}
@@ -24,6 +24,16 @@ MAX_DISCARD = {"german": 1, "american": 2, "russian": 4, "british": 2,
 
 NATIONS = ["german", "american"] # implemented nations
 SIDES = ["1", "2"]
+
+ACTIONS = {
+    "movement": "moved",
+    "terrain":  "enterd",
+    "fire":     "fired",
+    "rally":    "rallied",
+    "smoke":    "smoked",
+    "sniper":   "sniped",
+}
+
 
 
 # ──[ Classes ]────────────────────────────────────────────────────────────────
@@ -98,6 +108,7 @@ class Group:
         self.moving = None
         self.terrain = None
         self.has_acted = False
+        self.last_action = None
 
         
         
@@ -480,6 +491,9 @@ class GameServer:
         played_card.location = "table"
         played_card.group = target_groups[0].id
         
+        # Fill history
+        target_groups[0].last_action = ACTIONS[played_card.type]
+        
         # Set flag
         client.has_acted = True
         target_groups[0].has_acted = True
@@ -621,6 +635,7 @@ class GameServer:
         # Reset groups
         for group in self.group_list:
             group.has_acted = False
+            group.last_action = None
         
         # Reset client
         client.has_acted = False
@@ -698,7 +713,8 @@ class GameServer:
                     "owner": "player" if client.name == group.owner else "opponent",
                     "range": group.range,
                     "moving": group.moving,
-                    "terrain": group.terrain
+                    "terrain": group.terrain,
+                    "last_action": group.last_action
                 }
                 game_state["groups"].append(group_info)
             

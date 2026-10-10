@@ -174,6 +174,7 @@ class Group(arcade.Sprite):
         self.moving = None
         self.terrain = None
         self.active = True
+        self.last_action = None
         
         # Textures
         self.textures_map = {}
@@ -1079,6 +1080,7 @@ class GameView(arcade.View):
                 group.range = logical_group["range"]
                 group.moving = logical_group["moving"]
                 group.terrain = logical_group["terrain"]
+                group.last_action = logical_group["last_action"]
                 
                 
         # Init active groups (only once)
@@ -1275,6 +1277,7 @@ class GameView(arcade.View):
         for card in void:
             card.position = (-10000, -10000)
             
+
             
     def adjust_unit_position(self):
         
@@ -1433,6 +1436,17 @@ class GameView(arcade.View):
             text = self.annotate_text(label, x, y, 0, 18, color, False)
             text.draw()
             
+        # Play history under group tiles
+        for group in self.group_list:
+            sign = 1 if group.owner == "player" else -1
+            label = ("› " + group.last_action) if group.last_action else ""
+            x = group.center_x
+            y = group.center_y - sign * 70 * self.layout.scale
+            color = arcade.color.WHITE
+            text = self.annotate_text(label, x, y, 0, 16, color, False)
+            text.draw()
+            
+            
         # Card mode
         if self.hover_card is not None and self.hover_card.mode is not None:
             label = "[" + self.hover_card.mode + "]"
@@ -1516,7 +1530,7 @@ class MenuView(arcade.View):
         super().__init__()
 
         # Settings (later: set by user input)
-        self.username = "Player_" + str(random.randint(1, 1000))
+        self.username = "Player_" # + str(random.randint(1, 1000))
         self.server = "localhost:52000"
         self.nation = None
         
