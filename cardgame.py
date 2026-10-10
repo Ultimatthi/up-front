@@ -361,6 +361,8 @@ class GameView(arcade.View):
             print('No connection possible')
             return False
         
+        self.reader = self.socket.makefile("rb")
+        
         # Init game -----------------------------------------------------------
         
         # Set game phase
@@ -1005,20 +1007,20 @@ class GameView(arcade.View):
         
         while self.running:
             try:
-                data = self.socket.recv(8192)
-                self.update_state(data)
+                game_state = pickle.load(self.reader)
             except:
                 print("Connection lost")
-                time.sleep(0.1)
-                continue
-                
-            
-            
-    def update_state(self, data):
+                break
+            self.update_state(game_state)
+        
+                        
+                       
+    def update_state(self, game_state):
         """Update game state from server data"""
         
-        # Load game state
-        game_state = pickle.loads(data)
+        # Check hearbeat
+        if game_state.get("type") == "ping":
+            return
         
         # Update game state variables
         self.game_phase = game_state.get("game_phase")

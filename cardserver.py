@@ -261,20 +261,11 @@ class GameServer:
             
     def on_update(self, delta_time):
         
-        # Update time since last broadcast
+        # Send heartbeat
         self.broadcast_timer += delta_time
-        
-        # Send heartbeat to all clients
-        if self.broadcast_timer > 10.0:
-            # Reset timer
+        if self.broadcast_timer > 2.0:
             self.broadcast_timer = 0.0
-            # Set sound to silent
-            original_sound = self.current_sound
-            self.current_sound = None
-            # Send hearbeat
-            self.broadcast()
-            # Reset sound
-            self.current_sound = original_sound
+            self.send_heartbeat()
         
         # Check if required number of players are on server
         if len(self.client_list) < FULL_TABLE:
@@ -287,6 +278,17 @@ class GameServer:
             self.setup_logic()
         elif self.game_phase == "gameplay":
             self.gameplay_logic()
+            
+            
+            
+    def send_heartbeat(self):
+
+        for client in list(self.client_list):
+            try:
+                client.socket.sendall(pickle.dumps({"type": "ping"}))
+            except Exception:
+                print(f"Heartbeat failed for {client.name}")
+                self.remove_client(client.name)
             
             
             
