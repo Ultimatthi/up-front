@@ -483,9 +483,10 @@ class GameServer:
                     card.owner = None
     
         # Set stack count
-        played_card.stack_index = sum(1 for card in self.card_list 
-                                      if card.group == target_groups[0].id 
-                                      and card.type in ["movement", "terrain"])
+        if played_card.type == "movement":
+            played_card.stack_index = sum(1 for card in self.card_list 
+                                          if card.group == target_groups[0].id 
+                                          and card.type in ["movement", "terrain"])
             
         # Add card to the group
         played_card.location = "table"
@@ -631,6 +632,11 @@ class GameServer:
             
         # Refill player's hand
         self.draw_cards(client)
+        
+        # Remove action cards on table
+        for card in self.card_list:
+            if card.location == "table" and card.type not in ["movement", "terrain"]:
+                card.location = "discard"
         
         # Reset groups
         for group in self.group_list:
