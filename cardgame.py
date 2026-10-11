@@ -368,6 +368,7 @@ class GameView(arcade.View):
         # Set game phase
         self.game_phase = "assignment"
         self.game_subphase = None
+        self.pending_action = False
         
         # Mouse position
         self.mouse_x = 0
@@ -565,6 +566,7 @@ class GameView(arcade.View):
         # Rotate advance turn button
         angle = 180 if self.current_turn == self.player_name else 0
         angle += 90 if self.game_subphase == "discard" else 0
+        angle += 180 if self.pending_action else 0
         self.button_advance.angle = angle
             
         
@@ -1025,6 +1027,7 @@ class GameView(arcade.View):
         # Update game state variables
         self.game_phase = game_state.get("game_phase")
         self.game_subphase = game_state.get("game_subphase")
+        self.pending_action = game_state.get("pending_action")
 
         # Update game state variables
         self.current_turn = game_state.get("current_turn")
@@ -1460,7 +1463,10 @@ class GameView(arcade.View):
             
         # Turn
         if self.current_turn is not None:
-            label = "[Your Turn]" if self.current_turn == self.player_name else "[Enemy Turn]"
+            if self.current_turn == self.player_name:
+                label = "[Wait for concealed card]" if self.pending_action else "[Your Turn]"
+            else:
+                label = "[Play concealed card / pass]" if self.pending_action else "[Enemy Turn]"
             x = self.window.width - 20 * self.layout.scale
             y = 160 * self.layout.scale
             color = color=arcade.color.WHITE
@@ -1532,7 +1538,7 @@ class MenuView(arcade.View):
         super().__init__()
 
         # Settings (later: set by user input)
-        self.username = "Player_" # + str(random.randint(1, 1000))
+        self.username = "Player_" + str(random.randint(1, 1000))
         self.server = "localhost:52000"
         self.nation = None
         

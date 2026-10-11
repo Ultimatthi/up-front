@@ -14,7 +14,7 @@ import pandas as pd
 # ──[ Parameter ]──────────────────────────────────────────────────────────────
 
 FPS = 30
-FULL_TABLE = 1
+FULL_TABLE = 2
 
 MAX_HAND = {"german": 5, "american": 6, "russian": 4, "british": 5,
             "japanese": 4, "french": 6, "italian": 4}
@@ -27,7 +27,7 @@ SIDES = ["1", "2"]
 
 ACTIONS = {
     "movement": "moved",
-    "terrain":  "enterd",
+    "terrain":  "entered",
     "fire":     "fired",
     "rally":    "rallied",
     "smoke":    "smoked",
@@ -103,7 +103,7 @@ class Group:
         self.id = group_id
         self.label = label
         self.owner = owner
-        self.range = 0
+        self.range = 2
         self.fp = [0, 0, 0, 0, 0, 0]
         self.moving = None
         self.terrain = None
@@ -139,6 +139,10 @@ class GameServer:
         self.current_turn = None
         self.current_sound = None
         self.action_deck_counter = 0
+        
+        # Pending action
+        self.pending_action = {"type": None, "card": None, "strength": None,
+                               "offensive_group": None, "defensive_group": None}
         
         # List with all the cards
         self.card_list = []
@@ -272,12 +276,13 @@ class GameServer:
             return
         
         # Call respective game phase logic
-        if self.game_phase == "assignment":
-            self.assignment_logic()
-        elif self.game_phase == "setup":
-            self.setup_logic()
-        elif self.game_phase == "gameplay":
-            self.gameplay_logic()
+        with self.lock:
+            if self.game_phase == "assignment":
+                self.assignment_logic()
+            elif self.game_phase == "setup":
+                self.setup_logic()
+            elif self.game_phase == "gameplay":
+                self.gameplay_logic()
             
             
             
@@ -376,10 +381,9 @@ class GameServer:
                     
                     # Process client action
                     action = pickle.loads(data)
-                    self.process_action(action, client)
-
-                    # Send updated game state to all clients
-                    self.broadcast()
+                    with self.lock:
+                        self.process_action(action, client)
+                        self.broadcast()
                     
             except:
                 pass
@@ -405,10 +409,6 @@ class GameServer:
         
         # Check game phase
         if self.game_phase != "gameplay":
-            return
-        
-        # Check if it's this player's turn
-        if client.name != self.current_turn:
             return
         
         # Find card
@@ -440,14 +440,16 @@ class GameServer:
             return
             
         # Check if card is in player's hand
-        if played_card.owner != client.name:
+        if played_card.owner != client.name or played_card.location != "hand":
             return
         
         # Get card mode
         card_mode = action.get("card_mode")
         
         # Resolve card
-        if self.game_subphase == "action":
+        if self.pending_action["type"] is not None:
+            self.counter_card(played_card, target_groups, client)
+        elif self.game_subphase == "action":
             self.execute_card(played_card, card_mode, target_groups, target_units, client)
         else:
             self.discard_card(played_card, client)
@@ -455,6 +457,10 @@ class GameServer:
  
     
     def execute_card(self, played_card, card_mode, target_groups, target_units, client):
+        
+        # Check if it's this player's turn
+        if client.name != self.current_turn:
+            return
         
         # Check if group has already acted
         if target_groups[0].has_acted:
@@ -468,7 +474,7 @@ class GameServer:
         elif played_card.type == "rally":
             success = self.resolve_rally(target_groups[0], target_units, played_card)
         elif played_card.type == "fire":
-            success = self.resolve_fire(target_groups, played_card)
+            success = self.prepare_fire(target_groups, played_card)
         else:
             success = True
             
@@ -480,8 +486,8 @@ class GameServer:
         if played_card.type == "terrain":
             for card in self.card_list:
                 if card.group == target_groups[0].id:
-                    card.group = None
                     card.location = "discard"
+                    card.group = None
                     card.owner = None
     
         # Set stack count
@@ -561,16 +567,13 @@ class GameServer:
         
         
             
-    def resolve_fire(self, target_groups, played_card):
+    def prepare_fire(self, target_groups, played_card):
         
         # Get fire attributes
         card_firestrength, card_firepower = [int(n) for n in re.findall(r"\d+", played_card.subtype)]
         
         # Player units
         player_units = [unit for unit in self.unit_list if unit.group == target_groups[0].id]
-        
-        # Opponent units
-        opponent_units = [unit for unit in self.unit_list if unit.group == target_groups[1].id]
         
         # Relative range
         total = target_groups[0].range + target_groups[1].range
@@ -586,12 +589,61 @@ class GameServer:
         if firepower < card_firepower:
             return
         
-        # Attack opponent units
-        for unit in opponent_units:
-            attack = card_firestrength + self.draw_rnc()
-            print(attack)
+        # Calculate firestrength
+        modified_firestrength = card_firestrength + self.get_terrain_modifier(target_groups)
+        
+        # Set pending action
+        self.pending_action["type"] = "fire"
+        self.pending_action["card"] = played_card
+        self.pending_action["strength"] = modified_firestrength
+        self.pending_action["offensive_group"] = target_groups[0]
+        self.pending_action["defensive_group"] = target_groups[1]
+        
+        # Annotate target information
+        target_groups[1].last_action = "targeted"
+        
+        return True
+    
+    
+    
+    def counter_card(self, played_card, target_groups, client):
+        
+        # Validity check (1)
+        if client.name == self.current_turn:
+            return
+        
+        # Validity check (2)
+        if played_card.type != "concealed":
+            return
+        
+        # Validity check (3)
+        if target_groups[0] != self.pending_action["defensive_group"]:
+            return
+    
+        # Resolve counter
+        if self.pending_action["type"] == "fire":
+            self.resolve_fire(played_card)
+        
+        # Add card to the group
+        played_card.location = "table"
+        played_card.group = target_groups[0].id
             
-            print(type(unit.kia), unit.kia, type(unit.morale), unit.morale, type(unit.panic))
+
+    
+    def resolve_fire(self, concealed_card):
+        
+        # Get base firestrength
+        base_firestrength = self.pending_action["strength"] 
+        
+        # Get concealed firestrength
+        concealed_firestrength = int(concealed_card.subtype.split()[-1]) if concealed_card else 0
+        
+        # Defensive units
+        defensive_units = [unit for unit in self.unit_list if unit.group == self.pending_action["defensive_group"].id]
+        
+        # Attack defensive units
+        for unit in defensive_units:
+            attack = base_firestrength - concealed_firestrength + self.draw_rnc()
             
             if unit.state == "rallied":
                 if attack >= unit.kia[0]:
@@ -608,7 +660,12 @@ class GameServer:
             if unit.state in ["routed", "kia"]:
                 unit.group = None
                 
-        return True
+        # Reset pending action
+        for key in self.pending_action:
+            self.pending_action[key] = None
+            
+        # Reset target information
+        self.pending_action["defensive_group"].last_action = None
                 
             
             
@@ -617,9 +674,15 @@ class GameServer:
         # Check game phase
         if self.game_phase != "gameplay":
             return
-        
-        # Check if it's this player's turn
+                
+        # Check turn
         if client.name != self.current_turn:
+            if self.pending_action["type"] == "fire":
+                self.resolve_fire(None)
+            return
+        
+        # Check pending actions
+        if self.pending_action["type"] is not None:
             return
                 
         # Advance turn
@@ -639,6 +702,8 @@ class GameServer:
         for card in self.card_list:
             if card.location == "table" and card.type not in ["movement", "terrain"]:
                 card.location = "discard"
+                card.group = None
+                card.owner = None
         
         # Reset groups
         for group in self.group_list:
@@ -690,7 +755,8 @@ class GameServer:
                 "game_subphase": self.game_subphase,
                 "current_turn": self.current_turn,
                 "sound": self.current_sound,
-                "side": client.side
+                "side": client.side,
+                "pending_action": True if self.pending_action["type"] else False
             }
             
             # Add card information
@@ -784,7 +850,12 @@ class GameServer:
             card.owner = client.name
             
             
+            
     def discard_card(self, played_card, client):
+        
+        # Check if it's this player's turn
+        if client.name != self.current_turn:
+            return
         
         # Get discard maximum for this nation
         max_discard = MAX_DISCARD[client.nation] - client.discard_count
@@ -824,6 +895,14 @@ class GameServer:
         card.location = "discard"
         
         return(card.rnc)
+    
+    
+    
+    def get_terrain_modifier(self, target_groups):
+        
+        # not yet implemented
+        
+        return(0)
     
     
             
