@@ -32,6 +32,7 @@ ACTIONS = {
     "rally":    "rallied",
     "smoke":    "smoked",
     "sniper":   "sniped",
+    "hero":     "heroic"
 }
 
 
@@ -77,6 +78,7 @@ class Unit:
         self.state = "rallied" # rallied, pinned, routed, kia
         self.group = None
         self.owner = None
+        self.heroic = False
         
         # Attributes (crew related)
         self._firepower = firepower
@@ -103,7 +105,7 @@ class Group:
         self.id = group_id
         self.label = label
         self.owner = owner
-        self.range = 2
+        self.range = 0
         self.fp = [0, 0, 0, 0, 0, 0]
         self.moving = None
         self.terrain = None
@@ -452,7 +454,7 @@ class GameServer:
         elif self.game_subphase == "action":
             self.execute_card(played_card, card_mode, target_groups, target_units, client)
         else:
-            self.discard_card(played_card, client)
+            self.discard_card(played_card, card_mode, target_groups, client)
         
  
     
@@ -473,6 +475,8 @@ class GameServer:
             success = self.resolve_terrain(target_groups[0], played_card)
         elif played_card.type == "rally":
             success = self.resolve_rally(target_groups[0], target_units, played_card)
+        elif played_card.type == "hero":
+            success = self.resolve_hero(target_units, played_card)
         elif played_card.type == "fire":
             success = self.prepare_fire(target_groups, played_card)
         else:
@@ -504,8 +508,8 @@ class GameServer:
         target_groups[0].last_action = ACTIONS[played_card.type]
         
         # Set flag
-        client.has_acted = True
-        target_groups[0].has_acted = True
+        client.has_acted = True if played_card.type != "hero" else False
+        target_groups[0].has_acted = True if played_card.type != "hero" else False
         
         # Set sound
         self.current_sound = "play_card"
@@ -564,6 +568,24 @@ class GameServer:
             unit.state = "rallied"
         
         return True
+    
+    
+    
+    def resolve_hero(self, target_units, played_card):
+        
+        # Validity check (1)
+        if len(target_units) != 1:
+            return
+        
+        # Validity check (2)
+        if target_units[0].owner != self.current_turn:
+            return
+        
+        # Modify attributes
+        target_units[0].state = "rallied"
+        target_units[0].heroic = True
+        
+        return True
         
         
             
@@ -583,9 +605,12 @@ class GameServer:
         lateral_gap = abs(ord(target_groups[0].id[0]) - ord(target_groups[1].id[0]))
         if lateral_gap >= 2 and relative_range > 0:
             relative_range -= 1
+            
+        # Relative range cannot < 0 for firepower / to hit purposes
+        relative_range = max(relative_range, 0)
         
         # Check firepower
-        firepower = sum(unit.firepower[relative_range] for unit in player_units if unit.state == "rallied")
+        firepower = sum(unit.firepower[relative_range] * (unit.heroic+1) for unit in player_units if unit.state == "rallied")
         if firepower < card_firepower:
             return
         
@@ -709,6 +734,10 @@ class GameServer:
         for group in self.group_list:
             group.has_acted = False
             group.last_action = None
+            
+        # Reset units
+        for unit in self.unit_list:
+            unit.heroic = False
         
         # Reset client
         client.has_acted = False
@@ -851,7 +880,7 @@ class GameServer:
             
             
             
-    def discard_card(self, played_card, client):
+    def discard_card(self, played_card, card_mode, target_groups, client):
         
         # Check if it's this player's turn
         if client.name != self.current_turn:
@@ -869,16 +898,44 @@ class GameServer:
             return
                 
         # Discard card
-        played_card.location = "discard"
-        played_card.owner = None
+        if played_card.type == "sniper":
+            self.resolve_sniper(played_card, target_groups[0])
+        else:
+            played_card.location = "discard"
+            played_card.owner = None
             
         # Update discard count
         client.discard_count += 1
         
         # Set sound
         self.current_sound = "play_card"
+        
+        
+    
+    def resolve_sniper(self, played_card, target_group):
+        
+        thresholds = [5, 3] # replace
+        
+        # Get units in target group
+        units = [unit for unit in target_group]
+        
+        # Random position check
+        rpc = random.sample(range(len(units)),1)[0] # replace 
+        
+        # Random number check
+        rnc = abs(self.draw_rnc())
+        
+        # Set attributes
+        if rnc >=thresholds[0]:
+            units[rpc].state = "kia"
+        elif rnc > thresholds[1]:
+            units[rpc].state = "pinned"
             
+        # Discard card on opponent
+        played_card.location = "table"
+        played_card.group = target_group.id
             
+        
             
     def draw_rnc(self):
         
