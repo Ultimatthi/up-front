@@ -329,6 +329,7 @@ class GameView(arcade.View):
         self.sound_knock = arcade.load_sound(r'assets/sounds/knock.mp3')
         self.sound_play = arcade.load_sound(r'assets/sounds/play_card.mp3')
         self.sound_select = arcade.load_sound(r'assets/sounds/select.mp3')
+        self.sound_switch = arcade.load_sound(r'assets/sounds/switch.mp3')
         
         # Layout
         self.layout = Layout(self.window.width, self.window.height)
@@ -694,80 +695,47 @@ class GameView(arcade.View):
         
         # Check right click
         if button == arcade.MOUSE_BUTTON_RIGHT:
-            self.switch_card_mode()
+            success = self.switch_card_mode()
+            if success: self.play_sound("switch") # Client side
             return
-
-        # Get list of cards we've clicked on
-        cards = arcade.get_sprites_at_point((x, y), self.card_list)
-
-        # Have we clicked on a card?
-        if len(cards) > 0:
-
-            # Might be a stack of cards, get the top one
-            held_card = cards[-1]
-            
-            # Play card
-            if held_card.location == "hand":
-                self.play_card(held_card, self.active_groups)
         
-        # Get list of group tiles we've clicked on
-        groups = arcade.get_sprites_at_point((x, y), self.group_list)
-        
-        # Have we clicked on a group tile?
-        if len(groups) > 0:
+        # Get topmost sprites we've clicked on
+        card = self.get_hovered_sprite(x, y, self.card_list)
+        group = self.get_hovered_sprite(x, y, self.group_list)
+        button_ = self.get_hovered_sprite(x, y, self.button_list)
+        unit = self.get_hovered_sprite(x, y, self.unit_list)
             
-            # Might be a stack of tiles, get the top one
-            held_group = groups[-1]
+        # Play card
+        if card is not None:
+            self.play_card(card, self.active_groups)
+    
+        # Switch to clicked group
+        if group is not None:
+            self.active_groups[group.owner] = group
+            self.play_sound("select") # Client side
             
-            # Switch to that group
-            self.active_groups[held_group.owner] = held_group
-            
-            # Play sound
-            self.play_sound("select")
-            
-        # Get list of buttons we've clicked on
-        buttons = arcade.get_sprites_at_point((x, y), self.button_list)
-            
-        # Have we clicked on a button?
-        if len(buttons) > 0:
-            
-            # Might be a stack of tiles, get the top one
-            held_button = buttons[-1]
-            
-            # Play sound
-            self.play_sound("select")
-            
-            # Advance turn
-            if held_button.name == "advance":
+        # Select/deselect unit
+        if unit is not None:
+            unit.selected = not unit.selected
+            self.play_sound("select") # Client side
+    
+        # Press button
+        if button_ is not None:
+            if button_.name == "advance":
                 self.advance_turn()
-                
-        # Get list of unit cards we've clicked on
-        units = arcade.get_sprites_at_point((x, y), self.unit_list)
-            
-        # Have we clicked on the empty board?
-        if len(cards) == 0 and len(groups) == 0 and len(buttons) == 0 and len(units) == 0:
-            
-            # Generatge dust
+            if button_.name == "surrender":
+                pass # TODO
+    
+        # Clicked on the empty board: dust and knock
+        if card is None and group is None and button_ is None and unit is None:
             for _ in range(24):
                 self.dust_list.append(DustParticle(x, y))
-            # Play sound
             self.play_sound("knock")
-            
-        # Have we clicked on a unit?
-        if len(units) > 0:
-
-            # Might be a stack of cards, get the top one
-            held_unit = units[-1]
-            
-            # Select/deselect unit
-            held_unit.selected = not held_unit.selected
-            
-        # Adjust card position
+    
+        # Adjust positions
         self.adjust_card_position()
-        
-        # Update unit position
         self.adjust_unit_position()
-        
+
     
     
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
@@ -935,6 +903,8 @@ class GameView(arcade.View):
                 self.hover_card.mode = modes[i]
             else:
                 self.hover_card.mode = modes[0]
+                
+        return True
             
             
             
@@ -1103,7 +1073,9 @@ class GameView(arcade.View):
             arcade.play_sound(self.sound_play)
         elif sound == 'select':
             arcade.play_sound(self.sound_select)
-            
+        elif sound == 'switch':
+            arcade.play_sound(self.sound_switch)
+                  
             
     
     def adjust_hovered_elements(self):
