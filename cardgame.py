@@ -55,7 +55,6 @@ CARD_BACK_TEXTURE = arcade.load_texture("assets/cards/cardback.png")
 # ──[ Classes ]────────────────────────────────────────────────────────────────
 
 class Layout:
-    """ Layout variables """
     
     def __init__(self, width: int, height: int):
         self.update(width, height)
@@ -76,7 +75,6 @@ class Layout:
 
 
 class Card(arcade.Sprite):
-    """ Card sprite """
 
     def __init__(self, card_id, card_type, scale=1):
 
@@ -119,7 +117,6 @@ class Card(arcade.Sprite):
     
     
 class Unit(arcade.Sprite):
-    """ Unit card sprite """
 
     def __init__(self, unit_id, nation, owner, scale=1):
 
@@ -164,7 +161,6 @@ class Unit(arcade.Sprite):
 
         
 class Group(arcade.Sprite):
-    """ Group sprite """
     
     def __init__(self, group_id, label, scale=1):
         
@@ -219,7 +215,6 @@ class Group(arcade.Sprite):
             
             
 class Chit(arcade.Sprite):
-    """ Chit sprite """
     
     def __init__(self, chit_type, group, scale=1):
         
@@ -250,7 +245,6 @@ class Chit(arcade.Sprite):
             
 
 class Button(arcade.Sprite):
-    """ Board element sprite """
 
     def __init__(self, name, image_path, scale):
         
@@ -266,7 +260,6 @@ class Button(arcade.Sprite):
 
 
 class BoardElement(arcade.Sprite):
-    """ Board element sprite """
 
     def __init__(self, image_path, scale):
 
@@ -279,7 +272,6 @@ class BoardElement(arcade.Sprite):
     
 
 class DustParticle(arcade.SpriteCircle):
-    """Single dust particle"""
 
     def __init__(self, x, y):
         
@@ -319,7 +311,6 @@ class DustParticle(arcade.SpriteCircle):
 # ──[ Game View ]─────────────────────────────────────────────────────────────
 
 class GameView(arcade.View):
-    """ Main application class. """
 
     def __init__(self, username, nation, server):
         super().__init__()
@@ -351,7 +342,6 @@ class GameView(arcade.View):
 
 
     def setup(self):
-        """ Set up the game here. Call this function to restart the game. """
         
         # Check connection ----------------------------------------------------
         
@@ -596,7 +586,6 @@ class GameView(arcade.View):
         
         
     def on_resize(self, width, height):
-        """Rescales sprites"""
 
         # Calculate resize factors
         resize_x = width / self.layout.width
@@ -626,7 +615,6 @@ class GameView(arcade.View):
         
         
     def on_update(self, delta_time):
-        """Update sprites. """
         
         # Apply pending server states
         while not self.state_queue.empty():
@@ -665,7 +653,6 @@ class GameView(arcade.View):
                 
         
     def on_draw(self):
-        """ Render the screen. """
         
         # Clear the screen
         self.clear()
@@ -700,13 +687,10 @@ class GameView(arcade.View):
         self.dust_list.draw()
             
         # self.light_layer.draw()
-        
-
 
         
 
     def on_mouse_press(self, x, y, button, key_modifiers):
-        """ Called when the user presses a mouse button. """
         
         # Check right click
         if button == arcade.MOUSE_BUTTON_RIGHT:
@@ -787,7 +771,6 @@ class GameView(arcade.View):
     
     
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        """ Called when the user scrolls the mouse wheel. """
         
         # Check if active groups are set
         if None in self.active_groups.values():
@@ -824,7 +807,6 @@ class GameView(arcade.View):
         
         
     def on_mouse_motion(self, x, y, dx, dy):
-        """User moves mouse."""
     
         # Update mouse position
         self.mouse_x = x
@@ -881,7 +863,6 @@ class GameView(arcade.View):
         
         
     def on_key_press(self, key, _modifiers):
-        """ Handle keypresses. """
         
         # Set modifier
         if key == arcade.key.LCTRL:
@@ -926,7 +907,6 @@ class GameView(arcade.View):
             
             
     def on_key_release(self, key, _modifiers):
-        """ Handle keypresses. """
         
         # Set modifier
         if key == arcade.key.LCTRL:
@@ -959,7 +939,6 @@ class GameView(arcade.View):
             
             
     def play_card(self, card, active_groups):
-        """Send play card action to server"""
     
         # Create action for server
         action = {
@@ -979,7 +958,6 @@ class GameView(arcade.View):
             
             
     def advance_turn(self):
-        """Send advance_turn action to server"""
 
         # Create action for server
         action = {
@@ -999,7 +977,6 @@ class GameView(arcade.View):
 
 
     def receive_state(self):
-        """Receive game state from server"""
         
         while self.running:
             try:
@@ -1012,7 +989,6 @@ class GameView(arcade.View):
                         
                        
     def update_state(self, game_state):
-        """Update game state from server data"""
         
         # Check hearbeat
         if game_state.get("type") == "ping":
@@ -1565,7 +1541,7 @@ class MenuView(arcade.View):
 # ──[ Main ]───────────────────────────────────────────────────────────────────
 
 def main():
-    """ Main function """
+
     window = arcade.Window(LOBBY_WIDTH, LOBBY_HEIGHT, LOBBY_TITLE, resizable=True, antialiasing=True, vsync=True)
     menu_view = MenuView()  # Start with menu view   
     window.show_view(menu_view)

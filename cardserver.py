@@ -54,7 +54,6 @@ TERRAIN_MOD = {
 # ──[ Classes ]────────────────────────────────────────────────────────────────
 
 class Card:
-    """ Card for server logics """
     
     def __init__(self, card_id, card_type, card_subtype, rnc, breeze, color):
 
@@ -73,7 +72,6 @@ class Card:
         
         
 class Unit:
-    """ Unit card for server logics """
 
     def __init__(self, unit_id, nation, rank, name, weapon, malfunction, 
                  ccv, firepower, morale, panic, rout, kia, points):
@@ -113,7 +111,6 @@ class Unit:
         
 
 class Group:
-    """ Group for server logics"""
     
     def __init__(self, group_id, label, owner):
         # Attribute
@@ -807,7 +804,6 @@ class GameServer:
         
 
     def remove_client(self, player_name):
-        """Removes client from game"""
         
         # Remove from client list
         client = next((client for client in self.client_list if client.name == player_name), None)
@@ -828,7 +824,6 @@ class GameServer:
         
 
     def broadcast(self):
-        """Send game state to all connected clients"""
         
         for client in self.client_list:
             
