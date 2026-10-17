@@ -823,74 +823,59 @@ class GameView(arcade.View):
 
         
         
-    def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
-        """ User moves mouse """
-        
+    def on_mouse_motion(self, x, y, dx, dy):
+        """User moves mouse."""
+    
         # Update mouse position
         self.mouse_x = x
         self.mouse_y = y
+    
+        # Get hovered sprites
+        self.hover_card = self.get_hovered_sprite(x, y, self.card_list)
+        self.hover_unit = self.get_hovered_sprite(x, y, self.unit_list)
+        self.hover_group = self.get_hovered_sprite(x, y, self.group_list)
+        self.hover_button = self.get_hovered_sprite(x, y, self.button_list)
+    
+        # Init card mode 
+        if self.hover_card and self.hover_card.mode is None:
+            self.switch_card_mode()
+    
+        # Set cursor symbol
+        self.update_mouse_cursor()
+    
+    
+    
+    def get_hovered_sprite(self, x, y, sprite_list):
+
+        # Get the topmost sprite at location x, y
+        sprites = arcade.get_sprites_at_point((x, y), sprite_list)
+        return sprites[-1] if sprites else None
+    
+    
+    
+    def update_mouse_cursor(self):
         
         # Set cursor type to default
         cursor_type = self.window.CURSOR_DEFAULT
         
-        
-        # Get list of cards we'are hovering above
-        cards = arcade.get_sprites_at_point((x, y), self.card_list)
-
-        # Declare top card as hovered card
-        if len(cards) > 0:
-            self.hover_card = cards[-1]
-        else:
-            self.hover_card = None
-            
-        # Set cursor type to "hand" if hovering above hand card
-        if len(cards) > 0 and self.current_turn == self.player_name:
-            if cards[-1].location == "hand" and cards[-1].owner == "player":
-                cursor_type = self.window.CURSOR_HAND
-                
-        # Set init card mode
-        if self.hover_card and self.hover_card.mode is None:
-            self.switch_card_mode()
-                
-                
-        # Get list of cards we'are hovering above
-        units = arcade.get_sprites_at_point((x, y), self.unit_list)
-                
-        # Declare top unit as hovered unit
-        if len(units) > 0:
-            self.hover_unit = units[-1]
-        else:
-            self.hover_unit = None
-            
-        # Get list of group tiles we'are hovering above
-        groups = arcade.get_sprites_at_point((x, y), self.group_list)
-        
-        # Declare top tile as hovered tile
-        if len(groups) > 0:
-            self.hover_group = groups[-1]
-        else:
-            self.hover_group = None
-            
-        # Set cursor type to "hand" if hovering above group tile
-        if len(groups) > 0:
+        # Set cursor type to hand (above group)
+        if self.hover_group:
+            cursor_type = self.window.CURSOR_HAND
+    
+        # Set cursor type to hand (above button)
+        if self.hover_button and self.current_turn == self.player_name:
             cursor_type = self.window.CURSOR_HAND
             
-        
-        # Get list of buttons we'are hovering above
-        buttons = arcade.get_sprites_at_point((x, y), self.button_list)
-        
-        # Declare top button as hovered button
-        if len(buttons) > 0:
-            self.hover_button = buttons[-1]
-        else:
-            self.hover_button = None
-            
-        # Set cursor type to "hand" if hovering above button
-        if len(buttons) > 0:
+        # Set cursor type to hand (above player card)
+        if (
+            self.hover_card
+            and self.current_turn == self.player_name
+            and self.hover_card.location == "hand"
+            and self.hover_card.owner == "player"
+        ):
             cursor_type = self.window.CURSOR_HAND
             
-                     
-        # Set cursor
+        # Set cursor symbol
         self.window.set_mouse_cursor(self.window.get_system_mouse_cursor(cursor_type))
                 
         
