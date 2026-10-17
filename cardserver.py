@@ -68,6 +68,7 @@ class Card:
         self.group = None
         self.owner = None # player_name
         self.stack_index = 0
+        self.draw_index = 0
         
         
         
@@ -157,6 +158,7 @@ class GameServer:
         self.current_turn = None
         self.current_sound = None
         self.action_deck_counter = 0
+        self.draw_counter = 0
         
         # Pending action
         self.pending_action = {"type": None, "card": None, "strength": None,
@@ -844,7 +846,8 @@ class GameServer:
                     "owner": "player" if client.name == card.owner else "opponent",
                     "location": card.location,
                     "group": card.group,
-                    "stack_index": card.stack_index
+                    "stack_index": card.stack_index,
+                    "draw_index": card.draw_index
                 }
                 game_state["cards"].append(card_info)
                 
@@ -926,6 +929,10 @@ class GameServer:
             card = deck.pop()
             card.location = "hand"
             card.owner = client.name
+            
+            # Index card
+            self.draw_counter += 1
+            card.draw_index = self.draw_counter
             
             
             

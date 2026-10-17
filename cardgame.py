@@ -13,6 +13,7 @@ import socket
 import threading
 import time
 import warnings
+import queue
 from datetime import datetime
 import math
 from collections import defaultdict
@@ -88,6 +89,7 @@ class Card(arcade.Sprite):
         self.group = None
         self.mode = None
         self.stack_index = 0
+        self.draw_index = 0
 
         # Image to use for the sprite when face up (not yet loaded)
         self.texture_front = None
@@ -365,6 +367,9 @@ class GameView(arcade.View):
         
         # Init game -----------------------------------------------------------
         
+        # Server state queue
+        self.state_queue = queue.Queue()
+        
         # Set game phase
         self.game_phase = "assignment"
         self.game_subphase = None
@@ -623,6 +628,10 @@ class GameView(arcade.View):
     def on_update(self, delta_time):
         """Update sprites. """
         
+        # Apply pending server states
+        while not self.state_queue.empty():
+            self.update_state(self.state_queue.get())
+                
         # Adjust hovered elements
         self.adjust_hovered_elements()
                 
@@ -1013,7 +1022,7 @@ class GameView(arcade.View):
             except:
                 print("Connection lost")
                 break
-            self.update_state(game_state)
+            self.state_queue.put(game_state)
         
                         
                        
@@ -1052,6 +1061,7 @@ class GameView(arcade.View):
                 card.location = logical_card["location"]
                 card.group = logical_card["group"]
                 card.stack_index = logical_card["stack_index"]
+                card.draw_index = logical_card["draw_index"]
                 
                 
         # Get logical card variables
@@ -1092,6 +1102,10 @@ class GameView(arcade.View):
         if None in self.active_groups.values():
             player_side = game_state.get("side")
             self.init_active_groups(player_side)
+            
+        # Update hand / vertical card order
+        self.card_list.sort(key=lambda card: card.draw_index, reverse=True)
+        self.card_list.sort(key=lambda card: card.stack_index)
 
         # Update card position
         self.adjust_card_position()
@@ -1187,7 +1201,7 @@ class GameView(arcade.View):
         opponent_hand = [card for card in self.card_list if card.location == "hand" and card.owner != "player"]
         
         # Get cards on table (sorted by stack index)
-        table = sorted((card for card in self.card_list if card.location == "table"), key=lambda card: card.stack_index)
+        table = [card for card in self.card_list if card.location == "table"]
 
         # Get cards in piles
         deck = [card for card in self.card_list if card.location == "deck"]
@@ -1200,10 +1214,6 @@ class GameView(arcade.View):
         
         # Player's hand
         for i, card in enumerate(player_hand):
-
-            # Move to top
-            self.card_list.remove(card)
-            self.card_list.append(card)
             
             # Set facing
             card.facing = "up"
@@ -1218,10 +1228,6 @@ class GameView(arcade.View):
         # Opponent's hand
         for i, card in enumerate(opponent_hand):
             
-            # Move to top
-            self.card_list.remove(card)
-            self.card_list.append(card)
-            
             # Set facing
             card.facing = "down"
             
@@ -1234,10 +1240,6 @@ class GameView(arcade.View):
             
         # Table cards
         for card in table:
-            
-            # Vertically order cards
-            self.card_list.remove(card)
-            self.card_list.append(card)
             
             # Get active group
             active_group = self.active_groups[card.owner]
