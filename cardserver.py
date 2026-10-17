@@ -26,13 +26,27 @@ NATIONS = ["german", "american"] # implemented nations
 SIDES = ["1", "2"]
 
 ACTIONS = {
-    "movement": "moved",
-    "terrain":  "entered",
     "fire":     "fired",
+    "hero":     "heroic",
+    "movement": "moved",
     "rally":    "rallied",
     "smoke":    "smoked",
     "sniper":   "sniped",
-    "hero":     "heroic"
+    "terrain":  "entered",
+    "wire":     "wired"
+}
+
+TERRAIN_MOD = {
+    None:        (0,   0),
+    "brush":     (0,  -1),
+    "woods":     (0,  -2),
+    "buildings": (0,  -2),  # TODO: some buildings are -3
+    "hill":      (+1, -1),  # with conditions
+    "marsh":     (-1, -1),
+    "stream":    (-1,  0),
+    "gully":     (0,  -2),  # with conditions
+    "wall":      (0,  -1),  # with conditions
+    "pillbox":   (0, - 4)
 }
 
 
@@ -109,6 +123,8 @@ class Group:
         self.fp = [0, 0, 0, 0, 0, 0]
         self.moving = None
         self.terrain = None
+        self.wire = False
+        self.smoke = False
         self.has_acted = False
         self.last_action = None
 
@@ -473,6 +489,8 @@ class GameServer:
             success = self.resolve_movement(target_groups[0], played_card, card_mode)
         elif played_card.type == "terrain":
             success = self.resolve_terrain(target_groups[0], played_card)
+        elif played_card.type == "smoke":
+            success = self.resolve_smoke(target_groups[0], played_card)
         elif played_card.type == "rally":
             success = self.resolve_rally(target_groups[0], target_units, played_card)
         elif played_card.type == "hero":
@@ -480,29 +498,16 @@ class GameServer:
         elif played_card.type == "fire":
             success = self.prepare_fire(target_groups, played_card)
         else:
-            success = True
+            success = False
             
         # Check if card was resolved successfully
         if not success:
             return
-        
-        # Remove any cards from the group (if necessary)
-        if played_card.type == "terrain":
-            for card in self.card_list:
-                if card.group == target_groups[0].id:
-                    card.location = "discard"
-                    card.group = None
-                    card.owner = None
-    
-        # Set stack count
-        if played_card.type == "movement":
-            played_card.stack_index = sum(1 for card in self.card_list 
-                                          if card.group == target_groups[0].id 
-                                          and card.type in ["movement", "terrain"])
             
-        # Add card to the group
-        played_card.location = "table"
-        played_card.group = target_groups[0].id
+        # Add card to the group (if not already discarded)
+        if played_card.location == "hand":
+            played_card.location = "table"
+            played_card.group = target_groups[0].id
         
         # Fill history
         target_groups[0].last_action = ACTIONS[played_card.type]
@@ -518,22 +523,66 @@ class GameServer:
             
     def resolve_movement(self, target_group, played_card, card_mode):
         
+        # Get wire card (if present):
+        for card in self.card_list:
+            if card.location == "table" and card.group == target_group.id:
+                wire = card
+        
+        # Remove wire (if present)
+        if target_group.wire:
+            target_group.wire = False
+            played_card.location = "discard"
+            wire.location = "discard"
+            
+        
+        # Remove any terrain card if group is already moving
+        if target_group.moving:
+            for card in self.card_list:
+                if card.group == target_group.id and card.type == "terrain":
+                    self.move_card_to_discard(card)
+        
+        # Modify group attributes
         if card_mode == "forward":
             target_group.range += 1
         elif card_mode == "backward":
             target_group.range -= 1
         target_group.moving = card_mode
+    
+        # Set stack count
+        played_card.stack_index = sum(1 for card in self.card_list 
+                                      if card.group == target_group.id 
+                                      and card.type in ["movement", "terrain"])
         
         return True
         
         
     def resolve_terrain(self, target_group, played_card):
         
+        # Modify group attributes
         target_group.terrain = played_card.subtype
         target_group.moving = None
-        
+
+        # Remove movement/smoke cards from the group (if necessary)
+        for card in self.card_list:
+            if card.group == target_group.id and card.type in ["movement", "smoke"]:
+                self.move_card_to_discard(card)
+    
         return True
 
+
+
+    def resolve_smoke(self, target_group, played_card):
+        
+        # Modify group attributes
+        target_group.smoke = True
+        
+        # Set stack count
+        played_card.stack_index = sum(1 for card in self.card_list 
+                                      if card.group == target_group.id 
+                                      and card.type in ["movement", "terrain"])
+        
+        return True
+    
 
     
     def resolve_rally(self, target_group, target_units, played_card):
@@ -615,7 +664,9 @@ class GameServer:
             return
         
         # Calculate firestrength
-        modified_firestrength = card_firestrength + self.get_terrain_modifier(target_groups)
+        modified_firestrength = self.modify_base_firestrength(card_firestrength, target_groups[0], target_groups[1], relative_range)
+        if modified_firestrength is None:
+            return
         
         # Set pending action
         self.pending_action["type"] = "fire"
@@ -725,10 +776,8 @@ class GameServer:
         
         # Remove action cards on table
         for card in self.card_list:
-            if card.location == "table" and card.type not in ["movement", "terrain"]:
-                card.location = "discard"
-                card.group = None
-                card.owner = None
+            if card.location == "table" and card.type not in ["movement", "terrain", "wire", "smoke"]:
+                self.move_card_to_discard(card)
         
         # Reset groups
         for group in self.group_list:
@@ -899,13 +948,25 @@ class GameServer:
                 
         # Discard card
         if played_card.type == "sniper":
-            self.resolve_sniper(played_card, target_groups[0])
+            success = self.resolve_sniper(played_card, target_groups[1])
+        elif played_card.type == "wire":
+            success = self.resolve_wire(played_card, target_groups[1])
         else:
-            played_card.location = "discard"
-            played_card.owner = None
+            self.move_card_to_discard(played_card)
+            success = True
+            
+        # Check if card was resolved successfully
+        if not success:
+            return
             
         # Update discard count
         client.discard_count += 1
+        
+        # Add card to the group (if discarded on group)
+        if played_card.location != "discard":
+            played_card.location = "table"
+            played_card.group = target_groups[1].id
+            played_card.owner = target_groups[1].owner 
         
         # Set sound
         self.current_sound = "play_card"
@@ -917,25 +978,40 @@ class GameServer:
         thresholds = [5, 3] # replace
         
         # Get units in target group
-        units = [unit for unit in target_group]
+        units = [unit for unit in self.unit_list if unit.group == target_group.id]
+        if not units:
+            return False
         
-        # Random position check
-        rpc = random.sample(range(len(units)),1)[0] # replace 
+        # Select unit by RPC
+        unit = random.choice(units)  # TODO: RPC
         
         # Random number check
         rnc = abs(self.draw_rnc())
         
         # Set attributes
         if rnc >=thresholds[0]:
-            units[rpc].state = "kia"
+            unit.state = "kia"
+            unit.group = None
         elif rnc > thresholds[1]:
-            units[rpc].state = "pinned"
-            
-        # Discard card on opponent
-        played_card.location = "table"
-        played_card.group = target_group.id
-            
+            unit.state = "pinned"
         
+        return True
+        
+    
+    
+    def resolve_wire(self, played_card, target_group):
+        
+        if target_group.terrain in ["marsh", "pillbox"]:
+            return
+        
+        if target_group.terrain == "stream" and target_group.moving == False:
+            return
+        
+        target_group.wire = True
+            
+        return True
+        
+    
             
     def draw_rnc(self):
         
@@ -951,15 +1027,54 @@ class GameServer:
         card = deck.pop()
         card.location = "discard"
         
+        # Check for breeze
+        for card in self.card_list:
+            if card.type == "smoke" and card.location == "table":
+                self.move_card_to_discard(card)
+                
+        for group in self.group_list:
+            group.smoke = 0
+        
         return(card.rnc)
     
     
     
-    def get_terrain_modifier(self, target_groups):
+    def modify_base_firestrength(self, firestrength, source_group, target_group, relative_range):
         
-        # not yet implemented
+        # TODO: Mortar/Ordnance fire implementation
+        # TODO: encirclement check
         
-        return(0)
+        # No fire from gully
+        if source_group.terrain == "gully":
+            return None
+        
+        # No fire against gully
+        if target_group.terrain == "gully" and source_group.terrain != "hill" and relative_range != 5:
+            return None
+        
+        # Movement modifier
+        if source_group.moving:
+            firestrength //= 2
+        if target_group.moving:
+            firestrength += 1
+            
+        # Terrain modifier (outgoing)
+        firestrength += TERRAIN_MOD[source_group.terrain][0]
+            
+        # Terrain modifier (incoming)
+        firestrength += TERRAIN_MOD[target_group.terrain][1]
+        
+        # Artificial terrain modifier (outgoing)
+        firestrength += -source_group.wire - source_group.smoke
+        
+        # Artificial terrain modifier (incoming)
+        firestrength += target_group.wire - target_group.smoke
+        
+        # Enhanced protection behind wall
+        if target_group.terrain == "wall" and target_group.label == source_group.label:
+            firestrength -= 1
+
+        return(firestrength)
     
     
             
@@ -976,6 +1091,15 @@ class GameServer:
             return [self.parse_cell(x) for x in cell.split("|")]
         else:
             return int(cell) if cell.lstrip("-").isdigit() else cell
+        
+        
+        
+    def move_card_to_discard(self, card):
+        
+        card.owner = None
+        card.group = None
+        card.stack_index = 0
+        card.location = "discard"
         
         
 

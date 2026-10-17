@@ -1251,7 +1251,7 @@ class GameView(arcade.View):
             card.facing = "up"
             
             # Get position (player's view)
-            if card.type in ["movement", "terrain"]:
+            if card.type in ["movement", "terrain", "smoke", "wire"]:
                 x = 598 * self.layout.scale
                 y = 544 * self.layout.scale
             else:
