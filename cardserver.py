@@ -515,8 +515,9 @@ class GameServer:
         target_groups[0].last_action = ACTIONS[played_card.type]
         
         # Set flag
-        client.has_acted = True if played_card.type != "hero" else False
-        target_groups[0].has_acted = True if played_card.type != "hero" else False
+        if played_card.type != "hero":
+            client.has_acted = True
+            target_groups[0].has_acted = True
         
         # Set sound
         self.current_sound = "play_card"
@@ -525,18 +526,20 @@ class GameServer:
             
     def resolve_movement(self, target_group, played_card, card_mode):
         
+        # No movement with pinned units
+        if any(unit.state == "pinned" and unit.group == target_group.id for unit in self.unit_list):
+            return False
+        
         # Get wire card (if present):
-        for card in self.card_list:
-            if card.location == "table" and card.group == target_group.id:
-                wire = card
-        
-        # Remove wire (if present)
-        if target_group.wire:
+        wire = next((card for card in self.card_list if card.type == "wire" and card.group == target_group.id), None)
+
+        # Remove wire (if present and no pinned men)
+        if wire:
+            self.move_card_to_discard(wire)
+            self.move_card_to_discard(played_card)
             target_group.wire = False
-            played_card.location = "discard"
-            wire.location = "discard"
+            return True
             
-        
         # Remove any terrain card if group is already moving
         if target_group.moving:
             for card in self.card_list:
@@ -574,6 +577,9 @@ class GameServer:
 
 
     def resolve_smoke(self, target_group, played_card):
+        
+        if target_group.smoke:
+            return
         
         # Modify group attributes
         target_group.smoke = True
@@ -1008,6 +1014,9 @@ class GameServer:
     
     def resolve_wire(self, played_card, target_group):
         
+        if target_group.wire:
+            return
+        
         if target_group.terrain in ["marsh", "pillbox"]:
             return
         
@@ -1031,18 +1040,18 @@ class GameServer:
             deck = [card for card in self.card_list if card.location == "deck"]
         
         # Draw top card
-        card = deck.pop()
-        card.location = "discard"
+        rnc_card = deck.pop()
+        rnc_card.location = "discard"
         
         # Check for breeze
-        for card in self.card_list:
-            if card.type == "smoke" and card.location == "table":
-                self.move_card_to_discard(card)
-                
-        for group in self.group_list:
-            group.smoke = 0
+        if rnc_card.breeze:
+            for card in self.card_list:
+                if card.type == "smoke" and card.location == "table":
+                    self.move_card_to_discard(card)
+            for group in self.group_list:
+                group.smoke = 0
         
-        return(card.rnc)
+        return(rnc_card.rnc)
     
     
     
