@@ -8,6 +8,7 @@ import pickle
 import time
 import re
 import random
+import yaml
 import pandas as pd
 
 
@@ -130,13 +131,14 @@ class Group:
         
 class Client:
     
-    def __init__(self, socket, name, nation, side, ready):
+    def __init__(self, socket, name, nation, side, unit_allocation, ready):
         
         # Identity
         self.socket = socket
         self.name = name
         self.nation = nation
         self.side = side
+        self.unit_allocation = unit_allocation
         self.ready = ready
         self.has_acted = False
         self.discard_count = 0
@@ -146,6 +148,9 @@ class Client:
 class GameServer:
     
     def __init__(self):
+        
+        # Scenario
+        self.scenario = "A" # TODO: introduce more scenarios
         
         # Game variables
         self.game_phase = "assignment"
@@ -215,6 +220,7 @@ class GameServer:
                     player_data = pickle.loads(data)
                     player_name = player_data.get("player_name")
                     player_nation = player_data.get("player_nation")
+                    unit_allocation = player_data.get("unit_allocation")
                     print(f"Connection accepted from {addr} with username {player_name}")
                     
                     with self.lock:
@@ -237,7 +243,7 @@ class GameServer:
                         self.side_list.append(player_side)
                     
                         # Add to client list
-                        client = Client(c, player_name, player_nation, player_side, False)
+                        client = Client(c, player_name, player_nation, player_side, unit_allocation, False)
                         self.client_list.append(client)
 
                     
@@ -361,11 +367,13 @@ class GameServer:
             self.draw_cards(client)
             
         # Distribute units
+        scenario = "scenario " + self.scenario
+        units = {unit.name: unit for unit in self.unit_list}
         for client in self.client_list:
-            for unit in self.unit_list:
-                if unit.nation == client.nation:
-                    unit.group = random.choice(["A", "B"]) + client.side
-                    unit.owner = client.name
+            for group, names in client.unit_allocation[scenario][client.nation].items():
+                for name in names or []:
+                    units[name].group = group + client.side
+                    units[name].owner = client.name
             
         # Start playing phase
         self.game_phase = "gameplay"

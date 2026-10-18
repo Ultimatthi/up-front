@@ -22,6 +22,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import pyperclip
+import yaml
 import arcade
 import arcade.gui
 from PIL import Image, ImageDraw
@@ -339,6 +340,9 @@ class GameView(arcade.View):
         self.card_table.set_index("id", inplace=True)
         self.unit_table = pd.read_csv("assets/units/unit_table.csv", sep=",")
         self.unit_table.set_index("id", inplace=True)
+        
+        # Unit allocation
+        self.unit_allocation = yaml.safe_load(open("userdata/unit_allocation.yaml", encoding="utf-8"))
     
 
 
@@ -504,7 +508,8 @@ class GameView(arcade.View):
         # Send player data to server
         data = {
             "player_name": self.player_name,
-            "player_nation": self.player_nation
+            "player_nation": self.player_nation,
+            "unit_allocation": self.unit_allocation
         }
         self.socket.sendall(pickle.dumps(data))
         

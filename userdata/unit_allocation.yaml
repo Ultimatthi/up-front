@@ -1,0 +1,14 @@
+scenario A:
+  german:
+    A:
+      - Diettinger
+      - Hessel
+    B:
+      - Schüssel
+      - Schumacher
+  american:
+    A:
+      - Burnett
+      - Moores
+    B:
+      - Fox
