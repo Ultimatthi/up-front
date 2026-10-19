@@ -1,14 +1,29 @@
 scenario A:
   german:
     A:
-      - Diettinger
-      - Hessel
-    B:
-      - Schüssel
+      - Bernhoff
+      - Wolff
       - Schumacher
+      - Diettinger
+    B:
+      - Beck
+      - Wollak
+      - Schultz
+      - Streich
+      - Schüssel
+      - Hessel
   american:
     A:
+      - Myers
+      - Greenwood
+      - McElroy
       - Burnett
-      - Moores
     B:
+      - Smith
+      - Watson
+      - Anderson
+      - Frattali
+      - Edwards
+      - Burke
+      - Moores
       - Fox

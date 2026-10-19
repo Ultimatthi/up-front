@@ -90,8 +90,9 @@ class Unit:
         self.kia = kia # rallied|pinned
         self.points = points
         self.state = "rallied" # rallied, pinned, routed, kia
-        self.group = None
         self.owner = None
+        self.group = None
+        self.slot = 0
         self.heroic = False
         
         # Attributes (crew related)
@@ -371,9 +372,10 @@ class GameServer:
         units = {unit.name: unit for unit in self.unit_list}
         for client in self.client_list:
             for group, names in client.unit_allocation[scenario][client.nation].items():
-                for name in names or []:
+                for slot, name in enumerate(names or []):
                     units[name].group = group + client.side
                     units[name].owner = client.name
+                    units[name].slot = slot
             
         # Start playing phase
         self.game_phase = "gameplay"
@@ -866,7 +868,8 @@ class GameServer:
                     "unit_id": unit.id,
                     "owner": "player" if client.name == unit.owner else "opponent",
                     "group": unit.group,
-                    "state": unit.state,
+                    "slot": unit.slot,
+                    "state": unit.state
                 }
                 game_state["units"].append(unit_info)
                 

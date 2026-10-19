@@ -35,9 +35,9 @@ from arcade.future.light import Light, LightLayer
 CARD_SCALE = 144/675
 UNIT_SCALE = 144/600
 CARD_ENLARGE = 1.05
-CARD_ZOOM = 1.5
+CARD_ZOOM = 2
 UNIT_ENLARGE = 1.05
-UNIT_ZOOM = 1.5
+UNIT_ZOOM = 2
 GROUP_ENLARGE = 1.1
 BUTTON_ENLARGE = 1.1
 
@@ -126,6 +126,7 @@ class Unit(arcade.Sprite):
         self.nation = nation
         self.owner = None
         self.group = None
+        self.slot = 0
         self.state = "rallied" # rallied, pinned, routed, kia
         self.selected = False
 
@@ -1013,6 +1014,7 @@ class GameView(arcade.View):
                 unit = unit_map[key]
                 unit.owner = logical_unit["owner"]
                 unit.group = logical_unit["group"]
+                unit.slot = logical_unit["slot"]
                 unit.state = logical_unit["state"]
                 
                         
@@ -1227,14 +1229,14 @@ class GameView(arcade.View):
     def adjust_unit_position(self):
         
         # Get units of active group (player)
-        group_player = []
-        if self.active_groups["player"]:
-            group_player = [unit for unit in self.unit_list if unit.group == self.active_groups["player"].id]
+        group_player = sorted(
+            (unit for unit in self.unit_list if unit.group == self.active_groups["player"].id),
+            key=lambda unit: unit.slot) if self.active_groups["player"] else []
         
-        # Get units of active group (player)
-        group_opponent = []
-        if self.active_groups["opponent"]:
-            group_opponent = [unit for unit in self.unit_list if unit.group == self.active_groups["opponent"].id]
+        # Get units of active group (opponent)
+        group_opponent = sorted(
+            (unit for unit in self.unit_list if unit.group == self.active_groups["opponent"].id),
+            key=lambda unit: unit.slot) if self.active_groups["opponent"] else []
         
         # Get units of inactive groups
         inactive_groups = set(self.unit_list) - set(group_player) - set(group_opponent)
