@@ -170,6 +170,7 @@ class Group(arcade.Sprite):
         self.id = group_id
         self.label = label
         self.owner = None # player, opponent
+        self.empty = True
         self.range = 0
         self.moving = None
         self.terrain = None
@@ -197,6 +198,13 @@ class Group(arcade.Sprite):
         sign = 1 if self.owner == "player" else -1
         self.center_x = layout.width / 2 - 180 * layout.scale + i * 120 * layout.scale
         self.center_y = layout.height / 2 - sign * 180 * layout.scale
+        
+    def adjust_alpha(self):
+        
+        if self.empty:
+            self.alpha = 80
+        else:
+            self.alpha = 255
         
     def adjust_texture(self):
         
@@ -237,6 +245,13 @@ class Chit(arcade.Sprite):
         
         self.center_x = self.group.center_x
         self.center_y = self.group.center_y + sign * 110 * layout.scale
+        
+    def adjust_alpha(self):
+        
+        if self.group.empty:
+            self.alpha = 80
+        else:
+            self.alpha = 255
         
     def adjust_texture(self):
         
@@ -756,7 +771,7 @@ class GameView(arcade.View):
         
         # Select side
         target_owner = "opponent" if self.ctrl_held else "player"
-                
+        
         # Change active group
         if scroll_y < 0:
             target_label = chr((ord(self.active_groups[target_owner].label) - ord('A') + 1) % 4 + ord('A'))
@@ -1030,6 +1045,7 @@ class GameView(arcade.View):
             if key in group_map:
                 group = group_map[key]
                 group.owner = logical_group["owner"]
+                group.empty = logical_group["empty"]
                 group.range = logical_group["range"]
                 group.moving = logical_group["moving"]
                 group.terrain = logical_group["terrain"]
@@ -1261,10 +1277,12 @@ class GameView(arcade.View):
             
     def adjust_group_position(self):
         
-        # Adjust group tiles
+        # Adjust group tiles and alpha
         for group in self.group_list:
             group.set_position(self.layout)
-            
+            group.adjust_alpha()
+    
+    
         
         
     def adjust_chit_position(self):
@@ -1272,6 +1290,7 @@ class GameView(arcade.View):
         # Adjust range chit tiles
         for chit in self.chit_list:
             chit.set_position(self.layout)
+            chit.adjust_alpha()
             
             
             
@@ -1359,6 +1378,7 @@ class GameView(arcade.View):
             x = group.center_x - 22.5 * self.layout.scale
             y = group.center_y + sign * 22.5 * self.layout.scale
             color = arcade.color.ARSENIC if group.owner == "player" else arcade.color.WHITE
+            color = color.replace(a=group.alpha)
             text = self.annotate_text(label, x, y, 0, 24, color, True)
             text.draw()
             
@@ -1370,6 +1390,7 @@ class GameView(arcade.View):
             x = group.center_x + 22.5 * self.layout.scale
             y = group.center_y + sign * 22.5 * self.layout.scale
             color = arcade.color.RED
+            color = color.replace(a=group.alpha)
             text = self.annotate_text(label, x, y, 0, 24, color, True)
             text.draw()
         

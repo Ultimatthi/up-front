@@ -119,6 +119,7 @@ class Group:
         self.id = group_id
         self.label = label
         self.owner = owner
+        self.empty = True
         self.range = 0
         self.fp = [0, 0, 0, 0, 0, 0]
         self.moving = None
@@ -376,6 +377,10 @@ class GameServer:
                     units[name].group = group + client.side
                     units[name].owner = client.name
                     units[name].slot = slot
+                    
+        # Set empty groups
+        for group in self.group_list:
+            group.empty = not any(unit.group == group.id for unit in self.unit_list)
             
         # Start playing phase
         self.game_phase = "gameplay"
@@ -487,6 +492,10 @@ class GameServer:
         
         # Check if it's this player's turn
         if client.name != self.current_turn:
+            return
+        
+        # Check if group is empty
+        if target_groups[0].empty:
             return
         
         # Check if group has already acted
@@ -878,6 +887,7 @@ class GameServer:
                 group_info = {
                     "group_id": group.id,
                     "owner": "player" if client.name == group.owner else "opponent",
+                    "empty": group.empty,
                     "range": group.range,
                     "moving": group.moving,
                     "terrain": group.terrain,
@@ -994,6 +1004,10 @@ class GameServer:
     
     def resolve_sniper(self, played_card, target_group):
         
+        # Check if target group is empty
+        if target_group.empty:
+            return
+        
         thresholds = [5, 3] # replace
         
         # Get units in target group
@@ -1019,6 +1033,10 @@ class GameServer:
     
     
     def resolve_wire(self, played_card, target_group):
+        
+        # Check if target group is empty
+        if target_group.empty:
+            return
         
         if target_group.wire:
             return
