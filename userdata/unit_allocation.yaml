@@ -6,10 +6,10 @@ scenario A:
       - Schumacher
       - Diettinger
     B:
-      - Beck
+      - Streich
       - Wollak
       - Schultz
-      - Streich
+      - Beck
       - Schüssel
       - Hessel
   american:
@@ -19,11 +19,11 @@ scenario A:
       - McElroy
       - Burnett
     B:
-      - Smith
-      - Watson
       - Anderson
       - Frattali
-      - Edwards
       - Burke
-      - Moores
+      - Edwards
+      - Watson
+      - Smith
       - Fox
+      - Moores
