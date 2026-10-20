@@ -1558,10 +1558,14 @@ class HelpView(arcade.View):
 
     def on_resize(self, width, height):
 
+        # Resize help window
         self.layout.width = width*0.5
         self.layout.height = height*0.8
         self.layout.x = height*0.1
         self.layout.y = height*0.1
+        
+        # Resize game window in the background
+        self.game_view.on_resize(width, height)
                 
 
 
