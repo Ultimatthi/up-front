@@ -28,6 +28,9 @@ import arcade.gui
 from PIL import Image, ImageDraw
 from arcade.exceptions import PerformanceWarning
 from arcade.future.light import Light, LightLayer
+import markdown
+import pyglet
+from pyglet.text.layout import ScrollableTextLayout
 
 # ──[ Parameters ]─────────────────────────────────────────────────────────────
 
@@ -1509,43 +1512,40 @@ class GameView(arcade.View):
   
 class HelpView(arcade.View):
 
-    LINES = [
-        "Hilfe",
-        "",
-        "Linksklick Karte      Karte spielen",
-        "Rechtsklick Karte     Bewegungsmodus wechseln",
-        "Mausrad               Gruppe wechseln",
-        "Strg + Mausrad        Gegnergruppe wechseln",
-        "Alt (halten)          Karte/Unit vergrößern",
-        "Linksklick Unit       Unit auswählen",
-        "Leertaste             Zug beenden",
-        "Esc                   Spiel verlassen",
-        "",
-        "F1 / Esc              Hilfe schließen",
-    ]
-
-
-
     def __init__(self, game_view):
         
         super().__init__()
         self.game_view = game_view
+        
+        # Set background color
+        self.background_color = arcade.color.ARSENIC
+        
+        # Read in markdown file
+        text = open("assets/menu/helptext.md", encoding="utf-8").read().replace("\t", "    ")
+        html = markdown.markdown(text, extensions=["fenced_code"])
+        html = f'<font face="Arial">{html}</font>'
+        doc = pyglet.text.decode_html(html)
+        doc.set_style(0, len(doc.text), {"color": (255, 255, 255, 255)})
+        
+        # Set text placement
+        self.layout = ScrollableTextLayout(doc, width=self.width*0.5, height=self.height*0.8, multiline=True)
+        self.layout.x = self.height*0.1
+        self.layout.y = self.height*0.1
 
 
 
     def on_draw(self):
         
-        self.game_view.on_draw()
-        arcade.draw_lrbt_rectangle_filled(
-            0, self.window.width, 0, self.window.height, (0, 0, 0, 180))
-
-        s = self.game_view.layout.scale
-        x = self.window.width / 2 - 300 * s
-        y = self.window.height / 2 + 200 * s
-        for i, line in enumerate(self.LINES):
-            arcade.Text(line, x, y - i * 32 * s, arcade.color.WHITE,
-                        font_size=(22 if i == 0 else 16) * s,
-                        font_name="Consolas", bold=(i == 0)).draw()
+        self.clear()
+        self.layout.draw()
+        
+        
+        
+    def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
+        
+        layout = self.layout
+        min_y = min(0, -(layout.content_height - layout.height))
+        layout.view_y = max(min_y, min(0, layout.view_y + scroll_y * 30))
 
 
 
@@ -1558,7 +1558,10 @@ class HelpView(arcade.View):
 
     def on_resize(self, width, height):
 
-        self.game_view.on_resize(width, height)
+        self.layout.width = width*0.5
+        self.layout.height = height*0.8
+        self.layout.x = height*0.1
+        self.layout.y = height*0.1
                 
 
 
