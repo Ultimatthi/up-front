@@ -536,7 +536,14 @@ class GameView(arcade.View):
         return True
         
     
+    
+    def on_show_view(self):
         
+        self.ctrl_held = False
+        self.alt_held = False
+    
+        
+    
     def layout_elements(self):
             
         # Board element: Texture
@@ -865,6 +872,11 @@ class GameView(arcade.View):
         if key == arcade.key.SPACE:
             self.advance_turn()
             
+        # Open help
+        if key == arcade.key.F1:
+            self.window.show_view(HelpView(self))
+            return
+                    
         # Leave game
         if key == arcade.key.ESCAPE and self.ctrl_held == False:
             
@@ -1490,6 +1502,63 @@ class GameView(arcade.View):
         if self.hover_unit:
             arcade.draw_sprite(self.hover_unit)
             self.hover_unit.draw_overlay(self.unit_overlay)
+            
+            
+            
+# ──[ Menu View ]─────────────────────────────────────────────────────────────
+  
+class HelpView(arcade.View):
+
+    LINES = [
+        "Hilfe",
+        "",
+        "Linksklick Karte      Karte spielen",
+        "Rechtsklick Karte     Bewegungsmodus wechseln",
+        "Mausrad               Gruppe wechseln",
+        "Strg + Mausrad        Gegnergruppe wechseln",
+        "Alt (halten)          Karte/Unit vergrößern",
+        "Linksklick Unit       Unit auswählen",
+        "Leertaste             Zug beenden",
+        "Esc                   Spiel verlassen",
+        "",
+        "F1 / Esc              Hilfe schließen",
+    ]
+
+
+
+    def __init__(self, game_view):
+        
+        super().__init__()
+        self.game_view = game_view
+
+
+
+    def on_draw(self):
+        
+        self.game_view.on_draw()
+        arcade.draw_lrbt_rectangle_filled(
+            0, self.window.width, 0, self.window.height, (0, 0, 0, 180))
+
+        s = self.game_view.layout.scale
+        x = self.window.width / 2 - 300 * s
+        y = self.window.height / 2 + 200 * s
+        for i, line in enumerate(self.LINES):
+            arcade.Text(line, x, y - i * 32 * s, arcade.color.WHITE,
+                        font_size=(22 if i == 0 else 16) * s,
+                        font_name="Consolas", bold=(i == 0)).draw()
+
+
+
+    def on_key_press(self, key, modifiers):
+        
+        if key in (arcade.key.F1, arcade.key.ESCAPE):
+            self.window.show_view(self.game_view)
+
+
+
+    def on_resize(self, width, height):
+
+        self.game_view.on_resize(width, height)
                 
 
 
