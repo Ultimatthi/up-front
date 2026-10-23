@@ -119,16 +119,17 @@ class Group:
         self.id = group_id
         self.label = label
         self.owner = owner
-        self.empty = True
         self.range = 0
         self.fp = [0, 0, 0, 0, 0, 0]
         self.moving = None
         self.terrain = None
         self.wire = False
         self.smoke = False
-        self.has_acted = False
+        self.acted = False
+        self.leader = False
+        self.empty = True
         self.last_action = None
-
+        
         
         
 class Client:
@@ -142,7 +143,7 @@ class Client:
         self.side = side
         self.unit_allocation = unit_allocation
         self.ready = ready
-        self.has_acted = False
+        self.acted = False
         self.discard_count = 0
         
 
@@ -415,6 +416,7 @@ class GameServer:
                     action = pickle.loads(data)
                     with self.lock:
                         self.process_action(action, client)
+                        self.process_aftermath()
                         self.broadcast()
                     
             except:
@@ -499,7 +501,7 @@ class GameServer:
             return
         
         # Check if group has already acted
-        if target_groups[0].has_acted:
+        if target_groups[0].acted:
             return
         
         # Resolve actions
@@ -532,8 +534,8 @@ class GameServer:
         
         # Set flag
         if played_card.type != "hero":
-            client.has_acted = True
-            target_groups[0].has_acted = True
+            client.acted = True
+            target_groups[0].acted = True
         
         # Set sound
         self.current_sound = "play_card"
@@ -593,6 +595,9 @@ class GameServer:
 
 
     def resolve_smoke(self, target_group, played_card):
+        
+        if target_group.leader is False:
+            return
         
         if target_group.smoke:
             return
@@ -805,7 +810,7 @@ class GameServer:
         
         # Reset groups
         for group in self.group_list:
-            group.has_acted = False
+            group.acted = False
             group.last_action = None
             
         # Reset units
@@ -813,7 +818,7 @@ class GameServer:
             unit.heroic = False
         
         # Reset client
-        client.has_acted = False
+        client.acted = False
         client.discard_count = 0
         
         # End turn
@@ -931,6 +936,18 @@ class GameServer:
         # Get hand size maximum for this nation
         max_hand = MAX_HAND[client.nation]
         
+        # Get squad leader and assistant squad leader
+        sl = next(unit for unit in self.unit_list if unit.owner == client.name and unit.rank == "SGT")
+        asl = next(unit for unit in self.unit_list if unit.owner == client.name and unit.rank == "CPL")
+        
+        # Check for max hand size reduction
+        if sl.state == "rallied":
+            pass
+        elif sl.state == "pinned":
+            max_hand -= 1
+        elif asl.state != "rallied":
+            max_hand -= 1
+        
         # Get cards in action deck
         deck = [card for card in self.card_list if card.location == "deck"]
         
@@ -972,7 +989,7 @@ class GameServer:
             return
         
         # Check if discard is legal (2)
-        if client.has_acted and client.nation != "german":
+        if client.acted and client.nation != "german":
             return
                 
         # Discard card
@@ -1140,6 +1157,22 @@ class GameServer:
         card.group = None
         card.stack_index = 0
         card.location = "discard"
+        
+        
+        
+    def process_aftermath(self):
+        
+        for group in self.group_list:
+    
+            # Units in group
+            units = [unit for unit in self.unit_list if unit.group == self.group.id]
+        
+            # Group empty?
+            group.empty = len(units) == 0
+        
+            # Group has active leader?
+            group.leader = any(unit.rank in ("SGT", "CPL") and unit.state == "rallied" for unit in units)
+                
         
         
 
