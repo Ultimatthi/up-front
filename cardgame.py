@@ -388,6 +388,7 @@ class GameView(arcade.View):
         self.game_phase = "assignment"
         self.game_subphase = None
         self.pending_action = False
+        self.winner = None
         
         # Mouse position
         self.mouse_x = 0
@@ -591,7 +592,7 @@ class GameView(arcade.View):
         self.button_rnc.bottom = 20 * self.layout.scale
         
         # Rotate advance turn button
-        angle = 180 if self.current_turn == self.player_name else 0
+        angle = 180 if self.current_turn == "player" else 0
         angle += 90 if self.game_subphase == "discard" else 0
         angle += 180 if self.pending_action else 0
         self.button_advance.angle = angle
@@ -844,13 +845,13 @@ class GameView(arcade.View):
             cursor_type = self.window.CURSOR_HAND
     
         # Set cursor type to hand (above button)
-        if self.hover_button and self.current_turn == self.player_name:
+        if self.hover_button and self.current_turn == "player":
             cursor_type = self.window.CURSOR_HAND
             
         # Set cursor type to hand (above player card)
         if (
             self.hover_card
-            and self.current_turn == self.player_name
+            and self.current_turn == "player"
             and self.hover_card.location == "hand"
             and self.hover_card.owner == "player"
         ):
@@ -1004,14 +1005,12 @@ class GameView(arcade.View):
         self.game_phase = game_state.get("game_phase")
         self.game_subphase = game_state.get("game_subphase")
         self.pending_action = game_state.get("pending_action")
-
-        # Update game state variables
         self.current_turn = game_state.get("current_turn")
+        self.winner = game_state.get("winner")
         
         # Play sound
         sound = game_state.get("sound")
         self.play_sound(sound)
-        
             
         # Get logical card variables
         logical_card_list = game_state.get("cards")
@@ -1090,6 +1089,11 @@ class GameView(arcade.View):
         
         # Refresh layout
         self.layout_elements()
+        
+        # End game
+        if self.game_phase == "finished":
+            result_view = ResultView(self.winner)
+            self.window.show_view(result_view)
         
         
             
@@ -1441,7 +1445,7 @@ class GameView(arcade.View):
             
         # Turn
         if self.current_turn is not None:
-            if self.current_turn == self.player_name:
+            if self.current_turn == "player":
                 label = "[Wait for concealed card]" if self.pending_action else "[Your Turn]"
             else:
                 label = "[Play concealed card / pass]" if self.pending_action else "[Enemy Turn]"
@@ -1508,7 +1512,7 @@ class GameView(arcade.View):
             
             
             
-# ──[ Menu View ]─────────────────────────────────────────────────────────────
+# ──[ Help View ]─────────────────────────────────────────────────────────────
   
 class HelpView(arcade.View):
 
@@ -1566,6 +1570,45 @@ class HelpView(arcade.View):
         
         # Resize game window in the background
         self.game_view.on_resize(width, height)
+        
+        
+        
+# ──[ Result View ]─────────────────────────────────────────────────────────────
+  
+class ResultView(arcade.View):
+
+    def __init__(self, winner):
+        
+        super().__init__()
+        self.winner = winner
+        
+        # Set background color
+        self.background_color = arcade.color.ARSENIC
+        
+        # Display text
+        label = "[VICTORY]" if self.winner == "player" else "[DEFEAT]"
+        
+        # Displayed text
+        self.text = arcade.Text(
+            label,
+            x=self.window.width / 2, y=self.window.height / 2,
+            color=arcade.color.WHITE, font_size=48,
+            anchor_x="center", anchor_y="center", bold=True
+        )
+            
+        
+        
+    def on_draw(self):
+
+        self.clear()
+        self.text.draw()
+        
+        
+        
+    def on_resize(self, width, height):
+
+        self.text.x = width / 2
+        self.text.y = height / 2
                 
 
 

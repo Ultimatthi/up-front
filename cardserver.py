@@ -10,6 +10,7 @@ import re
 import random
 import yaml
 import pandas as pd
+import traceback
 
 
 # ──[ Parameter ]──────────────────────────────────────────────────────────────
@@ -164,6 +165,7 @@ class GameServer:
         self.current_sound = None
         self.action_deck_counter = 0
         self.draw_counter = 0
+        self.winner = None
         
         # Pending action
         self.pending_action = {"type": None, "card": None, "strength": None,
@@ -361,13 +363,6 @@ class GameServer:
         # Set first turn
         first_client = random.choice(self.client_list)
         self.current_turn = first_client.name
-        
-        # Shuffle cards
-        self.shuffle_cards()   
-        
-        # Distribute cards
-        for client in self.client_list:
-            self.draw_cards(client)
             
         # Distribute units
         scenario = "scenario " + self.scenario
@@ -382,6 +377,13 @@ class GameServer:
         # Set empty groups
         for group in self.group_list:
             group.empty = not any(unit.group == group.id for unit in self.unit_list)
+            
+        # Shuffle cards
+        self.shuffle_cards()   
+        
+        # Distribute cards
+        for client in self.client_list:
+            self.draw_cards(client)
             
         # Start playing phase
         self.game_phase = "gameplay"
@@ -419,8 +421,8 @@ class GameServer:
                         self.process_aftermath()
                         self.broadcast()
                     
-            except:
-                pass
+            except Exception:
+                traceback.print_exc()
 
 
 
@@ -858,10 +860,11 @@ class GameServer:
                 "groups": [],
                 "game_phase": self.game_phase,
                 "game_subphase": self.game_subphase,
-                "current_turn": self.current_turn,
+                "current_turn": "player" if client.name == self.current_turn else "opponent",
                 "sound": self.current_sound,
                 "side": client.side,
-                "pending_action": True if self.pending_action["type"] else False
+                "pending_action": True if self.pending_action["type"] else False,
+                "winner": "player" if client.name == self.winner else "opponent"
             }
             
             # Add card information
@@ -1165,7 +1168,7 @@ class GameServer:
         for group in self.group_list:
     
             # Units in group
-            units = [unit for unit in self.unit_list if unit.group == self.group.id]
+            units = [unit for unit in self.unit_list if unit.group == group.id]
         
             # Group empty?
             group.empty = len(units) == 0
@@ -1173,7 +1176,86 @@ class GameServer:
             # Group has active leader?
             group.leader = any(unit.rank in ("SGT", "CPL") and unit.state == "rallied" for unit in units)
                 
+        self.check_victory()
         
+        
+        
+    def check_victory(self):
+        
+        # Check scenario-specific victory conditions
+        for client in self.client_list:
+            if self.trigger_scenario_condition(self.scenario, client):
+                self.winner = client.name
+                self.game_phase = "finished"
+                return
+    
+        # Check whether the game has reached its scoring phase
+        if self.action_deck_counter < 3:
+            return
+    
+        # Calculate victory points
+        a, b = self.client_list
+        pa = self.calculate_victory_points(a)
+        pb = self.calculate_victory_points(b)
+    
+        # Compare victory points
+        if pa > pb:
+            self.winner = a.name
+        elif pb > pa:
+            self.winner = b.name
+    
+        self.game_phase = "finished"
+
+                
+                
+    def trigger_scenario_condition(self, scenario, client):
+        
+        # TODO: more scenarios
+        
+        count = 0
+        
+        if scenario == "A":
+
+            for group in self.group_list:
+                if group.owner != client.name:
+                    continue
+                if group.range < 0:
+                    continue
+                if TERRAIN_MOD[group.terrain][1] >= 0:
+                    continue
+                count += sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
+    
+            return count >= 0
+            
+        return False
+    
+        
+    
+    def calculate_victory_points(self, client):
+        
+        # TODO: AFV, prisoners, wounded men
+        
+        points = 0
+        
+        # Victory points for rallied units in stationary groups
+        for group in self.group_list:
+            if group.owner != client.name:
+                continue
+            if group.moving:
+                continue
+            points += sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
+                
+         # Victory points for enemy casualties and routed units
+        for unit in self.unit_list:
+            if unit.owner == client.name:
+                continue
+            if unit.state == "kia":
+                points += 2
+            elif unit.state == "routed":
+                points += 1
+                
+        return points
+                
         
 
 # ──[ Main ]───────────────────────────────────────────────────────────────────
