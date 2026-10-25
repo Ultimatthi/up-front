@@ -503,7 +503,7 @@ class GameServer:
             return
         
         # Check if group has already acted
-        if target_groups[0].acted:
+        if target_groups[0].acted and played_card.type != "hero":
             return
         
         # Resolve actions
@@ -1064,7 +1064,7 @@ class GameServer:
         if target_group.terrain in ["marsh", "pillbox"]:
             return
         
-        if target_group.terrain == "stream" and target_group.moving == False:
+        if target_group.terrain == "stream" and not target_group.moving:
             return
         
         target_group.wire = True
