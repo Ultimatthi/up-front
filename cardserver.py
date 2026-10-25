@@ -51,6 +51,7 @@ TERRAIN_MOD = {
     "pillbox":   (0, - 4)
 }
 
+TIME_LIMIT = 3
 
 
 # ──[ Classes ]────────────────────────────────────────────────────────────────
@@ -1182,33 +1183,24 @@ class GameServer:
         
     def check_victory(self):
         
-        # Check scenario-specific victory conditions
+        # Instant victory
         for client in self.client_list:
-            if self.trigger_scenario_condition(self.scenario, client):
+            opponent = next(c for c in self.client_list if c is not client)
+            if self.check_scenario_condition(self.scenario, client) or self.check_broken_group(opponent):
                 self.winner = client.name
                 self.game_phase = "finished"
                 return
-    
-        # Check whether the game has reached its scoring phase
-        if self.action_deck_counter < 3:
-            return
-    
-        # Calculate victory points
-        a, b = self.client_list
-        pa = self.calculate_victory_points(a)
-        pb = self.calculate_victory_points(b)
-    
-        # Compare victory points
-        if pa > pb:
-            self.winner = a.name
-        elif pb > pa:
-            self.winner = b.name
-    
-        self.game_phase = "finished"
+        
+        # Time limit victory
+        if self.action_deck_counter > TIME_LIMIT:
+            a, b = self.client_list
+            pa, pb = self.calculate_victory_points(a), self.calculate_victory_points(b)
+            self.winner = a.name if pa > pb else b.name
+            self.game_phase = "finished"
 
                 
                 
-    def trigger_scenario_condition(self, scenario, client):
+    def check_scenario_condition(self, scenario, client):
         
         # TODO: more scenarios
         
@@ -1219,18 +1211,32 @@ class GameServer:
             for group in self.group_list:
                 if group.owner != client.name:
                     continue
-                if group.range < 0:
+                if group.range < 4:
                     continue
                 if TERRAIN_MOD[group.terrain][1] >= 0:
                     continue
                 count += sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
     
-            return count >= 0
-            
+            return count >= 4
+        
         return False
+            
+    
+    
+    
+    def check_broken_group(self, client):
+        
+        # Total units
+        total_units = [unit for unit in self.unit_list if unit.owner == client.name]
+        
+        # Broken units
+        broken_units = [unit for unit in total_units if unit.state not in ["rallied", "pinned"]]
+        
+        # Broken group
+        return len(broken_units) / len(total_units) > 0.5
+            
     
         
-    
     def calculate_victory_points(self, client):
         
         # TODO: AFV, prisoners, wounded men
