@@ -951,6 +951,13 @@ class GameServer:
             max_hand -= 1
         elif asl.state != "rallied":
             max_hand -= 1
+            
+        # Get enemy groups
+        enemy_groups = [group for group in self.group_list if group.owner != client.name]
+            
+        # Check for max hand size increase (unbalanced position)
+        if len(enemy_groups) < 2:
+            max_hand += 1
         
         # Get cards in action deck
         deck = [card for card in self.card_list if card.location == "deck"]
