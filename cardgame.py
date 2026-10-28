@@ -1624,18 +1624,31 @@ class MenuView(arcade.View):
         self.server = "localhost:52000"
         self.nation = None
         
+        # Set background color
+        self.background_color = arcade.color.ARSENIC
+        
+        # Sprite list with all the board elements
+        self.board_elements = arcade.SpriteList()
+        
+        # Create background texture
+        image_path =  r'assets/boardelements/board.texture.png'
+        self.board_texture = BoardElement(image_path, LOBBY_SCALE)
+        self.board_elements.append(self.board_texture)
+        
         
 
     def on_draw(self):
         
         self.clear()
+        self.board_elements.draw()
         
         
         
     def on_update(self, delta_time):
 
-        self.start_game()
-        
+        # self.start_game()
+        pass
+    
 
 
     def on_key_press(self, key, modifiers):
@@ -1644,6 +1657,23 @@ class MenuView(arcade.View):
             self.start_game()
             
             
+    
+    def on_resize(self, width, height):
+        
+        scale = min(height / 1080, width / 1920)
+        
+        self.layout_elements(scale)
+        
+        
+        
+    def layout_elements(self, scale):
+            
+        # Board element: Texture
+        self.board_texture.width = self.window.width
+        self.board_texture.height = self.window.height
+        self.board_texture.position = self.window.width / 2, self.window.height / 2
+            
+
 
     def start_game(self):
         
