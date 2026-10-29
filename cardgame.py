@@ -1635,7 +1635,7 @@ class MenuView(arcade.View):
         self.board_texture = BoardElement(image_path, LOBBY_SCALE)
         self.board_elements.append(self.board_texture)
         
-        
+
 
     def on_draw(self):
         

@@ -583,7 +583,11 @@ class GameServer:
         
         
     def resolve_terrain(self, target_group, played_card):
-        
+
+        # Terrain can only be entered by a moving group
+        if not target_group.moving:
+            return False
+
         # Modify group attributes
         target_group.terrain = played_card.subtype
         target_group.moving = None
@@ -751,7 +755,7 @@ class GameServer:
         
         # Attack defensive units
         for unit in defensive_units:
-            attack = base_firestrength - concealed_firestrength + self.draw_rnc()
+            attack = base_firestrength + concealed_firestrength + self.draw_rnc()
             
             if unit.state == "rallied":
                 if attack >= unit.kia[0]:
@@ -768,12 +772,12 @@ class GameServer:
             if unit.state in ["routed", "kia"]:
                 unit.group = None
                 
+        # Reset target information
+        self.pending_action["defensive_group"].last_action = None
+
         # Reset pending action
         for key in self.pending_action:
             self.pending_action[key] = None
-            
-        # Reset target information
-        self.pending_action["defensive_group"].last_action = None
                 
             
             
@@ -953,7 +957,7 @@ class GameServer:
             max_hand -= 1
             
         # Get enemy groups
-        enemy_groups = [group for group in self.group_list if group.owner != client.name]
+        enemy_groups = [group for group in self.group_list if group.owner != client.name and not group.empty]
             
         # Check for max hand size increase (unbalanced position)
         if len(enemy_groups) < 2:
