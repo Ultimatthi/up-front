@@ -588,9 +588,14 @@ class GameServer:
         if not target_group.moving:
             return False
 
+        # Terrain types without implemented rules (e.g. minefield) cannot be played
+        if played_card.subtype not in TERRAIN_MOD:
+            return False
+
         # Modify group attributes
         target_group.terrain = played_card.subtype
         target_group.moving = None
+        target_group.smoke = False
 
         # Remove movement/smoke cards from the group (if necessary)
         for card in self.card_list:
@@ -1105,7 +1110,7 @@ class GameServer:
                 if card.type == "smoke" and card.location == "table":
                     self.move_card_to_discard(card)
             for group in self.group_list:
-                group.smoke = 0
+                group.smoke = False
         
         return(rnc_card.rnc)
     
