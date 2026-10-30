@@ -761,7 +761,10 @@ class GameServer:
         
         # Defensive units
         defensive_units = [unit for unit in self.unit_list if unit.group == self.pending_action["defensive_group"].id]
-        
+
+        # Sort defensive units by position within the group
+        defensive_units.sort(key=lambda unit: unit.slot)
+
         # Attack defensive units
         for unit in defensive_units:
             attack = base_firestrength + concealed_firestrength + self.draw_rnc()
@@ -1055,7 +1058,10 @@ class GameServer:
         units = [unit for unit in self.unit_list if unit.group == target_group.id]
         if not units:
             return False
-        
+
+        # Sort units by position within the group
+        units.sort(key=lambda unit: unit.slot)
+
         # Select unit by RPC
         unit = random.choice(units)  # TODO: RPC
         
@@ -1190,7 +1196,11 @@ class GameServer:
     
             # Units in group
             units = [unit for unit in self.unit_list if unit.group == group.id]
-        
+
+            # Close gaps in positions after losses
+            for slot, unit in enumerate(sorted(units, key=lambda unit: unit.slot)):
+                unit.slot = slot
+
             # Group empty?
             group.empty = len(units) == 0
         

@@ -8,7 +8,14 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 
 ## Git
 
-- Nie pushen, keine PRs. Nur Dateien lokal ändern; committen nur auf ausdrückliche Anfrage.
+- Nur Dateien lokal ändern; committen und pushen nur auf ausdrückliche Anfrage. Keine PRs.
+- Commit-Nachrichten: kurz und prägnant, auf Englisch, beginnend mit einem Partizip (z. B. „fixed smoke reset", „implemented sniper check").
+
+## Änderungen an Dateien
+
+- Vor jeder Dateiänderung zuerst eine Vorschau zeigen: betroffene Dateien und die geplanten Änderungen als Diff (wie `git diff`), kurz begründet.
+- Danach warten und erst nach ausdrücklicher Zustimmung umsetzen.
+- Ausnahme: Hilfsdateien im Scratchpad (Testskripte, Notizen).
 
 ## Spiel starten
 
