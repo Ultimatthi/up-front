@@ -421,9 +421,13 @@ class GameServer:
                         self.process_action(action, client)
                         self.process_aftermath()
                         self.broadcast()
+                        
+                else:
+                    break
                     
             except Exception:
                 traceback.print_exc()
+                break
 
 
 

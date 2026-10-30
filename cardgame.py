@@ -10,6 +10,7 @@ import pickle
 import random
 import re
 import socket
+import sys
 import threading
 import time
 import warnings
@@ -49,6 +50,7 @@ LOBBY_WIDTH = 1280
 LOBBY_HEIGHT = 720
 LOBBY_TITLE = "Up Front"
 LOBBY_SCALE = min(LOBBY_HEIGHT/1080, LOBBY_WIDTH/1920)
+LOBBY_NATIONS = ["american", "british", "french", "german", "italian", "japanese", "russian"]
 
 # Visual appearance
 MAIN_COLOR = (50, 59, 64, 255)
@@ -1618,72 +1620,330 @@ class MenuView(arcade.View):
 
     def __init__(self):
         super().__init__()
+        self.toggle_list = []
+        self.input_list = []
 
-        # Settings (later: set by user input)
-        self.username = "Player_" + str(random.randint(1, 1000))
-        self.server = "localhost:52000"
-        self.nation = None
-        
-        # Set background color
-        self.background_color = arcade.color.ARSENIC
-        
-        # Sprite list with all the board elements
-        self.board_elements = arcade.SpriteList()
-        
-        # Create background texture
-        image_path =  r'assets/boardelements/board.texture.png'
-        self.board_texture = BoardElement(image_path, LOBBY_SCALE)
-        self.board_elements.append(self.board_texture)
-        
+        # Load assets
+        self.load_assets()
+
+        # Set up UI elements
+        self.setup_ui_styles()
+        self.create_ui_elements()
+        self.position_ui_elements()
+        self.setup_event_handlers()
 
 
-    def on_draw(self):
-        
-        self.clear()
-        self.board_elements.draw()
-        
-        
-        
-    def on_update(self, delta_time):
 
-        # self.start_game()
-        pass
-    
-
-
-    def on_key_press(self, key, modifiers):
-        
-        if key == arcade.key.ENTER:
-            self.start_game()
-            
-            
-    
     def on_resize(self, width, height):
-        
-        scale = min(height / 1080, width / 1920)
-        
-        self.layout_elements(scale)
-        
-        
-        
-    def layout_elements(self, scale):
-            
-        # Board element: Texture
-        self.board_texture.width = self.window.width
-        self.board_texture.height = self.window.height
-        self.board_texture.position = self.window.width / 2, self.window.height / 2
-            
+
+        # De-maximize window
+        hwnd = self.window._hwnd
+        if ctypes.windll.user32.IsZoomed(hwnd):
+            ctypes.windll.user32.ShowWindow(hwnd, 9)
+
+
+
+    def load_assets(self):
+
+
+        # Background image
+        self.background = arcade.load_texture("assets/menu/lobby.background.png")
+
+        # Background color
+        self.background_color = MAIN_COLOR
+
+        # Texture
+        self.board_texture = arcade.load_texture("assets/boardelements/board.texture.png")
+
+        # Load sound effects
+        self.sound_select = arcade.load_sound("assets/sounds/select.mp3")
+
+        # Load button textures
+        self.textures = {}
+        for name in LOBBY_NATIONS + ["join"]:
+            self.textures[f"{name}_off"] = arcade.load_texture(f"assets/menu/button.{name}.off.png")
+            self.textures[f"{name}_on"] = arcade.load_texture(f"assets/menu/button.{name}.on.png")
+
+
+
+    def setup_ui_styles(self):
+
+        # Input text widget style - transparent background with no border
+        self.input_style = arcade.gui.widgets.text.UIInputTextStyle(
+            bg=(0, 0, 0, 0),
+            border=None,
+            border_width=0
+        )
+
+
+
+    def create_ui_elements(self):
+
+        self.manager = arcade.gui.UIManager()
+
+        # Load lobby settings
+        username, server, default_nation = self.load_lobby_settings()
+
+        # Player name from command line overrides saved name
+        if len(sys.argv) > 1:
+            username = sys.argv[1]
+
+        # Create text input fields: 1
+        self.username_widget = arcade.gui.UIInputText(
+            text=username,
+            height=35 * LOBBY_SCALE,
+            width=(500 - 2 * 12) * LOBBY_SCALE,
+            font_name="Arial",
+            font_size=15,
+            border_width=0,
+            style={state: self.input_style for state in ["normal", "hover", "focus", "press", "disabled", "invalid"]}
+        )
+        self.input_list.append(self.username_widget)
+
+        # Create text input fields: 2
+        self.server_widget = arcade.gui.UIInputText(
+            text=server,
+            height=35 * LOBBY_SCALE,
+            width=(500 - 2 * 12) * LOBBY_SCALE,
+            font_name="Arial",
+            font_size=15,
+            border_width=0,
+            style={state: self.input_style for state in ["normal", "hover", "focus", "press", "disabled", "invalid"]}
+        )
+        self.input_list.append(self.server_widget)
+
+        # Bold input text
+        for widget in self.input_list:
+            widget.doc.set_style(0, len(widget.text), {"weight": "bold"})
+
+        # Create launch button
+        self.launch_widget = arcade.gui.UITextureButton(
+            height=self.textures["join_off"].height * LOBBY_SCALE,
+            width=self.textures["join_off"].width * LOBBY_SCALE,
+            texture=self.textures["join_off"],
+            texture_hovered=self.textures["join_on"]
+        )
+
+        # Create nation toggle buttons
+        self.create_nation_toggles(default_nation)
+
+
+
+    def create_nation_toggles(self, default_nation):
+
+        self.toggle_nations = {}
+
+        # Create all nation toggles in a loop
+        for nation in LOBBY_NATIONS:
+            toggle = arcade.gui.UITextureToggle(
+                height=self.textures[f"{nation}_off"].height * LOBBY_SCALE,
+                width=self.textures[f"{nation}_off"].width * LOBBY_SCALE,
+                on_texture=self.textures[f"{nation}_on"],
+                off_texture=self.textures[f"{nation}_off"],
+                value=False
+            )
+            self.toggle_list.append(toggle)
+            self.toggle_nations[nation] = toggle
+
+        # Set default toggle
+        if default_nation in self.toggle_nations:
+            self.toggle_nations[default_nation].value = True
+
+
+
+    def position_ui_elements(self):
+
+        # Create main anchor layout
+        self.anchor = self.manager.add(arcade.gui.UIAnchorLayout())
+
+        # Position username input
+        self.anchor.add(
+            child=self.username_widget,
+            anchor_x="left", align_x=(690 + 12) * LOBBY_SCALE,
+            anchor_y="bottom", align_y=(560 + 12) * LOBBY_SCALE
+        )
+
+        # Position server input
+        self.anchor.add(
+            child=self.server_widget,
+            anchor_x="left", align_x=(690 + 12) * LOBBY_SCALE,
+            anchor_y="bottom", align_y=(420 + 12) * LOBBY_SCALE
+        )
+
+        # Position launch button
+        self.anchor.add(
+            child=self.launch_widget,
+            anchor_x="center", align_x=0,
+            anchor_y="center", align_y=-370 * LOBBY_SCALE
+        )
+
+        # Position toggle buttons
+        self.position_toggle_buttons()
+
+
+
+    def position_toggle_buttons(self):
+
+        step = self.textures["german_off"].width
+        for i, widget in enumerate(self.toggle_list):
+            self.anchor.add(
+                child=widget,
+                anchor_x="center", align_x=(i - (len(self.toggle_list) - 1) / 2) * step * LOBBY_SCALE,
+                anchor_y="center", align_y=-235 * LOBBY_SCALE
+            )
+
+
+
+    def setup_event_handlers(self):
+
+        # Launch button event
+        @self.launch_widget.event("on_click")
+        def on_click_start_new_game_button(event):
+            arcade.play_sound(self.sound_select)
+            self.start_game()
+
+        # Toggle button events - only one can be selected at a time
+        for toggle in self.toggle_list:
+            @toggle.event("on_click")
+            def handle_toggle(event, toggle=toggle):  # Default-arg-trick for closure
+                for other in self.toggle_list:
+                    if other != toggle:
+                        other.value = False
+
+                # Redraw parents too, since transparent toggle areas keep old content
+                toggle.trigger_full_render()
+
+                arcade.play_sound(self.sound_select)
+
+        # Text input events - only one can be selected at a time
+        for widget in self.input_list:
+            @widget.event("on_click")
+            def handle_input(event, widget=widget):
+                for other in self.input_list:
+                    if other != widget:
+                        other.deactivate()
+
 
 
     def start_game(self):
-        
-        game_view = GameView(self.username, self.nation, self.server)
 
-        # Show game
+        username = self.username_widget.text.strip()
+        server = self.server_widget.text.strip()
+
+        # Name and server are required
+        if not username or ":" not in server:
+            return
+
+        # Get the selected nation
+        selected_nation = None
+        for nation, toggle in self.toggle_nations.items():
+            if toggle.value:
+                selected_nation = nation
+                break
+
+        # Save lobby settings
+        self.save_lobby_settings(username, server, selected_nation)
+
+        # Create game view with the user inputs
+        game_view = GameView(username, selected_nation, server)
+
         if game_view.setup():
+            # Reset window boundaries
+            self.window.set_minimum_size(LOBBY_WIDTH, LOBBY_HEIGHT)
+            self.window.set_maximum_size(3840, 2160)
+            # Enter game
             self.window.show_view(game_view)
         else:
             print("Cannot start game")
+
+
+
+    def on_show_view(self):
+
+        self.manager.enable()
+
+        self.window.set_minimum_size(LOBBY_WIDTH, LOBBY_HEIGHT)
+        self.window.set_maximum_size(LOBBY_WIDTH, LOBBY_HEIGHT)
+
+
+
+    def on_hide_view(self):
+
+        self.manager.disable()
+
+
+
+    def on_draw(self):
+
+        # Clear the screen
+        self.clear()
+
+        # Draw background
+        rect = arcade.LBWH(left=0, bottom=0, width=self.window.width, height=self.window.height)
+        arcade.draw_texture_rect(texture=self.background,rect=rect)
+
+        # Draw texture
+        rect = arcade.LBWH(left=0, bottom=0, width=self.window.width, height=self.window.height)
+        arcade.draw_texture_rect(texture=self.board_texture,rect=rect)
+
+        # Draw UI elements
+        self.manager.draw()
+
+
+
+    def on_key_press(self, key, modifiers):
+
+        # Handle Enter (join game)
+        if key == arcade.key.ENTER:
+            self.start_game()
+
+        # Handle Ctrl+V (paste)
+        elif key == arcade.key.V and modifiers & arcade.key.MOD_CTRL:
+
+            # Get copied text
+            clipboard_text = pyperclip.paste()
+
+            # Add text in active widget
+            for widget in self.input_list:
+                if widget.active:
+                    cursor_pos = widget.caret.position
+                    current_text = widget.text
+                    new_text = current_text[:cursor_pos] + clipboard_text + current_text[cursor_pos:]
+                    widget.text = new_text
+                    widget.caret.position = cursor_pos + len(clipboard_text)
+
+        # Handle Ctrl+A (select all)
+        elif key == arcade.key.A and modifiers & arcade.key.MOD_CTRL:
+
+            # Select text in active widget
+            for widget in self.input_list:
+                if widget.active:
+                    widget.caret.mark = 0
+                    widget.caret.position = len(widget.text)
+
+
+
+    def save_lobby_settings(self, name, server, nation, filename="userdata/lobby_settings.json"):
+        
+        data = {
+            "name": name,
+            "server": server,
+            "nation": nation
+        }
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+
+
+    def load_lobby_settings(self, filename="userdata/lobby_settings.json"):
+        
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data["name"], data["server"], data["nation"]
+        except (FileNotFoundError, KeyError, json.JSONDecodeError):
+            # Return defaults if file not found or corrupted
+            return "", "localhost:52000", None
 
 
 

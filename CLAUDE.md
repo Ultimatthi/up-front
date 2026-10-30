@@ -33,7 +33,7 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 
 - `start.bat` startet 1 Server + 2 Clients. Aus der Claude-Umgebung startete die Datei keine Prozesse – dann direkt starten:
   - Server: `python -u cardserver.py` (wartet auf Port-Eingabe → leere stdin-Datei umleiten = Port 52000)
-  - Client (2×): `python cardgame.py`, im Lobby-Fenster **Enter** drücken → verbindet zu `localhost:52000`
+  - Client (2×): `python cardgame.py "Player A"` bzw. `"Player B"` (Name optional, sonst aus `lobby_settings.json`), im Lobby-Fenster **Enter** drücken (oder „Join“) → verbindet zum Server im zweiten Feld (Default `localhost:52000`). Name/Server/Nation werden in `userdata/lobby_settings.json` gespeichert – beide Test-Clients teilen sich die Datei.
 - Server-Fehler landen nur auf stderr (`traceback.print_exc` in `handle_client`) → stderr in Datei umleiten und nach jeder Aktion prüfen.
 
 ## GUI-Tests (Fenster fernsteuern)
