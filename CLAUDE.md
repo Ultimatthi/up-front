@@ -10,12 +10,24 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 
 - Nur Dateien lokal ändern; committen und pushen nur auf ausdrückliche Anfrage. Keine PRs.
 - Commit-Nachrichten: kurz und prägnant, auf Englisch, beginnend mit einem Partizip (z. B. „fixed smoke reset", „implemented sniper check").
+- Keine „Co-Authored-By"-Zeile oder sonstige Claude-Hinweise in Commit-Nachrichten.
 
 ## Änderungen an Dateien
 
 - Vor jeder Dateiänderung zuerst eine Vorschau zeigen: betroffene Dateien und die geplanten Änderungen als Diff (wie `git diff`), kurz begründet.
 - Danach warten und erst nach ausdrücklicher Zustimmung umsetzen.
 - Ausnahme: Hilfsdateien im Scratchpad (Testskripte, Notizen).
+
+## Projektentscheidungen
+
+- Der Client gilt als vertrauenswürdig: keine serverseitige Prüfung, ob `group_ids` dem richtigen Spieler gehören.
+- Erledigtes wird aus `TODO.csv` gelöscht; IDs bleiben stabil (nicht neu nummerieren).
+
+## Dateiformate
+
+- `TODO.csv` und `assets/cards/card_table.csv`: UTF-8 mit BOM, CRLF – beim Schreiben beibehalten (Excel).
+- `TODO.csv`: Trennzeichen `;`, Spalten `ID;Status;Kategorie;Regel;Aufgabe`, Status leer = offen bzw. `Ignoriert`. Texte mit `;` in Anführungszeichen setzen.
+- Wire-Karten haben in `card_table.csv` den Typ `wire` (nicht `terrain`); Terrain-Subtypen ohne Eintrag in `TERRAIN_MOD` werden abgelehnt.
 
 ## Spiel starten
 
@@ -43,8 +55,9 @@ Schneller und deterministisch: `GameServer` direkt instanziieren, zwei `Client`-
 - Pro Gruppe eine Aktion pro Zug (mehrere Gruppen dürfen handeln). Hero zählt nicht als Aktion.
 - Ablegen: Deutsche dürfen auch nach einer Aktion ablegen (max. 1), Amerikaner nur ohne Aktion (max. 2).
 - Gelände nur auf Gruppen in Bewegung.
+- Positionen: `unit.slot` ist 0-basiert (Regelbuch/RPN 1-basiert → Position n = slot n-1). Wo die Reihenfolge zählt (Feuer, Sniper, künftig RPC/Crew), nach `slot` sortieren; `process_aftermath` schließt Lücken nach Verlusten.
 
 ## Bekannte offene Punkte
 
-- Sniper-Schwellen fest auf `[5, 3]` mit `abs(rnc)`, Karte sagt „KIA 4-6, PIN 2-3".
-- Regelbuch: `rules/UF RuleBook updated.pdf` (91 Seiten, inkl. Q&A). Das Read-Tool kann es nicht rendern (kein poppler) → Text per `pypdf` extrahieren (installiert): `pypdf.PdfReader(pfad).pages[i].extract_text()`, Regelnummern (z. B. „16.42“) per Textsuche über alle Seiten finden.
+- Offene Aufgaben stehen in `TODO.csv` (nicht hier doppelt pflegen).
+- Regelbuch: `rules/UF RuleBook updated.pdf` (91 Seiten, inkl. Q&A). Das Read-Tool kann es nicht rendern (kein poppler) → Text per `pypdf` extrahieren (ggf. `pip install pypdf`): `pypdf.PdfReader(pfad).pages[i].extract_text()`, Regelnummern (z. B. „16.42“) per Textsuche über alle Seiten finden.
