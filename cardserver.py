@@ -663,14 +663,18 @@ class GameServer:
     
     def resolve_hero(self, target_units, played_card):
         
-        # Validity check (1)
+        # Validity check (1): At least one unit
         if len(target_units) != 1:
             return
         
-        # Validity check (2)
+        # Validity check (2): Only units owned by player
         if target_units[0].owner != self.current_turn:
             return
-        
+
+        # Validity check (3): Only units still in play
+        if target_units[0].state not in ("rallied", "pinned") or target_units[0].group is None:
+            return
+
         # Modify attributes
         target_units[0].state = "rallied"
         target_units[0].heroic = True
