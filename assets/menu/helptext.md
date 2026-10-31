@@ -14,6 +14,7 @@ Wheel               Cycle own active group (A–D)
 Ctrl+Wheel          Cycle enemy active group (A–D)
 Alt (hold)          Zoom card/unit
 Space               End turn/phase
+S                   Sniper check (active group)
 Esc                 Leave game, back to menu
 F1                  Show help
 ```

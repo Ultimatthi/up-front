@@ -877,7 +877,11 @@ class GameView(arcade.View):
         # Advance turn
         if key == arcade.key.SPACE:
             self.advance_turn()
-            
+
+        # Sniper check
+        if key == arcade.key.S:
+            self.group_action("sniper_check")
+
         # Open help
         if key == arcade.key.F1:
             self.window.show_view(HelpView(self))
@@ -963,7 +967,25 @@ class GameView(arcade.View):
             self.socket.sendall(pickle.dumps(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
-            
+
+
+
+    def group_action(self, name):
+
+        # Create action for server
+        action = {
+            "type": "group_action",
+            "action": name,
+            "group_ids": [group.id for group in self.active_groups.values()],
+            "unit_ids": [unit.id for unit in self.unit_list if unit.selected]
+        }
+
+        # Send action to server
+        try:
+            self.socket.sendall(pickle.dumps(action))
+        except Exception as e:
+            print(f"Error sending to server: {e}")
+
             
             
     def advance_turn(self):

@@ -23,7 +23,6 @@
 23;Ignoriert;Abweichung;15.2;SL im eigenen Zug gerade KIA/Panik -> -1 Karte beim Refill;;;;
 24;Ignoriert;Abweichung;4.5;Nachziehen optional (dann bis zur vollen Hand);;;;
 25;;Abweichung;4.3;Karten eliminierter Gruppen abwerfen (Movement/Terrain bleiben sonst liegen);;;;
-26;;Abweichung;14.3;"Sniper-Schwellen von der Karte lesen (Code hartkodiert [5,3]; CSV hat fuer alle 4 Sniper nur subtype 'sniper', KIA/PIN-Werte fehlen); Pin auf gepinnten Mann -> Panik/Rout";;;;
 27;Ignoriert;Abweichung;14.2;random.choice statt RPC (Vereinfachung/Hausregel);;;;
 28;Ignoriert;Abweichung;10.4/10.42/10.45;"Hero jederzeit (auch Gegnerzug, vor Angriffsaufloesung, nach Draw mit Extra-Draw); Rally nur gepinnt; Doppel-FP nur beim Feuern";;;;
 29;Ignoriert;Abweichung;10.23;Rally All fuer zwei Gruppen;;;;
@@ -37,7 +36,6 @@
 38;;Fehlt;8.5;Stream: Fording (8.53), Waffenbeschraenkungen (8.52);;;;
 39;;Fehlt;10.3;Freiwillige Panik (gepinnte Maenner entfernen, RNC-Panik/Rout);;;;
 40;;Fehlt;11;Crew-Waffen: Assistent bestimmen, geklammerte/ungeklammerte FP, set_mode('crewed') wird nie gerufen;;;;
-41;;Fehlt;14.4;"Sniper Check (schwarze RNC > Sniper-RNC; danach Sniper Cower)";;;;
 42;;Fehlt;14.6 / 2.0;RPC/RPN-Mechanik (RPN-Daten fehlen in card_table.csv: nur id/type/subtype/rnc/breeze/color);;;;
 43;;Fehlt;4.6;Pass-Pflicht: Hat der Gegner im direkt vorherigen Zug gepasst, muss man handeln oder ablegen;;;;
 44;;Fehlt;5.6.2;Optional: Range-Reset beim Deckwechsel (Konsens);;;;

@@ -131,6 +131,7 @@ class Group:
         self.leader = False
         self.empty = True
         self.last_action = None
+        self.sniper_rnc = None
         
         
         
@@ -147,6 +148,7 @@ class Client:
         self.ready = ready
         self.acted = False
         self.discard_count = 0
+        self.sniper_lost = False
         
 
 
@@ -443,6 +445,46 @@ class GameServer:
         # End player's turn
         if action_type == "advance_turn":
             self.advance_turn(action, client)
+
+        # Group action without card
+        if action_type == "group_action":
+            self.group_action(action, client)
+
+
+
+    def group_action(self, action, client):
+
+        # Check game phase
+        if self.game_phase != "gameplay" or self.game_subphase != "action":
+            return
+
+        # Check if it's this player's turn
+        if client.name != self.current_turn or self.pending_action["type"] is not None:
+            return
+
+        # Find own active group
+        target_group = next((group for group in self.group_list if group.id == action.get("group_ids")[0]), None)
+
+        # Check if group can act
+        if target_group is None or target_group.empty or target_group.acted:
+            return
+
+        # Resolve action
+        if action.get("action") == "sniper_check":
+            success = self.resolve_sniper_check(target_group)
+        else:
+            success = False
+
+        # Check if action was resolved successfully
+        if not success:
+            return
+
+        # Set flags
+        target_group.acted = True
+        client.acted = True
+
+        # Set sound
+        self.current_sound = "play_card"
 
             
             
@@ -771,7 +813,7 @@ class GameServer:
 
         # Attack defensive units
         for unit in defensive_units:
-            attack = base_firestrength + concealed_firestrength + self.draw_rnc()
+            attack = base_firestrength + concealed_firestrength + self.draw_rnc_card().rnc
             
             if unit.state == "rallied":
                 if attack >= unit.kia[0]:
@@ -835,7 +877,9 @@ class GameServer:
         for group in self.group_list:
             group.acted = False
             group.last_action = None
-            
+            if group.owner == client.name:
+                group.sniper_rnc = None
+
         # Reset units
         for unit in self.unit_list:
             unit.heroic = False
@@ -1024,7 +1068,7 @@ class GameServer:
             return
                 
         # Discard card
-        if played_card.type == "sniper":
+        if played_card.type == "sniper" and not client.sniper_lost:
             success = self.resolve_sniper(played_card, target_groups[1])
         elif played_card.type == "wire":
             success = self.resolve_wire(played_card, target_groups[1])
@@ -1056,7 +1100,8 @@ class GameServer:
         if target_group.empty:
             return
         
-        thresholds = [5, 3] # replace
+        # KIA and PIN thresholds from card, e.g. "sniper (kia 5 pin 3)"
+        kia, pin = [int(n) for n in re.findall(r"\d+", played_card.subtype)]
         
         # Get units in target group
         units = [unit for unit in self.unit_list if unit.group == target_group.id]
@@ -1070,15 +1115,48 @@ class GameServer:
         unit = random.choice(units)  # TODO: RPC
         
         # Random number check
-        rnc = abs(self.draw_rnc())
-        
+        rnc = abs(self.draw_rnc_card().rnc)
+
+        # Remember lowest sniper RNC for sniper check
+        if target_group.sniper_rnc is None or rnc < target_group.sniper_rnc:
+            target_group.sniper_rnc = rnc
+
         # Set attributes
-        if rnc >=thresholds[0]:
+        if rnc >= kia:
             unit.state = "kia"
             unit.group = None
-        elif rnc > thresholds[1]:
+        elif rnc >= pin and unit.state == "pinned":
+            unit.state = "routed"
+            unit.group = None
+        elif rnc >= pin:
             unit.state = "pinned"
-        
+
+        return True
+
+
+
+    def resolve_sniper_check(self, target_group):
+
+        # Group must have been sniped in the opponent's last turn
+        if target_group.sniper_rnc is None:
+            return False
+
+        # Needs an unpinned unit
+        if not any(unit.group == target_group.id and unit.state == "rallied" for unit in self.unit_list):
+            return False
+
+        # Black RNC higher than sniper RNC eliminates the opponent's sniper
+        rnc_card = self.draw_rnc_card()
+        if rnc_card.color == "black" and abs(rnc_card.rnc) > target_group.sniper_rnc:
+            opponent = next(client for client in self.client_list if client.name != target_group.owner)
+            opponent.sniper_lost = True
+            target_group.last_action = "killed snpr"
+        else:
+            target_group.last_action = "checked snpr"
+
+        # Only one check per sniper attack
+        target_group.sniper_rnc = None
+
         return True
         
     
@@ -1104,7 +1182,7 @@ class GameServer:
         
     
             
-    def draw_rnc(self):
+    def draw_rnc_card(self):
         
         # Get cards in action deck
         deck = [card for card in self.card_list if card.location == "deck"]
@@ -1126,7 +1204,7 @@ class GameServer:
             for group in self.group_list:
                 group.smoke = False
         
-        return(rnc_card.rnc)
+        return(rnc_card)
     
     
     
