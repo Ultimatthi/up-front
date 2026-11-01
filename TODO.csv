@@ -12,7 +12,6 @@
 12;Ignoriert;Abweichung;6.5;Angreifer darf nach finaler Staerke abbrechen (Karte verwerfen, Aktion verbraucht);;;;
 13;Ignoriert;Abweichung;6.3;Mehrere Fire-Karten pro Angriff (Summe Staerke und FP);;;;
 14;;Abweichung;5.2/6.43/7.2;"Movement-Karten zaehlen: +1 pro Karte fuer Verteidiger; bei 2 Karten Terrain verloren";;;;
-15;;Abweichung;5.41/7.2;Terrain-Karte bleibt liegen (Code verwirft sie bei 2. Movement, group.terrain bleibt aber stehen -> z. B. Gruppe gilt nach Verlassen eines Gully weiter als im Gully und kann nie mehr feuern);;;;
 16;;Abweichung;8.42/13.34;resolve_terrain: nicht auf Wire (erst Wire per Movement entfernen), Marsh erst nach 2 Movement-Karten (Movement-Pflicht ist umgesetzt);;;;
 17;;Abweichung;8.6;"Buildings Standard -3, nur -2 wenn auf Karte angegeben (Code fix -2; CSV unterscheidet die Buildings-Karten nicht)";;;;
 18;;Abweichung;8.3;"Hill: Elevated Fire +1 nur gegen Ziel ohne Hill/Pillbox; -1 nur gegen Angreifer nicht auf Hill";;;;

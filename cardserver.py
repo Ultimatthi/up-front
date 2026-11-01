@@ -616,11 +616,9 @@ class GameServer:
             target_group.wire = False
             return True
             
-        # Remove any terrain card if group is already moving
+        # Second movement card: group leaves its terrain (5.2), terrain card stays on the table (5.41)
         if target_group.moving:
-            for card in self.card_list:
-                if card.group == target_group.id and card.type == "terrain":
-                    self.move_card_to_discard(card)
+            target_group.terrain = None
         
         # Modify group attributes
         if card_mode == "forward":
@@ -652,9 +650,9 @@ class GameServer:
         target_group.moving = None
         target_group.smoke = False
 
-        # Remove movement/smoke cards from the group (if necessary)
+        # Remove all cards beneath the new terrain card (7.34)
         for card in self.card_list:
-            if card.group == target_group.id and card.type in ["movement", "smoke"]:
+            if card.group == target_group.id and card.type in ["movement", "smoke", "terrain"]:
                 self.move_card_to_discard(card)
     
         return True
