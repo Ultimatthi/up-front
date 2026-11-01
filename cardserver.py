@@ -183,10 +183,9 @@ class GameServer:
         # List with all the groups
         self.group_list = []
         
-        # List with selected nations / sides
-        self.nation_list = []
-        self.side_list = []
-        
+        # Clients that left the game, kept for rejoining
+        self.left_clients = {}
+
         # Card table
         self.card_table = pd.read_csv("assets/cards/card_table.csv", sep=",")
         self.card_table.set_index("id", inplace=True)
@@ -232,26 +231,35 @@ class GameServer:
                     print(f"Connection accepted from {addr} with username {player_name}")
                     
                     with self.lock:
-                        
+
+                        # Same player connects again: drop the old connection first
+                        if any(client.name == player_name for client in self.client_list):
+                            self.remove_client(player_name)
+
                         # Decline if table is full
                         if len(self.client_list) == FULL_TABLE:
                             continue
-                        
+
+                        # Get nations and sides already taken
+                        nations = [client.nation for client in self.client_list]
+                        sides = [client.side for client in self.client_list]
+
                         # Decline if nation if already taken
-                        if player_nation not in NATIONS or player_nation in self.nation_list:
-                            player_nation = next(nation for nation in NATIONS if nation not in self.nation_list)
-                            
-                        # Add nation to list
-                        self.nation_list.append(player_nation)
-                        
+                        if player_nation not in NATIONS or player_nation in nations:
+                            player_nation = next(nation for nation in NATIONS if nation not in nations)
+
                         # Allocate side
-                        player_side = next(side for side in SIDES if side not in self.side_list)
-                        
-                        # Add side to list
-                        self.side_list.append(player_side)
-                    
-                        # Add to client list
+                        player_side = next(side for side in SIDES if side not in sides)
+
+                        # Create new client
                         client = Client(c, player_name, player_nation, player_side, unit_allocation, False)
+
+                        # Rejoining player gets his old client back (nation, side and state)
+                        if player_name in self.left_clients:
+                            client = self.left_clients.pop(player_name)
+                            client.socket = c
+
+                        # Add to client list
                         self.client_list.append(client)
 
                     
@@ -346,9 +354,10 @@ class GameServer:
             self.card_list.append(card)
             
         # Create every unit
+        nations = [client.nation for client in self.client_list]
         for unit_id in self.unit_table.index:
             row = self.unit_table.loc[unit_id]
-            if row["nation"] not in self.nation_list:
+            if row["nation"] not in nations:
                 continue
             unit = Unit(unit_id, row["nation"], row["rank"], row["name"], row["weapon"], 
                         row["malfunction"], row["ccv"], row["firepower"], row["morale"], 
@@ -899,9 +908,10 @@ class GameServer:
         # Remove from client list
         client = next((client for client in self.client_list if client.name == player_name), None)
         self.client_list.remove(client)
-        self.nation_list.remove(client.nation)
-        self.side_list.remove(client.side)
-        
+
+        # Keep client for rejoining
+        self.left_clients[player_name] = client
+
         # Close socket
         try:
             client.socket.shutdown(socket.SHUT_RDWR)
