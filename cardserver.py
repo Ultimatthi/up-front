@@ -114,7 +114,22 @@ class Unit:
     def _select(self, value):
         
         return value[self.mode] if isinstance(value, dict) else value
-        
+
+    def get_firepower(self, group, relative_range):
+
+        # Only rallied units fire
+        if self.state != "rallied":
+            return 0
+
+        # Base firepower (doubled for heroes)
+        firepower = self.firepower[relative_range] * (self.heroic+1)
+
+        # Moving fire: halve bolt-action rifles (rounded down)
+        if group.moving and self.weapon == "Bolt-Action Rifle":
+            firepower //= 2
+
+        return firepower
+
         
 
 class Group:
@@ -788,19 +803,19 @@ class GameServer:
         relative_range = max(relative_range, 0)
         
         # Check firepower
-        firepower = sum(unit.firepower[relative_range] * (unit.heroic+1) for unit in player_units if unit.state == "rallied")
+        firepower = sum(unit.get_firepower(target_groups[0], relative_range) for unit in player_units)
         if firepower < card_firepower:
             return
         
         # Calculate firestrength
-        modified_firestrength = self.modify_base_firestrength(card_firestrength, target_groups[0], target_groups[1], relative_range)
-        if modified_firestrength is None:
+        firestrength = self.get_firestrength(card_firestrength, target_groups[0], target_groups[1], relative_range)
+        if firestrength is None:
             return
         
         # Set pending action
         self.pending_action["type"] = "fire"
         self.pending_action["card"] = played_card
-        self.pending_action["strength"] = modified_firestrength
+        self.pending_action["strength"] = firestrength
         self.pending_action["offensive_group"] = target_groups[0]
         self.pending_action["defensive_group"] = target_groups[1]
         
@@ -837,8 +852,8 @@ class GameServer:
     
     def resolve_fire(self, concealed_card):
         
-        # Get base firestrength
-        base_firestrength = self.pending_action["strength"] 
+        # Get firestrength
+        firestrength = self.pending_action["strength"] 
         
         # Get concealed firestrength
         concealed_firestrength = int(concealed_card.subtype.split()[-1]) if concealed_card else 0
@@ -851,7 +866,7 @@ class GameServer:
 
         # Attack defensive units
         for unit in defensive_units:
-            attack = base_firestrength + concealed_firestrength + self.draw_rnc_card().rnc
+            attack = firestrength + concealed_firestrength + self.draw_rnc_card().rnc
             
             if unit.state == "rallied":
                 if attack >= unit.kia[0]:
@@ -1257,7 +1272,7 @@ class GameServer:
     
     
     
-    def modify_base_firestrength(self, firestrength, source_group, target_group, relative_range):
+    def get_firestrength(self, firestrength, source_group, target_group, relative_range):
         
         # TODO: Mortar/Ordnance fire implementation
         # TODO: encirclement check
