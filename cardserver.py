@@ -53,6 +53,9 @@ TERRAIN_MOD = {
 
 TIME_LIMIT = 3
 
+# Axis nations (French not treated as Vichy France)
+AXIS = ["german", "japanese", "italian"]
+
 
 # ──[ Classes ]────────────────────────────────────────────────────────────────
 
@@ -372,8 +375,9 @@ class GameServer:
                 group = Group(group_id, label, owner)
                 self.group_list.append(group)
         
-        # Set first turn
-        first_client = random.choice(self.client_list)
+        # Axis moves first (scenarios A and B), otherwise random
+        axis = [client for client in self.client_list if client.nation in AXIS]
+        first_client = random.choice(axis or self.client_list)
         self.current_turn = first_client.name
             
         # Distribute units
@@ -616,7 +620,7 @@ class GameServer:
             target_group.wire = False
             return True
             
-        # Second movement card: group leaves its terrain (5.2), terrain card stays on the table (5.41)
+        # Second movement card: group leaves its terrain
         if target_group.moving:
             target_group.terrain = None
         
@@ -650,7 +654,7 @@ class GameServer:
         target_group.moving = None
         target_group.smoke = False
 
-        # Remove all cards beneath the new terrain card (7.34)
+        # Remove all cards beneath the new terrain card
         for card in self.card_list:
             if card.group == target_group.id and card.type in ["movement", "smoke", "terrain"]:
                 self.move_card_to_discard(card)
@@ -1222,7 +1226,7 @@ class GameServer:
         # TODO: encirclement check
         
         # No fire from gully
-        if source_group.terrain == "gully":
+        if source_group.terrain == "gully" and relative_range != 5:
             return None
         
         # No fire against gully
@@ -1296,7 +1300,13 @@ class GameServer:
         
             # Group has active leader?
             group.leader = any(unit.rank in ("SGT", "CPL") and unit.state == "rallied" for unit in units)
-                
+  
+            # Discard placed cards of empty group
+            if group.empty:
+                for card in self.card_list:
+                    if card.group == group.id:
+                        self.move_card_to_discard(card)
+
         self.check_victory()
         
         
