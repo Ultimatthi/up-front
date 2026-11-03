@@ -1610,7 +1610,8 @@ class ResultView(arcade.View):
         self.background_color = arcade.color.ARSENIC
         
         # Display text
-        label = "[VICTORY]" if self.winner == "player" else "[DEFEAT]"
+        labels = {"player": "[VICTORY]", "opponent": "[DEFEAT]", "draw": "[DRAW]"}
+        label = labels[self.winner]
         
         # Displayed text
         self.text = arcade.Text(

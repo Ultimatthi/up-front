@@ -941,7 +941,7 @@ class GameServer:
                 "sound": self.current_sound,
                 "side": client.side,
                 "pending_action": True if self.pending_action["type"] else False,
-                "winner": "player" if client.name == self.winner else "opponent"
+                "winner": "draw" if self.winner == "draw" else "player" if client.name == self.winner else "opponent"
             }
             
             # Add card information
@@ -1325,7 +1325,7 @@ class GameServer:
         if self.action_deck_counter > TIME_LIMIT:
             a, b = self.client_list
             pa, pb = self.calculate_victory_points(a), self.calculate_victory_points(b)
-            self.winner = a.name if pa > pb else b.name
+            self.winner = a.name if pa > pb else b.name if pb > pa else "draw"
             self.game_phase = "finished"
 
                 
@@ -1343,7 +1343,10 @@ class GameServer:
                     continue
                 if group.range < 4:
                     continue
-                if TERRAIN_MOD[group.terrain][1] >= 0:
+                if group.moving:
+                    continue
+                # Terrain must reduce fire strength, wire counts against it, smoke doesn't help
+                if TERRAIN_MOD[group.terrain][1] + group.wire >= 0:
                     continue
                 count += sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
     
@@ -1373,13 +1376,13 @@ class GameServer:
         
         points = 0
         
-        # Victory points for rallied units in stationary groups
+        # Victory points: range number x rallied units in stationary groups
         for group in self.group_list:
             if group.owner != client.name:
                 continue
             if group.moving:
                 continue
-            points += sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
+            points += group.range * sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
                 
          # Victory points for enemy casualties and routed units
         for unit in self.unit_list:
