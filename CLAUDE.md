@@ -18,6 +18,11 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 - Danach warten und erst nach ausdrücklicher Zustimmung umsetzen.
 - Ausnahme: Hilfsdateien im Scratchpad (Testskripte, Notizen).
 
+## Code-Stil
+
+- In Code, Kommentaren und Texten immer „units“ statt „men“ verwenden.
+- In Code-Kommentaren keine Regel-Kapitel angeben (z. B. kein „16.42“); die Referenzen kommen erst ganz am Ende.
+
 ## Projektentscheidungen
 
 - Der Client gilt als vertrauenswürdig: keine serverseitige Prüfung, ob `group_ids` dem richtigen Spieler gehören.

@@ -151,6 +151,7 @@ class Client:
         self.ready = ready
         self.acted = False
         self.discard_count = 0
+        self.passed = False
         self.sniper_lost = False
         
 
@@ -864,6 +865,16 @@ class GameServer:
         
         # Check pending actions
         if self.pending_action["type"] is not None:
+            return
+        
+        # Check if player is passing
+        client.passed = not client.acted and client.discard_count == 0
+
+        # Get opponent
+        opponent = next(c for c in self.client_list if c is not client)
+
+        # Check if passing is allowed
+        if self.game_subphase == "discard" and client.passed and opponent.passed:
             return
                 
         # Advance turn
