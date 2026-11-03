@@ -23,8 +23,6 @@
 31;Ignoriert;Abweichung;16.2;Deck leer mitten im Angriff: bisher gespielte Karten sofort einmischen;;;;
 32;Ignoriert;Abweichung;16.5;"Beide Squads gleichzeitig gebrochen = Niederlage fuer beide (Q&A); Code gibt dem ersten Spieler der Liste den Sieg";;;;
 33;;Fehlt;7.3;"Terrain auf Gegnergruppe ablegen, annehmen/ablehnen (7.31-7.33); Stream/Minefield nicht ablehnbar";;;;
-34;;Fehlt;5.51;"Retrograde: Rueckzug bei Range <= 0 nur mit roter RNC; Relative Range < 0 nicht erlaubt";;;;
-35;;Fehlt;5.7;Blocking: nicht ueber Relative Range 5 zur gegenueberliegenden Gruppe vorruecken;;;;
 36;;Fehlt;8.1;Open Ground: beliebige Karte verdeckt auf Movement;;;;
 37;;Fehlt;8.4;Marsh (2 Movement-Karten, Waffenbeschraenkungen 8.41-8.44);;;;
 38;;Fehlt;8.5;Stream: Fording (8.53), Waffenbeschraenkungen (8.52);;;;

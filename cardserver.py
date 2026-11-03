@@ -614,13 +614,30 @@ class GameServer:
         # Get wire card (if present):
         wire = next((card for card in self.card_list if card.type == "wire" and card.group == target_group.id), None)
 
-        # Remove wire (if present and no pinned men)
+        # Remove wire (if present and no pinned units)
         if wire:
             self.move_card_to_discard(wire)
             self.move_card_to_discard(played_card)
             target_group.wire = False
             return True
-            
+
+        # Get enemy groups still in play
+        enemy_groups = [group for group in self.group_list if group.owner != target_group.owner and not group.empty]
+
+        # Check retreat I: relative range to closest enemy group must not drop below 0
+        closest_range = max(self.get_relative_range([target_group, enemy]) for enemy in enemy_groups)
+        if card_mode == "backward" and closest_range <= 0:
+            return False
+
+        # Check retreat II: at range number 0 or less only with red RNC
+        if card_mode == "backward" and target_group.range <= 0 and played_card.color != "red":
+            return False
+
+        # Check blocking: relative range to opposite group must not exceed 5
+        opposite = next((group for group in enemy_groups if group.label == target_group.label), None)
+        if card_mode == "forward" and opposite and target_group.range + 1 + opposite.range > 5:
+            return False
+
         # Second movement card: group leaves its terrain
         if target_group.moving:
             target_group.terrain = None
@@ -738,9 +755,24 @@ class GameServer:
         target_units[0].heroic = True
         
         return True
-        
-        
-            
+
+
+
+    def get_relative_range(self, target_groups):
+
+        # Relative range
+        total = target_groups[0].range + target_groups[1].range
+        relative_range = min(total, 10-total)
+
+        # Relative range: Deduction for lateral distance
+        lateral_gap = abs(ord(target_groups[0].id[0]) - ord(target_groups[1].id[0]))
+        if lateral_gap >= 2 and relative_range > 0:
+            relative_range -= 1
+
+        return relative_range
+
+
+
     def prepare_fire(self, target_groups, played_card):
         
         # Get fire attributes
@@ -750,14 +782,8 @@ class GameServer:
         player_units = [unit for unit in self.unit_list if unit.group == target_groups[0].id]
         
         # Relative range
-        total = target_groups[0].range + target_groups[1].range
-        relative_range = min(total, 10-total)
-        
-        # Relative range: Deduction for lateral distance
-        lateral_gap = abs(ord(target_groups[0].id[0]) - ord(target_groups[1].id[0]))
-        if lateral_gap >= 2 and relative_range > 0:
-            relative_range -= 1
-            
+        relative_range = self.get_relative_range(target_groups)
+
         # Relative range cannot < 0 for firepower / to hit purposes
         relative_range = max(relative_range, 0)
         
