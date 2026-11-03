@@ -47,8 +47,9 @@ TERRAIN_MOD = {
     "marsh":     (-1, -1),
     "stream":    (-1,  0),
     "gully":     (0,  -2),  # with conditions
-    "wall":      (0,  -1),  # with conditions
-    "pillbox":   (0, - 4)
+    "wall":      (0,  -2),  # with conditions
+    "pillbox":   (0, - 4),
+    "minefield": (0,   0)   # with conditions
 }
 
 TIME_LIMIT = 3
@@ -186,6 +187,7 @@ class GameServer:
         self.current_turn = None
         self.current_sound = None
         self.action_deck_counter = 0
+        self.breeze = False # breeze drawn in current player turn
         self.draw_counter = 0
         self.winner = None
         
@@ -663,12 +665,20 @@ class GameServer:
         elif card_mode == "backward":
             target_group.range -= 1
         target_group.moving = card_mode
-    
+
         # Set stack count
-        played_card.stack_index = sum(1 for card in self.card_list 
-                                      if card.group == target_group.id 
+        played_card.stack_index = sum(1 for card in self.card_list
+                                      if card.group == target_group.id
                                       and card.type in ["movement", "terrain"])
-        
+
+        # Get smoke card (if present)
+        smoke = next((card for card in self.card_list if card.type == "smoke" and card.group == target_group.id), None)
+
+        # Second movement card on top of smoke removes it (smoke lies below played card)
+        if smoke and smoke.stack_index < played_card.stack_index:
+            self.move_card_to_discard(smoke)
+            target_group.smoke = False
+
         return True
         
         
@@ -678,8 +688,20 @@ class GameServer:
         if not target_group.moving:
             return False
 
-        # Terrain types without implemented rules (e.g. minefield) cannot be played
+        # Terrain types without implemented rules cannot be played
         if played_card.subtype not in TERRAIN_MOD:
+            return False
+
+        # Pillbox and minefield are cower cards in scenario A
+        if self.scenario == "A" and played_card.subtype in ["pillbox", "minefield"]:
+            return False
+
+        # No terrain on wire (remove wire with movement card first)
+        if target_group.wire:
+            return False
+
+        # No new terrain on marsh before two movement cards
+        if target_group.terrain == "marsh":
             return False
 
         # Modify group attributes
@@ -703,7 +725,15 @@ class GameServer:
         
         if target_group.smoke:
             return
-        
+
+        # No smoke in marsh
+        if target_group.terrain == "marsh":
+            return
+
+        # No smoke in a player turn with breeze
+        if self.breeze:
+            return
+
         # Modify group attributes
         target_group.smoke = True
         
@@ -950,6 +980,9 @@ class GameServer:
         # Reset client
         client.acted = False
         client.discard_count = 0
+
+        # Reset breeze
+        self.breeze = False
         
         # End turn
         i = (self.client_list.index(client) + 1) % len(self.client_list)
@@ -1262,6 +1295,7 @@ class GameServer:
         
         # Check for breeze
         if rnc_card.breeze:
+            self.breeze = True
             for card in self.card_list:
                 if card.type == "smoke" and card.location == "table":
                     self.move_card_to_discard(card)
@@ -1303,9 +1337,9 @@ class GameServer:
         # Artificial terrain modifier (incoming)
         firestrength += target_group.wire - target_group.smoke
         
-        # Enhanced protection behind wall
-        if target_group.terrain == "wall" and target_group.label == source_group.label:
-            firestrength -= 1
+        # Reduced protection behind wall against groups not directly opposite
+        if target_group.terrain == "wall" and target_group.label != source_group.label:
+            firestrength += 1
 
         return(firestrength)
     
