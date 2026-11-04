@@ -23,6 +23,5 @@
 38;;Fehlt;8.5;Stream: Fording (8.53), Waffenbeschraenkungen (8.52);;;;
 39;;Fehlt;10.3;Freiwillige Panik (gepinnte Maenner entfernen, RNC-Panik/Rout);;;;
 40;;Fehlt;11 / 12.13;"Crew-Waffen: Assistent bestimmen, geklammerte/ungeklammerte FP, set_mode('crewed') wird nie gerufen; LMG in Bewegung nur geklammert und nur voll bemannt";;;;
-42;;Fehlt;14.6 / 2.0;RPC/RPN-Mechanik (RPN-Daten fehlen in card_table.csv: nur id/type/subtype/rnc/breeze/color);;;;
 44;;Fehlt;5.6.2;Optional: Range-Reset beim Deckwechsel (Konsens);;;;
 45;;Klaeren;6.53/6.531;Was gilt bei RPN = Panic-Wert? (Regelbuch schweigt);;;;

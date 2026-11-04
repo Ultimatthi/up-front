@@ -62,7 +62,7 @@ AXIS = ["german", "japanese", "italian"]
 
 class Card:
     
-    def __init__(self, card_id, card_type, card_subtype, rnc, breeze, color):
+    def __init__(self, card_id, card_type, card_subtype, rnc, breeze, color, rpn):
 
         self.id = card_id
         self.type = card_type
@@ -70,6 +70,10 @@ class Card:
         self.rnc = rnc
         self.breeze = breeze
         self.color = color
+
+        # Random position numbers: index = group size, rpn[10] = 0r (printed 0 = 10)
+        self.rpn = [None] + [10 if n == "0" else int(n) for n in rpn.split("|")]
+
         self.location = "deck" # deck, discard, void, hand, table
         self.group = None
         self.owner = None # player_name
@@ -376,7 +380,7 @@ class GameServer:
         for i in range(162):
             card_id = f"ac{i+1:02d}"
             row = self.card_table.loc[card_id]
-            card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["breeze"], row["color"])
+            card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["breeze"], row["color"], row["rpn"])
             self.card_list.append(card)
             
         # Create every unit
