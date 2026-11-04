@@ -908,7 +908,8 @@ class GameServer:
 
         # Attack defensive units
         for unit in defensive_units:
-            attack = firestrength + concealed_firestrength + self.draw_rnc_card().rnc
+            rnc_card = self.draw_rnc_card()
+            attack = firestrength + concealed_firestrength + rnc_card.rnc
             
             if unit.state == "rallied":
                 if attack >= unit.kia[0]:
@@ -920,7 +921,8 @@ class GameServer:
                 if attack >= unit.kia[1]:
                     unit.state = "kia"
                 elif attack >= unit.panic:
-                    unit.state = "routed"
+                    # Panic: KIA if 0r does not exceed rout value, otherwise rout
+                    unit.state = "kia" if rnc_card.rpn[10] <= unit.rout else "routed"
 
             if unit.state in ["routed", "kia"]:
                 unit.group = None
@@ -1224,7 +1226,8 @@ class GameServer:
         unit = random.choice(units)  # TODO: RPC
         
         # Random number check
-        rnc = abs(self.draw_rnc_card().rnc)
+        rnc_card = self.draw_rnc_card()
+        rnc = abs(rnc_card.rnc)
 
         # Remember lowest sniper RNC for sniper check
         if target_group.sniper_rnc is None or rnc < target_group.sniper_rnc:
@@ -1235,7 +1238,8 @@ class GameServer:
             unit.state = "kia"
             unit.group = None
         elif rnc >= pin and unit.state == "pinned":
-            unit.state = "routed"
+            # Panic: KIA if 0r does not exceed rout value, otherwise rout
+            unit.state = "kia" if rnc_card.rpn[10] <= unit.rout else "routed"
             unit.group = None
         elif rnc >= pin:
             unit.state = "pinned"
