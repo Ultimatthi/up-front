@@ -1052,9 +1052,6 @@ class GameServer:
 
             if unit.state in ["routed", "kia"]:
                 unit.group = None
-                
-        # Reset target information
-        self.pending_action["defensive_group"].last_action = None
 
         # Reset pending action
         for key in self.pending_action:
