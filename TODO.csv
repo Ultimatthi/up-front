@@ -27,5 +27,3 @@
 42;;Fehlt;14.6 / 2.0;RPC/RPN-Mechanik (RPN-Daten fehlen in card_table.csv: nur id/type/subtype/rnc/breeze/color);;;;
 44;;Fehlt;5.6.2;Optional: Range-Reset beim Deckwechsel (Konsens);;;;
 45;;Klaeren;6.53/6.531;Was gilt bei RPN = Panic-Wert? (Regelbuch schweigt);;;;
-47;;Bug;-;Freier Platz nach Verlassen: fremder Name kann mitten im Spiel joinen (neuer Client ohne Gruppen/Einheiten);;;;
-49;;Bug;-;Rejoin: alter handle_client-Thread wirft OSError-Traceback, kleines Heartbeat-Race;;;;

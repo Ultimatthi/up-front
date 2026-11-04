@@ -261,6 +261,10 @@ class GameServer:
                         if len(self.client_list) == FULL_TABLE:
                             continue
 
+                        # Decline new players once the game has started (rejoin only)
+                        if self.game_phase != "assignment" and player_name not in self.left_clients:
+                            continue
+
                         # Get nations and sides already taken
                         nations = [client.nation for client in self.client_list]
                         sides = [client.side for client in self.client_list]
@@ -329,7 +333,8 @@ class GameServer:
         self.broadcast_timer += delta_time
         if self.broadcast_timer > 2.0:
             self.broadcast_timer = 0.0
-            self.send_heartbeat()
+            with self.lock:
+                self.send_heartbeat()
         
         # Check if required number of players are on server
         if len(self.client_list) < FULL_TABLE:
@@ -457,7 +462,10 @@ class GameServer:
                         
                 else:
                     break
-                    
+
+            except OSError:
+                # Socket closed by server (client left or rejoined)
+                break
             except Exception:
                 traceback.print_exc()
                 break
