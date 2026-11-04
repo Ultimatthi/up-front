@@ -1349,6 +1349,10 @@ class GameServer:
         if target_group.terrain == "wall" and target_group.label != source_group.label:
             firestrength += 1
 
+        # No elevated fire from hill against pillbox
+        if source_group.terrain == "hill" and target_group.terrain == "pillbox":
+            firestrength -= 1
+
         return(firestrength)
     
     
