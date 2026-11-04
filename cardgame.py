@@ -882,6 +882,10 @@ class GameView(arcade.View):
         if key == arcade.key.S:
             self.group_action("sniper_check")
 
+        # Voluntary panic of selected pinned units
+        if key == arcade.key.P:
+            self.group_action("voluntary_panic")
+
         # Open help
         if key == arcade.key.F1:
             self.window.show_view(HelpView(self))

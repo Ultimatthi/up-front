@@ -15,6 +15,7 @@ Ctrl+Wheel          Cycle enemy active group (A–D)
 Alt (hold)          Zoom card/unit
 Space               End turn/phase
 S                   Sniper check (active group)
+P                   Voluntary panic (selected pinned units, active group)
 Esc                 Leave game, back to menu
 F1                  Show help
 ```

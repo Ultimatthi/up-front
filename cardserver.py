@@ -498,7 +498,7 @@ class GameServer:
     def group_action(self, action, client):
 
         # Check game phase
-        if self.game_phase != "gameplay" or self.game_subphase != "action":
+        if self.game_phase != "gameplay":
             return
 
         # Check if it's this player's turn
@@ -508,8 +508,17 @@ class GameServer:
         # Find own active group
         target_group = next((group for group in self.group_list if group.id == action.get("group_ids")[0]), None)
 
+        # Check if group exists
+        if target_group is None or target_group.empty:
+            return
+
+        # Voluntary panic is no action (any subphase, also after an action)
+        if action.get("action") == "voluntary_panic":
+            self.resolve_voluntary_panic(target_group, action.get("unit_ids"))
+            return
+
         # Check if group can act
-        if target_group is None or target_group.empty or target_group.acted:
+        if self.game_subphase != "action" or target_group.acted:
             return
 
         # Resolve action
@@ -1271,6 +1280,24 @@ class GameServer:
         target_group.sniper_rnc = None
 
         return True
+
+
+
+    def resolve_voluntary_panic(self, target_group, unit_ids):
+
+        # Selected pinned units of the group
+        units = [unit for unit in self.unit_list if unit.id in unit_ids and unit.group == target_group.id and unit.state == "pinned"]
+
+        # Every unit panics with its own RNC
+        for unit in units:
+            rnc_card = self.draw_rnc_card()
+            # Panic: KIA if 0r does not exceed rout value, otherwise rout
+            unit.state = "kia" if rnc_card.rpn[10] <= unit.rout else "routed"
+            unit.group = None
+
+        # Set sound
+        if units:
+            self.current_sound = "play_card"
         
     
     
