@@ -77,6 +77,7 @@ class Card:
         self.location = "deck" # deck, discard, void, hand, table
         self.group = None
         self.owner = None # player_name
+        self.mode = None
         self.stack_index = 0
         self.draw_index = 0
         
@@ -501,6 +502,11 @@ class GameServer:
         if self.game_phase != "gameplay":
             return
 
+        # Rejecting terrain is the opponent's decision
+        if action.get("action") == "reject_terrain":
+            self.reject_terrain(client)
+            return
+
         # Check if it's this player's turn
         if client.name != self.current_turn or self.pending_action["type"] is not None:
             return
@@ -607,17 +613,17 @@ class GameServer:
         
         # Resolve actions
         if played_card.type == "movement":
-            success = self.resolve_movement(target_groups[0], played_card, card_mode)
+            success = self.resolve_movement(played_card, card_mode, target_groups[0])
         elif played_card.type == "terrain":
-            success = self.resolve_terrain(target_groups[0], played_card)
+            success = self.resolve_terrain(played_card, target_groups[0])
         elif played_card.type == "smoke":
-            success = self.resolve_smoke(target_groups[0], played_card)
+            success = self.resolve_smoke(played_card, target_groups[0])
         elif played_card.type == "rally":
-            success = self.resolve_rally(target_groups[0], target_units, played_card)
+            success = self.resolve_rally(played_card, target_groups[0], target_units)
         elif played_card.type == "hero":
-            success = self.resolve_hero(target_units, played_card)
+            success = self.resolve_hero(played_card, target_units)
         elif played_card.type == "fire":
-            success = self.prepare_fire(target_groups, played_card)
+            success = self.prepare_fire(played_card, target_groups)
         else:
             success = False
             
@@ -643,7 +649,7 @@ class GameServer:
     
     
             
-    def resolve_movement(self, target_group, played_card, card_mode):
+    def resolve_movement(self, played_card, card_mode, target_group):
         
         # No movement with pinned units
         if any(unit.state == "pinned" and unit.group == target_group.id for unit in self.unit_list):
@@ -686,6 +692,7 @@ class GameServer:
         elif card_mode == "backward":
             target_group.range -= 1
         target_group.moving = card_mode
+        played_card.mode = card_mode
 
         # Set stack count
         played_card.stack_index = sum(1 for card in self.card_list
@@ -703,7 +710,7 @@ class GameServer:
         return True
         
         
-    def resolve_terrain(self, target_group, played_card):
+    def check_terrain_entry(self, played_card, target_group):
 
         # Terrain can only be entered by a moving group
         if not target_group.moving:
@@ -725,6 +732,16 @@ class GameServer:
         if target_group.terrain == "marsh":
             return False
 
+        return True
+
+
+
+    def resolve_terrain(self, played_card, target_group):
+
+        # Check if group can enter terrain
+        if not self.check_terrain_entry(played_card, target_group):
+            return False
+
         # Modify group attributes
         target_group.terrain = played_card.subtype
         target_group.moving = None
@@ -732,14 +749,111 @@ class GameServer:
 
         # Remove all cards beneath the new terrain card
         for card in self.card_list:
-            if card.group == target_group.id and card.type in ["movement", "smoke", "terrain"]:
+            if card is not played_card and card.group == target_group.id and card.type in ["movement", "smoke", "terrain"]:
                 self.move_card_to_discard(card)
+
+        # Terrain card lies at the bottom of the stack
+        played_card.stack_index = 0
     
         return True
 
 
 
-    def resolve_smoke(self, target_group, played_card):
+    def offer_terrain(self, played_card, target_group):
+
+        # Check if target group is empty
+        if target_group.empty:
+            return
+
+        # Check if enemy group can enter terrain
+        if not self.check_terrain_entry(played_card, target_group):
+            return
+
+        # Stream cannot be rejected
+        if played_card.subtype == "stream":
+            return self.resolve_terrain(played_card, target_group)
+
+        # Place terrain on top of the stack
+        played_card.stack_index = sum(1 for card in self.card_list
+                                      if card.group == target_group.id
+                                      and card.type in ["movement", "terrain"])
+
+        # Set pending action
+        self.pending_action["type"] = "terrain"
+        self.pending_action["card"] = played_card
+        self.pending_action["defensive_group"] = target_group
+
+        # Annotate target information
+        target_group.last_action = "enter?"
+
+        return True
+
+
+
+    def accept_terrain(self):
+
+        # Enter terrain (card already lies on the group)
+        self.resolve_terrain(self.pending_action["card"], self.pending_action["defensive_group"])
+
+        # Annotate target information
+        self.pending_action["defensive_group"].last_action = "entered"
+
+        # Reset pending action
+        for key in self.pending_action:
+            self.pending_action[key] = None
+
+        # Set sound
+        self.current_sound = "play_card"
+
+
+
+    def reject_terrain(self, client):
+
+        # Only the opponent can reject
+        if self.pending_action["type"] != "terrain" or client.name == self.current_turn:
+            return
+
+        # Get target group
+        target_group = self.pending_action["defensive_group"]
+
+        # Discard terrain card
+        self.move_card_to_discard(self.pending_action["card"])
+
+        # Get cards of target group
+        group_cards = [card for card in self.card_list if card.group == target_group.id]
+
+        # Get movement cards (top card last) and terrain card
+        movements = [card for card in group_cards if card.type == "movement"]
+        movements.sort(key=lambda card: card.stack_index)
+        terrain = next((card for card in group_cards if card.type == "terrain"), None)
+
+        # Sideways movement is discarded, advance or retreat turns sideways
+        if movements[-1].mode == "sideways":
+            self.move_card_to_discard(movements.pop())
+        else:
+            target_group.range += -1 if movements[-1].mode == "forward" else 1
+            movements[-1].mode = "sideways"
+
+        # Group keeps moving with the top remaining movement card
+        target_group.moving = movements[-1].mode if movements else None
+
+        # Group is (again) in its terrain with less than two movement cards
+        if terrain and len(movements) < 2:
+            target_group.terrain = terrain.subtype
+
+        # Annotate target information
+        target_group.last_action = "rejected"
+
+        # Reset pending action
+        for key in self.pending_action:
+            self.pending_action[key] = None
+
+        # Set sound
+        self.current_sound = "play_card"
+
+
+
+    def resolve_smoke(self, played_card, target_group):
         
         if target_group.leader is False:
             return
@@ -767,7 +881,7 @@ class GameServer:
     
 
     
-    def resolve_rally(self, target_group, target_units, played_card):
+    def resolve_rally(self, played_card, target_group, target_units):
         
         # Restrict selected units to target group
         target_units = [unit for unit in target_units if unit.group == target_group.id]
@@ -802,7 +916,7 @@ class GameServer:
     
     
     
-    def resolve_hero(self, target_units, played_card):
+    def resolve_hero(self, played_card, target_units):
         
         # Validity check (1): At least one unit
         if len(target_units) != 1:
@@ -839,7 +953,7 @@ class GameServer:
 
 
 
-    def prepare_fire(self, target_groups, played_card):
+    def prepare_fire(self, played_card, target_groups):
         
         # Get fire attributes
         card_firestrength, card_firepower = [int(n) for n in re.findall(r"\d+", played_card.subtype)]
@@ -890,10 +1004,13 @@ class GameServer:
         # Validity check (3)
         if target_groups[0] != self.pending_action["defensive_group"]:
             return
+
+        # Validity check (4)
+        if self.pending_action["type"] != "fire":
+            return
     
         # Resolve counter
-        if self.pending_action["type"] == "fire":
-            self.resolve_fire(played_card)
+        self.resolve_fire(played_card)
         
         # Add card to the group
         played_card.location = "table"
@@ -955,6 +1072,8 @@ class GameServer:
         if client.name != self.current_turn:
             if self.pending_action["type"] == "fire":
                 self.resolve_fire(None)
+            elif self.pending_action["type"] == "terrain":
+                self.accept_terrain()
             return
         
         # Check pending actions
@@ -1048,7 +1167,7 @@ class GameServer:
                 "current_turn": "player" if client.name == self.current_turn else "opponent",
                 "sound": self.current_sound,
                 "side": client.side,
-                "pending_action": True if self.pending_action["type"] else False,
+                "pending_action": self.pending_action["type"],
                 "winner": "draw" if self.winner == "draw" else "player" if client.name == self.winner else "opponent"
             }
             
@@ -1187,11 +1306,13 @@ class GameServer:
         if client.acted and client.nation != "german":
             return
                 
-        # Discard card
-        if played_card.type == "sniper" and not client.sniper_lost:
+        # Discard card (on enemy group or discard pile)
+        if card_mode == "enemy" and played_card.type == "sniper" and not client.sniper_lost:
             success = self.resolve_sniper(played_card, target_groups[1])
-        elif played_card.type == "wire":
+        elif card_mode == "enemy" and played_card.type == "wire":
             success = self.resolve_wire(played_card, target_groups[1])
+        elif card_mode == "enemy" and played_card.type == "terrain":
+            success = self.offer_terrain(played_card, target_groups[1])
         else:
             self.move_card_to_discard(played_card)
             success = True

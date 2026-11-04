@@ -56,6 +56,21 @@ LOBBY_NATIONS = ["american", "british", "french", "german", "italian", "japanese
 MAIN_COLOR = (50, 59, 64, 255)
 CARD_BACK_TEXTURE = arcade.load_texture("assets/cards/cardback.png")
 
+# Card modes per subphase (first mode is default)
+CARD_MODES = {
+    "action":  {"movement": ["forward", "sideways", "backward"]},
+    "discard": {"terrain":  ["discard", "enemy"],
+                "wire":     ["enemy", "discard"],
+                "sniper":   ["enemy", "discard"]}
+}
+
+# Turn labels per pending action (own turn, enemy turn)
+TURN_LABELS = {
+    None:      ("[Your Turn]",                 "[Enemy Turn]"),
+    "fire":    ("[Wait for concealed card]",   "[Play concealed card / pass]"),
+    "terrain": ("[Wait for terrain decision]", "[Accept (Space) / reject (R) terrain]"),
+}
+
 
 
 # ──[ Classes ]────────────────────────────────────────────────────────────────
@@ -886,6 +901,10 @@ class GameView(arcade.View):
         if key == arcade.key.P:
             self.group_action("voluntary_panic")
 
+        # Reject terrain discarded on own group
+        if key == arcade.key.R:
+            self.group_action("reject_terrain")
+
         # Open help
         if key == arcade.key.F1:
             self.window.show_view(HelpView(self))
@@ -935,21 +954,31 @@ class GameView(arcade.View):
     
     def switch_card_mode(self):
         
+        # Check if subphase is set
+        if self.game_subphase is None:
+            return
+        
+        # Check if card is hovered
         if self.hover_card is None:
             return
         
+        # Check if hovered card is owned by player
         if self.hover_card.owner != "player":
             return
         
-        if self.hover_card.type == "movement":
+        # Get modes for hovered card
+        modes = CARD_MODES.get(self.game_subphase).get(self.hover_card.type)
         
-            modes = ["forward", "sideways", "backward"]
-            
-            if self.hover_card.mode in modes:
-                i = (modes.index(self.hover_card.mode) + 1) % len(modes)
-                self.hover_card.mode = modes[i]
-            else:
-                self.hover_card.mode = modes[0]
+        # Check if hovered card has modes
+        if not modes:
+            return
+        
+        # Cycle through modes
+        if self.hover_card.mode in modes:
+            i = (modes.index(self.hover_card.mode) + 1) % len(modes)
+            self.hover_card.mode = modes[i]
+        else:
+            self.hover_card.mode = modes[0]
                 
         return True
             
@@ -1462,7 +1491,7 @@ class GameView(arcade.View):
             text.draw()
             
             
-        # Card mode
+        # Card mode (only where it applies)
         if self.hover_card is not None and self.hover_card.mode is not None:
             label = "[" + self.hover_card.mode + "]"
             x = self.hover_card.center_x
@@ -1473,10 +1502,8 @@ class GameView(arcade.View):
             
         # Turn
         if self.current_turn is not None:
-            if self.current_turn == "player":
-                label = "[Wait for concealed card]" if self.pending_action else "[Your Turn]"
-            else:
-                label = "[Play concealed card / pass]" if self.pending_action else "[Enemy Turn]"
+            own_label, enemy_label = TURN_LABELS.get(self.pending_action)
+            label = own_label if self.current_turn == "player" else enemy_label
             x = self.window.width - 20 * self.layout.scale
             y = 160 * self.layout.scale
             color = color=arcade.color.WHITE
