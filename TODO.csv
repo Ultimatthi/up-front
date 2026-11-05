@@ -6,7 +6,6 @@
 12;Ignoriert;Abweichung;6.5;Angreifer darf nach finaler Staerke abbrechen (Karte verwerfen, Aktion verbraucht);;;;
 13;Ignoriert;Abweichung;6.3;Mehrere Fire-Karten pro Angriff (Summe Staerke und FP);;;;
 14;Ignoriert;Abweichung;5.2/6.43/7.2;"Movement-Karten zaehlen: +1 pro Karte fuer Verteidiger; bei 2 Karten Terrain verloren";;;;
-17;;Abweichung;8.6;"Buildings Standard -3, nur -2 wenn auf Karte angegeben (Code fix -2; CSV unterscheidet die Buildings-Karten nicht)";;;;
 20;Ignoriert;Abweichung;13.25/13.6;Smoke und Wire kumulativ (Code: Boolean, zweite wird abgelehnt);;;;
 23;Ignoriert;Abweichung;15.2;SL im eigenen Zug gerade KIA/Panik -> -1 Karte beim Refill;;;;
 24;Ignoriert;Abweichung;4.5;Nachziehen optional (dann bis zur vollen Hand);;;;

@@ -42,7 +42,8 @@ TERRAIN_MOD = {
     None:        (0,   0),
     "brush":     (0,  -1),
     "woods":     (0,  -2),
-    "buildings": (0,  -2),  # TODO: some buildings are -3
+    "buildings -2": (0,  -2),
+    "buildings -3": (0,  -3),
     "hill":      (+1, -1),  # with conditions
     "marsh":     (-1, -1),
     "stream":    (-1,  0),
