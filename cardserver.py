@@ -53,13 +53,13 @@ TERRAIN_MOD = {
     "minefield": (0,   0)   # with conditions
 }
 
-# Cards treated as cower cards (kinds)
+# Cards treated as cower cards (subtypes)
 COWER_CARDS = {
     "A": ["pillbox", "minefield"]
 }
 
-# Cards removed from the game when first discarded or drawn as RNC (kind: count)
-REMOVED_CARDS = {
+# Cards to remove from the game when first discarded or drawn as RNC (kind: count)
+REMOVE_CARDS = {
     "A": {"buildings": 5}
 }
 
@@ -732,7 +732,7 @@ class GameServer:
             return False
 
         # Cower cards of the scenario cannot be played
-        if played_card.subtype.split()[0] in COWER_CARDS.get(self.scenario, []):
+        if played_card.subtype in COWER_CARDS.get(self.scenario, []):
             return False
 
         # Cards to be removed by the scenario are cower cards until then
@@ -754,13 +754,13 @@ class GameServer:
     def check_card_removal(self, card):
 
         # Scenario removes the first cards of this kind from the game
-        removed_cards = REMOVED_CARDS.get(self.scenario, {})
+        remove_cards = REMOVE_CARDS.get(self.scenario, {})
         kind = card.subtype.split()[0]
-        if kind not in removed_cards:
+        if kind not in remove_cards:
             return False
-        removed = [other for other in self.card_list
-                   if other.location == "void" and other.subtype.split()[0] == kind]
-        return len(removed) < removed_cards[kind]
+        removed = [card for card in self.card_list
+                   if card.location == "void" and card.subtype.split()[0] == kind]
+        return len(removed) < remove_cards[kind]
 
 
 
