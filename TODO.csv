@@ -19,4 +19,4 @@
 37;;Fehlt;8.4;Marsh (2 Movement-Karten, Waffenbeschraenkungen 8.41-8.44);;;;
 38;;Fehlt;8.5;Stream: Fording (8.53), Waffenbeschraenkungen (8.52);;;;
 40;;Fehlt;11 / 12.13;"Crew-Waffen: Assistent bestimmen, geklammerte/ungeklammerte FP, set_mode('crewed') wird nie gerufen; LMG in Bewegung nur geklammert und nur voll bemannt";;;;
-44;;Fehlt;5.6.2;Optional: Range-Reset beim Deckwechsel (Konsens);;;;
+44;Ignoriert;Fehlt;5.6.2;Optional: Range-Reset beim Deckwechsel (Konsens);;;;
