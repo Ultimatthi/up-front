@@ -102,8 +102,8 @@ class WaitingAnimation:
         label = "Waiting for opponent " + "." * dots + " " * (3 - dots)
         arcade.Text(
             label,
-            x=cx, y=cy - h / 2 - 50 * scale,
+            x=cx, y=cy - h / 2 - 70 * scale,
             color=arcade.color.WHITE,
-            font_size=18 * scale, font_name="Arial", bold=True,
+            font_size=24 * scale, font_name="Arial", bold=True,
             anchor_x="center", anchor_y="center"
         ).draw()
