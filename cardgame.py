@@ -32,7 +32,7 @@ from arcade.future.light import Light, LightLayer
 import markdown
 import pyglet
 from pyglet.text.layout import ScrollableTextLayout
-from menu.waiting_animation import WaitingAnimation
+from modules.waiting_animation import WaitingAnimation
 
 # ──[ Parameters ]─────────────────────────────────────────────────────────────
 
@@ -712,8 +712,8 @@ class GameView(arcade.View):
         self.dust_list.update(delta_time)
 
         # Update waiting animation
-        waiting = self.game_phase in ("assignment", "setup")
-        self.waiting_animation.update(delta_time, waiting)
+        self.waiting_animation.active = self.game_phase in ("assignment", "setup")
+        self.waiting_animation.update(delta_time)
                 
                 
         

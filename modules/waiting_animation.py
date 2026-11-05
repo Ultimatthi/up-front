@@ -8,7 +8,8 @@ import arcade
 
 WAITING_PERIOD = 2.4  # s, one shuffle cycle
 WAITING_CARDS = 4
-WAITING_VEIL_ALPHA = 170
+WAITING_CARD_ZOOM = 1.6  # relative to hand cards
+WAITING_TEXTURE = "assets/boardelements/board.texture.png"
 WAITING_SOUND = "assets/sounds/waiting.wav"  # loop of two shuffle cycles
 READY_SOUND = "assets/sounds/ready.wav"
 WAITING_VOLUME = 0.5
@@ -19,12 +20,13 @@ WAITING_VOLUME = 0.5
 
 class WaitingAnimation:
 
-    def __init__(self, card_texture, card_scale, veil_color):
+    def __init__(self, card_texture, card_scale, background_color):
 
         # Appearance
         self.texture = card_texture
-        self.card_scale = card_scale
-        self.veil_color = tuple(veil_color[:3]) + (WAITING_VEIL_ALPHA,)
+        self.card_scale = card_scale * WAITING_CARD_ZOOM
+        self.background_color = background_color
+        self.background_texture = arcade.load_texture(WAITING_TEXTURE)
 
         # Elapsed time (loops every WAITING_PERIOD)
         self.time = 0.0
@@ -35,17 +37,15 @@ class WaitingAnimation:
         self.player = None
         self.active = False
 
-    def update(self, delta_time, active):
+    def update(self, delta_time):
 
         # Game got ready: stop the loop and signal the connection
-        if self.active and not active and self.player is not None:
+        if not self.active and self.player is not None:
             self.stop()
             arcade.play_sound(self.sound_ready, volume=WAITING_VOLUME)
 
-        self.active = active
-
         # Start sound and animation together
-        if active and self.player is None:
+        if self.active and self.player is None:
             self.time = 0.0
             self.player = arcade.play_sound(self.sound, volume=WAITING_VOLUME, loop=True)
 
@@ -70,8 +70,9 @@ class WaitingAnimation:
         step = 4 * scale
         p = (self.time % WAITING_PERIOD) / WAITING_PERIOD
 
-        # Dim the board
-        arcade.draw_lrbt_rectangle_filled(0, width, 0, height, self.veil_color)
+        # Cover the board completely (background color with texture, as in the lobby)
+        arcade.draw_lrbt_rectangle_filled(0, width, 0, height, self.background_color)
+        arcade.draw_texture_rect(self.background_texture, arcade.LBWH(0, 0, width, height))
 
         # Top card slides out, then tucks back under the pile
         out = smoothstep(p / 0.4)
@@ -98,7 +99,7 @@ class WaitingAnimation:
 
         # Label with dots in sync with the shuffle
         dots = int(p * 3) + 1
-        label = "Waiting for opponent" + "." * dots + " " * (3 - dots)
+        label = "Waiting for opponent " + "." * dots + " " * (3 - dots)
         arcade.Text(
             label,
             x=cx, y=cy - h / 2 - 50 * scale,
