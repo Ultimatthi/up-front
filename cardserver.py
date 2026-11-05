@@ -53,6 +53,16 @@ TERRAIN_MOD = {
     "minefield": (0,   0)   # with conditions
 }
 
+# Cards treated as cower cards (kinds)
+COWER_CARDS = {
+    "A": ["pillbox", "minefield"]
+}
+
+# Cards removed from the game when first discarded or drawn as RNC (kind: count)
+REMOVED_CARDS = {
+    "A": {"buildings": 5}
+}
+
 TIME_LIMIT = 3
 
 # Axis nations (French not treated as Vichy France)
@@ -721,8 +731,12 @@ class GameServer:
         if played_card.subtype not in TERRAIN_MOD:
             return False
 
-        # Pillbox and minefield are cower cards in scenario A
-        if self.scenario == "A" and played_card.subtype in ["pillbox", "minefield"]:
+        # Cower cards of the scenario cannot be played
+        if played_card.subtype.split()[0] in COWER_CARDS.get(self.scenario, []):
+            return False
+
+        # Cards to be removed by the scenario are cower cards until then
+        if self.check_card_removal(played_card):
             return False
 
         # No terrain on wire (remove wire with movement card first)
@@ -734,6 +748,19 @@ class GameServer:
             return False
 
         return True
+
+
+
+    def check_card_removal(self, card):
+
+        # Scenario removes the first cards of this kind from the game
+        removed_cards = REMOVED_CARDS.get(self.scenario, {})
+        kind = card.subtype.split()[0]
+        if kind not in removed_cards:
+            return False
+        removed = [other for other in self.card_list
+                   if other.location == "void" and other.subtype.split()[0] == kind]
+        return len(removed) < removed_cards[kind]
 
 
 
@@ -1453,7 +1480,7 @@ class GameServer:
         
         # Draw top card
         rnc_card = deck.pop()
-        rnc_card.location = "discard"
+        self.move_card_to_discard(rnc_card)
         
         # Check for breeze
         if rnc_card.breeze:
@@ -1533,6 +1560,10 @@ class GameServer:
         card.group = None
         card.stack_index = 0
         card.location = "discard"
+
+        # Cards to be removed by the scenario go out of the game
+        if self.check_card_removal(card):
+            card.location = "void"
         
         
         

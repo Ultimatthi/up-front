@@ -1,7 +1,6 @@
 ﻿ID;Status;Kategorie;Regel;Aufgabe;;;;
 1;Ignoriert;Bug;-;Besitzpruefung fehlt: group_ids[0] muss dem Client gehoeren, group_ids[1] dem Gegner. Bewusst nicht umgesetzt: Client wird als vertrauenswuerdig angenommen (sendet immer eigene/gegnerische aktive Gruppe);;;;
 2;;Szenario A;3.6;Anfangsterrain-Phase (abwechselnde Platzierung, kein Cower/Smoke/Wire/Open Ground, nicht ablehnbar, danach Nachziehen);;;;
-5;;Szenario A;16.1;"Erste 5 Buildings (abgeworfen oder als RNC/RPC) nach 'void'; bis dahin Cower, danach normales Terrain";;;;
 6;;Szenario A;2.21 / 2.22;"Nationalitaets-Splits und nationenspezifische Cower-Karten: CSV hat keine Nationalitaets-Spalte; Split-Karten wie 'rally 2 / conceal -1 / radio' und 'rally 1 / movement' nur als Rally nutzbar, 'concealed -1 / movement' und 'movement / smoke' nur als Movement";;;;
 12;Ignoriert;Abweichung;6.5;Angreifer darf nach finaler Staerke abbrechen (Karte verwerfen, Aktion verbraucht);;;;
 13;Ignoriert;Abweichung;6.3;Mehrere Fire-Karten pro Angriff (Summe Staerke und FP);;;;
