@@ -1922,7 +1922,8 @@ class MenuView(arcade.View):
 
         if game_view.setup():
             # Reset window boundaries
-            self.window.set_minimum_size(LOBBY_WIDTH, LOBBY_HEIGHT)
+            scale = self.window.scale
+            self.window.set_minimum_size(int(LOBBY_WIDTH * scale), int(LOBBY_HEIGHT * scale))
             self.window.set_maximum_size(3840, 2160)
             # Enter game
             self.window.show_view(game_view)
@@ -1935,8 +1936,10 @@ class MenuView(arcade.View):
 
         self.manager.enable()
 
-        self.window.set_minimum_size(LOBBY_WIDTH, LOBBY_HEIGHT)
-        self.window.set_maximum_size(LOBBY_WIDTH, LOBBY_HEIGHT)
+        # Lock lobby size (pyglet does not scale size limits with the display scaling)
+        scale = self.window.scale
+        self.window.set_minimum_size(int(LOBBY_WIDTH * scale), int(LOBBY_HEIGHT * scale))
+        self.window.set_maximum_size(int(LOBBY_WIDTH * scale), int(LOBBY_HEIGHT * scale))
 
 
 
