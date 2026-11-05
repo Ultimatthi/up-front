@@ -32,6 +32,7 @@ from arcade.future.light import Light, LightLayer
 import markdown
 import pyglet
 from pyglet.text.layout import ScrollableTextLayout
+from menu.waiting_animation import WaitingAnimation
 
 # ──[ Parameters ]─────────────────────────────────────────────────────────────
 
@@ -460,6 +461,9 @@ class GameView(arcade.View):
         # Sprite list with all the dust particles (visual effect only)
         self.dust_list = arcade.SpriteList()
 
+        # Waiting animation until the game is ready
+        self.waiting_animation = WaitingAnimation(CARD_BACK_TEXTURE, CARD_SCALE, MAIN_COLOR)
+
         # Create every card
         for i in range(162):
             card_id = f"ac{i+1:02d}"
@@ -562,9 +566,16 @@ class GameView(arcade.View):
         
         self.ctrl_held = False
         self.alt_held = False
-    
-        
-    
+
+
+
+    def on_hide_view(self):
+
+        # Silence the waiting loop when leaving the view
+        self.waiting_animation.stop()
+
+
+
     def layout_elements(self):
             
         # Board element: Texture
@@ -699,6 +710,10 @@ class GameView(arcade.View):
                 
         # Update dust particles
         self.dust_list.update(delta_time)
+
+        # Update waiting animation
+        waiting = self.game_phase in ("assignment", "setup")
+        self.waiting_animation.update(delta_time, waiting)
                 
                 
         
@@ -735,6 +750,10 @@ class GameView(arcade.View):
         
         # Dust particles
         self.dust_list.draw()
+
+        # Waiting animation until the game is ready
+        if self.waiting_animation.active:
+            self.waiting_animation.draw(self.window.width, self.window.height, self.layout.scale)
             
         # self.light_layer.draw()
 
