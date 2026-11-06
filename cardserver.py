@@ -146,6 +146,10 @@ class Unit:
                 return 0
             values = self.firepower["uncrewed"]
 
+        # Heroic machinegunners double their bracketed values (also when fully crewed)
+        if self.heroic and self.crew_served:
+            values = self.firepower["uncrewed"]
+
         # Base firepower (doubled for heroes)
         firepower = values[relative_range] * (self.heroic+1)
 
