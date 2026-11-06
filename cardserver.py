@@ -118,8 +118,8 @@ class Unit:
         self.heroic = False
         
         # Attributes (crew related)
-        self.crew = None # unit id of crew partner
-        self.crew_served = isinstance(firepower, dict)
+        self.crew_partner = None # unit id of crew partner
+        self.crew_served = isinstance(firepower, dict) # True, False
         self._firepower = firepower
         self._malfunction = malfunction
         self.set_mode("uncrewed")
@@ -541,9 +541,12 @@ class GameServer:
         if target_group is None or target_group.empty:
             return
 
+        # Get targeted units
+        target_units = action.get("unit_ids")
+
         # Voluntary panic is no action (any subphase, also after an action)
         if action.get("action") == "voluntary_panic":
-            self.resolve_voluntary_panic(target_group, action.get("unit_ids"))
+            self.resolve_voluntary_panic(target_group, target_units)
             return
 
         # Check if group can act
@@ -554,7 +557,7 @@ class GameServer:
         if action.get("action") == "sniper_check":
             success = self.resolve_sniper_check(target_group)
         elif action.get("action") == "crew":
-            success = self.resolve_crew(target_group, action.get("unit_ids"))
+            success = self.resolve_crew(target_group, target_units)
         else:
             success = False
 
@@ -1230,7 +1233,7 @@ class GameServer:
                     "group": unit.group,
                     "slot": unit.slot,
                     "state": unit.state,
-                    "crew": unit.crew
+                    "crew_partner": unit.crew_partner
                 }
                 game_state["units"].append(unit_info)
                 
@@ -1446,26 +1449,32 @@ class GameServer:
 
     def resolve_crew(self, target_group, unit_ids):
 
-        # Two selected unpinned units of the group
-        units = [unit for unit in self.unit_list if unit.id in unit_ids and unit.group == target_group.id]
+        # Get targeted units
+        units = [unit for unit in self.unit_list if unit.id in unit_ids]
+
+        # Check validity (1)
+        if not all(unit.group == target_group.id for unit in units):
+            return False
+
+        # Check validity (2)
         if len(units) != 2 or any(unit.state != "rallied" for unit in units):
             return False
 
         # Uncrew: relieve the assistant of a crewed pair
-        if units[0].crew == units[1].id:
+        if units[0].crew_partner == units[1].id:
             for unit in units:
-                unit.crew = None
+                unit.crew_partner = None
                 unit.set_mode("uncrewed")
             target_group.last_action = "uncrewed"
             return True
 
         # Crew: exactly one crew-served weapon, neither unit already crew
         gunners = [unit for unit in units if unit.crew_served]
-        if len(gunners) != 1 or any(unit.crew for unit in units):
+        if len(gunners) != 1 or any(unit.crew_partner for unit in units):
             return False
         gunner = gunners[0]
         assistant = next(unit for unit in units if unit is not gunner)
-        gunner.crew, assistant.crew = assistant.id, gunner.id
+        gunner.crew_partner, assistant.crew_partner = assistant.id, gunner.id
         gunner.set_mode("crewed")
         assistant.set_mode("assistant")
 
@@ -1626,12 +1635,17 @@ class GameServer:
             for slot, unit in enumerate(sorted(units, key=lambda unit: unit.slot)):
                 unit.slot = slot
 
-            # Update crews: lost partner ends the crew, pinned assistant leaves the weapon uncrewed
-            for unit in [unit for unit in units if unit.crew]:
-                partner = next((partner for partner in units if partner.id == unit.crew), None)
+            # Get crew members
+            crews = [unit for unit in units if unit.crew_partner]
+
+            # Update crew members
+            for unit in crews:
+                partner = next((partner for partner in units if partner.id == unit.crew_partner), None)
+                # Lost partner ends crew
                 if partner is None:
-                    unit.crew = None
+                    unit.crew_partner = None
                     unit.set_mode("uncrewed")
+                # Pinned assistant leaves the weapon uncrewed
                 elif unit.mode != "assistant":
                     unit.set_mode("crewed" if partner.state == "rallied" else "uncrewed")
 
