@@ -150,6 +150,7 @@ class Unit(arcade.Sprite):
         self.slot = 0
         self.state = "rallied" # rallied, pinned, routed, kia
         self.selected = False
+        self.crew = None
 
         base = f'assets/units/{nation}/{unit_id}'
 
@@ -540,6 +541,7 @@ class GameView(arcade.View):
         
         # Overlay elements
         self.unit_overlay = arcade.Sprite("assets/overlays/unit.overlay.png", self.layout.unit_scale)
+        self.crew_chit = arcade.Sprite("assets/chits/chit.crew.png", self.layout.scale)
         
         # Layout elements
         self.layout_elements()
@@ -916,6 +918,10 @@ class GameView(arcade.View):
         if key == arcade.key.S:
             self.group_action("sniper_check")
 
+        # Crew/uncrew the two selected units
+        if key == arcade.key.C:
+            self.group_action("crew")
+
         # Voluntary panic of selected pinned units
         if key == arcade.key.P:
             self.group_action("voluntary_panic")
@@ -1121,6 +1127,7 @@ class GameView(arcade.View):
                 unit.group = logical_unit["group"]
                 unit.slot = logical_unit["slot"]
                 unit.state = logical_unit["state"]
+                unit.crew = logical_unit["crew"]
                 
                         
         # Get logical group variables
@@ -1578,6 +1585,15 @@ class GameView(arcade.View):
         # Draw unit overlays
         for unit in self.unit_list:
             unit.draw_overlay(self.unit_overlay)
+
+        # Draw crew chits (overlapping both crew units)
+        for unit in self.unit_list:
+            partner = next((partner for partner in self.unit_list if partner.id == unit.crew), None)
+            if partner and unit.slot < partner.slot:
+                self.crew_chit.position = ((unit.center_x + partner.center_x) / 2,
+                                           (unit.center_y + partner.center_y) / 2)
+                self.crew_chit.scale = self.layout.scale
+                arcade.draw_sprite(self.crew_chit)
     
         # Draw hovered unit
         if self.hover_unit:

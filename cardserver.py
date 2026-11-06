@@ -118,11 +118,13 @@ class Unit:
         self.heroic = False
         
         # Attributes (crew related)
+        self.crew = None # unit id of crew partner
+        self.crew_served = isinstance(firepower, dict)
         self._firepower = firepower
         self._malfunction = malfunction
         self.set_mode("uncrewed")
             
-    def set_mode(self, mode):
+    def set_mode(self, mode): # crewed, uncrewed, assistant
         
         self.mode = mode
         self.firepower = self._select(self._firepower)
@@ -137,6 +139,16 @@ class Unit:
         # Only rallied units fire
         if self.state != "rallied":
             return 0
+
+        # Assistants forfeit their own firepower
+        if self.mode == "assistant":
+            return 0
+
+        # Moving light machine guns: bracketed firepower, only when fully crewed
+        if group.moving and self.weapon == "Light Machinegun":
+            if self.mode != "crewed":
+                return 0
+            return self._firepower["uncrewed"][relative_range] * (self.heroic+1)
 
         # Base firepower (doubled for heroes)
         firepower = self.firepower[relative_range] * (self.heroic+1)
@@ -541,6 +553,8 @@ class GameServer:
         # Resolve action
         if action.get("action") == "sniper_check":
             success = self.resolve_sniper_check(target_group)
+        elif action.get("action") == "crew":
+            success = self.resolve_crew(target_group, action.get("unit_ids"))
         else:
             success = False
 
@@ -1215,7 +1229,8 @@ class GameServer:
                     "owner": "player" if client.name == unit.owner else "opponent",
                     "group": unit.group,
                     "slot": unit.slot,
-                    "state": unit.state
+                    "state": unit.state,
+                    "crew": unit.crew
                 }
                 game_state["units"].append(unit_info)
                 
@@ -1429,6 +1444,39 @@ class GameServer:
 
 
 
+    def resolve_crew(self, target_group, unit_ids):
+
+        # Two selected unpinned units of the group
+        units = [unit for unit in self.unit_list if unit.id in unit_ids and unit.group == target_group.id]
+        if len(units) != 2 or any(unit.state != "rallied" for unit in units):
+            return False
+
+        # Uncrew: relieve the assistant of a crewed pair
+        if units[0].crew == units[1].id:
+            for unit in units:
+                unit.crew = None
+                unit.set_mode("uncrewed")
+            target_group.last_action = "uncrewed"
+            return True
+
+        # Crew: exactly one crew-served weapon, neither unit already crew
+        gunners = [unit for unit in units if unit.crew_served]
+        if len(gunners) != 1 or any(unit.crew for unit in units):
+            return False
+        gunner = gunners[0]
+        assistant = next(unit for unit in units if unit is not gunner)
+        gunner.crew, assistant.crew = assistant.id, gunner.id
+        gunner.set_mode("crewed")
+        assistant.set_mode("assistant")
+
+        # Assistant is placed next to the weapon (gaps are closed in aftermath)
+        assistant.slot = gunner.slot + 0.5
+
+        target_group.last_action = "crewed"
+        return True
+
+
+
     def resolve_voluntary_panic(self, target_group, unit_ids):
 
         # Selected pinned units of the group
@@ -1577,6 +1625,15 @@ class GameServer:
             # Close gaps in positions after losses
             for slot, unit in enumerate(sorted(units, key=lambda unit: unit.slot)):
                 unit.slot = slot
+
+            # Update crews: lost partner ends the crew, pinned assistant leaves the weapon uncrewed
+            for unit in [unit for unit in units if unit.crew]:
+                partner = next((partner for partner in units if partner.id == unit.crew), None)
+                if partner is None:
+                    unit.crew = None
+                    unit.set_mode("uncrewed")
+                elif unit.mode != "assistant":
+                    unit.set_mode("crewed" if partner.state == "rallied" else "uncrewed")
 
             # Group empty?
             group.empty = len(units) == 0
