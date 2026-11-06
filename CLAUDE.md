@@ -23,6 +23,7 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 - In Code, Kommentaren und Texten immer „units“ statt „men“ verwenden.
 - In Code-Kommentaren keine Regel-Kapitel angeben (z. B. kein „16.42“); die Referenzen kommen erst ganz am Ende.
 - Der bestehenden Philosophie und Programmierweise möglichst treu bleiben: vorhandene Muster (z. B. `pending_action`, `resolve_*`-Funktionen, Kartenmodi, Kommentarstil) wiederverwenden statt neue Konzepte einzuführen.
+- Möglichst flache Hierarchien, wenig Verschachtelung: früh mit `return`/`continue` aussteigen statt Bedingungen ineinander zu verschachteln; Zwischenwerte in eigene Variablen statt lange verschachtelte Ausdrücke.
 
 ## Projektentscheidungen
 

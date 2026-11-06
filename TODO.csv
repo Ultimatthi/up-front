@@ -17,3 +17,4 @@
 37;;Fehlt;8.4;Marsh (2 Movement-Karten, Waffenbeschraenkungen 8.41-8.44);;;;
 38;;Fehlt;8.5;Stream: Fording (8.53), Waffenbeschraenkungen (8.52);;;;
 44;Ignoriert;Fehlt;5.6.2;Optional: Range-Reset beim Deckwechsel (Konsens);;;;
+45;;Abweichung;10.45;Hero auf Maschinengewehr verdoppelt immer den geklammerten Wert, auch wenn voll bemannt (Code verdoppelt den Crew-Wert);;;;

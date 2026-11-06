@@ -120,19 +120,9 @@ class Unit:
         # Attributes (crew related)
         self.crew_partner = None # unit id of crew partner
         self.crew_served = isinstance(firepower, dict) # True, False
-        self._firepower = firepower
-        self._malfunction = malfunction
-        self.set_mode("uncrewed")
-            
-    def set_mode(self, mode): # crewed, uncrewed, assistant
-        
-        self.mode = mode
-        self.firepower = self._select(self._firepower)
-        self.malfunction = self._select(self._malfunction)
-    
-    def _select(self, value):
-        
-        return value[self.mode] if isinstance(value, dict) else value
+        self.mode = "uncrewed" # crewed, uncrewed, assistant
+        self.firepower = firepower
+        self.malfunction = malfunction
 
     def get_firepower(self, group, relative_range):
 
@@ -144,14 +134,20 @@ class Unit:
         if self.mode == "assistant":
             return 0
 
-        # Moving light machine guns: bracketed firepower, only when fully crewed
+        # Firepower values (crew-served weapons depend on their crew)
+        if not self.crew_served:
+            values = self.firepower
+        else:
+            values = self.firepower[self.mode]
+
+        # Moving light machine guns: bracketed values, only when fully crewed
         if group.moving and self.weapon == "Light Machinegun":
             if self.mode != "crewed":
                 return 0
-            return self._firepower["uncrewed"][relative_range] * (self.heroic+1)
+            values = self.firepower["uncrewed"]
 
         # Base firepower (doubled for heroes)
-        firepower = self.firepower[relative_range] * (self.heroic+1)
+        firepower = values[relative_range] * (self.heroic+1)
 
         # Moving fire: halve bolt-action rifles (rounded down)
         if group.moving and self.weapon == "Bolt-Action Rifle":
@@ -1464,7 +1460,7 @@ class GameServer:
         if units[0].crew_partner == units[1].id:
             for unit in units:
                 unit.crew_partner = None
-                unit.set_mode("uncrewed")
+                unit.mode = "uncrewed"
             target_group.last_action = "uncrewed"
             return True
 
@@ -1475,8 +1471,8 @@ class GameServer:
         gunner = gunners[0]
         assistant = next(unit for unit in units if unit is not gunner)
         gunner.crew_partner, assistant.crew_partner = assistant.id, gunner.id
-        gunner.set_mode("crewed")
-        assistant.set_mode("assistant")
+        gunner.mode = "crewed"
+        assistant.mode = "assistant"
 
         # Assistant is placed next to the weapon (gaps are closed in aftermath)
         assistant.slot = gunner.slot + 0.5
@@ -1644,10 +1640,10 @@ class GameServer:
                 # Lost partner ends crew
                 if partner is None:
                     unit.crew_partner = None
-                    unit.set_mode("uncrewed")
+                    unit.mode = "uncrewed"
                 # Pinned assistant leaves the weapon uncrewed
                 elif unit.mode != "assistant":
-                    unit.set_mode("crewed" if partner.state == "rallied" else "uncrewed")
+                    unit.mode = "crewed" if partner.state == "rallied" else "uncrewed"
 
             # Group empty?
             group.empty = len(units) == 0
