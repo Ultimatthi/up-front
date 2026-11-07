@@ -156,8 +156,8 @@ ac154,fire,fire 2 (ff1),-5,false,red,1|2|1|2|4|4|7|2|1|4,r|r|b|b|b|r|b|b|b|b,,
 ac155,fire,fire 3 (ff4),-4,false,red,1|1|2|3|5|5|1|3|2|5,r|r|b|b|b|r|b|b|b|b,,
 ac156,sniper,sniper (kia 6 pin 3),-0,false,red,1|2|3|4|1|6|2|4|3|6,r|r|b|b|b|r|b|b|b|b,,
 ac157,terrain,brush,-1,false,red,1|1|1|1|2|1|3|5|4|7,r|r|r|b|b|b|b|b|b|b,,
-ac158,split,movement / smoke,4,false,black,1|2|2|2|3|2|4|6|5|8,r|r|r|b|b|b|b|r|b|b,italian,german|russian|japanese|french|british / american|british
-ac159,split,rally 1 / movement,3,false,black,1|1|3|3|4|3|5|7|6|9,r|b|r|b|r|b|b|b|b|b,italian,german|american|russian|japanese|french|british / russian|japanese
+ac158,split,movement / smoke,4,false,black,1|2|2|2|3|2|4|6|5|8,r|r|r|b|b|b|b|r|b|b,italian,german|russian|japanese|french / american|british
+ac159,split,rally 1 / movement,3,false,black,1|1|3|3|4|3|5|7|6|9,r|b|r|b|r|b|b|b|b|b,italian,german|american|french|british / russian|japanese
 ac160,rally,rally all,0,false,black,1|2|1|4|5|4|6|8|7|0,r|b|r|r|r|b|b|b|b|b,,
-ac161,split,concealed -1 / movement,-3,false,red,1|1|2|1|1|5|7|1|8|1,b|b|r|r|r|b|b|b|b|b,italian,german|american|russian|japanese|french|british / russian|japanese
-ac162,split,concealed -1 / movement,-4,false,red,1|2|3|2|2|6|1|2|9|2,r|b|r|r|r|b|b|b|b|b,italian,german|american|russian|japanese|french|british / russian|japanese
+ac161,split,concealed -1 / movement,-3,false,red,1|1|2|1|1|5|7|1|8|1,b|b|r|r|r|b|b|b|b|b,italian,german|american|french|british / russian|japanese
+ac162,split,concealed -1 / movement,-4,false,red,1|2|3|2|2|6|1|2|9|2,r|b|r|r|r|b|b|b|b|b,italian,german|american|french|british / russian|japanese
