@@ -182,6 +182,14 @@ class Unit(arcade.Sprite):
             overlay.scale = self.scale
             arcade.draw_sprite(overlay)
 
+    def draw_crew_chit(self, chit):
+
+        if self.crew_partner:
+            chit.scale = self.scale
+            chit.right = self.right
+            chit.top = self.top
+            arcade.draw_sprite(chit)
+
 
         
 class Group(arcade.Sprite):
@@ -541,7 +549,7 @@ class GameView(arcade.View):
         
         # Overlay elements
         self.unit_overlay = arcade.Sprite("assets/overlays/unit.overlay.png", self.layout.unit_scale)
-        self.crew_chit = arcade.Sprite("assets/chits/chit.crew.png", self.layout.scale)
+        self.crew_chit = arcade.Sprite("assets/chits/chit.crew.png", self.layout.unit_scale)
         
         # Layout elements
         self.layout_elements()
@@ -1582,27 +1590,16 @@ class GameView(arcade.View):
         if self.hover_card:
             arcade.draw_sprite(self.hover_card)
     
-        # Draw unit overlays
+        # Draw unit overlays and crew chits
         for unit in self.unit_list:
             unit.draw_overlay(self.unit_overlay)
-
-        # Draw crew chits (overlapping both crew units)
-        for unit in self.unit_list:
-            partner = next((partner for partner in self.unit_list if partner.id == unit.crew_partner), None)
-            if not partner:
-                continue
-            if unit.slot >= partner.slot:
-                continue
-            x = (unit.center_x + partner.center_x) / 2
-            y = (unit.center_y + partner.center_y) / 2
-            self.crew_chit.position = x, y
-            self.crew_chit.scale = self.layout.scale
-            arcade.draw_sprite(self.crew_chit)
+            unit.draw_crew_chit(self.crew_chit)
     
         # Draw hovered unit
         if self.hover_unit:
             arcade.draw_sprite(self.hover_unit)
             self.hover_unit.draw_overlay(self.unit_overlay)
+            self.hover_unit.draw_crew_chit(self.crew_chit)
             
             
             

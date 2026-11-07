@@ -1478,8 +1478,11 @@ class GameServer:
         gunner.mode = "crewed"
         assistant.mode = "assistant"
 
-        # Assistant is placed next to the weapon (gaps are closed in aftermath)
-        assistant.slot = gunner.slot + 0.5
+        # Assistant moves next to the weapon from its side (gaps are closed in aftermath)
+        if assistant.slot < gunner.slot:
+            assistant.slot = gunner.slot - 0.5
+        else:
+            assistant.slot = gunner.slot + 0.5
 
         target_group.last_action = "crewed"
         return True
