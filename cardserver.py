@@ -140,9 +140,10 @@ class Unit:
         else:
             values = self.firepower[self.mode]
 
-        # Moving light machine guns: bracketed values, only when fully crewed
-        if group.moving and self.weapon == "Light Machinegun":
-            if self.mode != "crewed":
+        # Light machine guns moving or in water: bracketed values, only when fully crewed
+        in_water = group.terrain in ["marsh", "stream"]
+        if self.weapon == "Light Machinegun" and (group.moving or in_water):
+            if self.mode != "crewed" or (group.moving and in_water):
                 return 0
             values = self.firepower["uncrewed"]
 
@@ -708,6 +709,10 @@ class GameServer:
         # Check blocking: relative range to opposite group must not exceed 5
         opposite = next((group for group in enemy_groups if group.label == target_group.label), None)
         if card_mode == "forward" and opposite and target_group.range + 1 + opposite.range > 5:
+            return False
+
+        # First movement card on marsh must be sideways
+        if target_group.terrain == "marsh" and not target_group.moving and card_mode != "sideways":
             return False
 
         # Second movement card: group leaves its terrain
