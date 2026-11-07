@@ -1,4 +1,4 @@
-﻿id,type,subtype,rnc,breeze,color,rpn,rpn_color,
+﻿id,type,subtype,rnc,breeze,color,rpn,rpn_color,cower
 ac01,movement,movement,6,false,black,1|1|1|1|1|1|1|1|1|1,b|b|b|b|b|b|b|b|b|b,
 ac02,movement,movement,5,false,black,1|2|2|2|2|2|2|2|2|2,b|b|b|b|b|b|b|b|b|b,
 ac03,movement,ford,5,false,black,1|1|3|3|3|3|3|3|3|3,r|r|b|b|b|b|b|b|b|b,
@@ -10,9 +10,9 @@ ac08,movement,movement,2,false,black,1|2|2|4|3|2|1|8|8|8,r|b|b|r|r|r|r|b|b|b,
 ac09,movement,movement,2,false,black,1|1|3|1|4|3|2|1|9|9,r|r|b|b|b|r|r|r|b|b,
 ac10,movement,movement,1,false,black,1|2|1|2|5|4|3|2|1|0,r|r|r|b|r|r|r|r|r|b,
 ac11,movement,movement,1,false,black,1|1|2|3|1|5|4|3|2|1,b|r|r|b|b|r|r|r|r|r,
-ac12,movement,movement,0,false,black,1|2|3|4|2|6|5|4|3|2,b|r|r|b|b|r|r|r|r|r,
+ac12,movement,movement,0,false,black,1|2|3|4|2|6|5|4|3|2,b|r|r|b|b|r|r|r|r|r,american|italian
 ac13,movement,ford,0,false,black,1|1|1|1|3|1|6|5|4|3,r|b|b|b|b|b|r|r|r|r,
-ac14,movement,movement,-0,false,red,1|2|2|2|4|2|7|6|5|4,r|b|b|b|b|b|r|r|r|r,
+ac14,movement,movement,-0,false,red,1|2|2|2|4|2|7|6|5|4,r|b|b|b|b|b|r|r|r|r,american|italian
 ac15,movement,ford,-0,false,red,1|1|3|3|5|3|1|7|6|5,r|r|b|b|b|b|b|r|r|b,
 ac16,movement,movement,-1,false,red,1|2|1|4|1|4|2|8|7|6,r|r|r|b|r|b|b|r|r|r,
 ac17,movement,movement,-1,false,red,1|1|2|1|2|5|3|1|8|7,r|r|r|b|r|b|b|b|r|r,
@@ -35,11 +35,11 @@ ac33,terrain,buildings -2,1,false,black,1|1|3|1|3|3|5|1|6|3,r|r|b|b|b|b|b|b|r|r,
 ac34,rally,rally 1,5,false,black,1|2|1|2|4|4|6|2|7|4,r|r|r|b|b|b|b|b|r|r,
 ac35,rally,rally 2,-1,true,red,1|1|2|3|5|5|7|3|8|5,r|r|r|b|b|b|b|b|r|r,
 ac36,rally,rally 5 / radio,-1,false,red,1|2|3|4|1|6|1|4|9|6,r|r|r|b|r|b|r|r|r|b,
-ac37,rally,rally 1,4,false,black,1|1|1|1|2|1|2|5|1|7,r|b|b|r|r|r|r|r|b|b,
+ac37,rally,rally 1,4,false,black,1|1|1|1|2|1|2|5|1|7,r|b|b|r|r|r|r|r|b|b,american|italian
 ac38,rally,rally 2,-2,true,red,1|2|2|2|3|2|3|6|2|8,r|b|b|r|r|r|r|b|b|b,
 ac39,rally,rally 6 / radio,-0,false,red,1|1|3|3|4|3|4|7|3|9,r|r|b|r|b|r|r|b|b|b,
 ac40,rally,rally 1,-5,true,red,1|2|1|4|5|4|5|8|4|0,r|r|r|r|r|r|r|b|b|b,
-ac41,rally,rally 1,-4,false,red,1|1|2|1|1|5|6|1|5|1,b|r|r|b|b|r|r|b|b|b,
+ac41,rally,rally 1,-4,false,red,1|1|2|1|1|5|6|1|5|1,b|r|r|b|b|r|r|b|b|b,american|italian
 ac42,rally,rally 2 / radio,0,false,black,1|2|3|2|2|6|7|2|6|2,b|r|r|b|b|r|r|b|b|b,
 ac43,rally,rally 3,2,true,black,1|1|1|3|3|1|1|3|7|3,r|b|b|b|b|b|b|b|b|b,
 ac44,rally,rally 3,-2,true,red,1|2|2|4|4|2|2|4|8|4,r|b|b|b|b|b|b|b|b|b,
@@ -55,15 +55,15 @@ ac53,rally,rally 4 / conceal -1 / radio,4,false,black,1|1|2|1|3|5|4|5|8|3,r|r|r|
 ac54,concealed,concealed -1,3,false,black,1|2|3|2|4|6|5|6|9|4,r|r|r|b|b|b|b|b|b|b,
 ac55,concealed,concealed -1,2,false,black,1|1|1|3|5|1|6|7|1|5,r|b|b|b|b|b|b|b|b|b,
 ac56,concealed,concealed -1,1,false,black,1|2|2|4|1|2|7|8|2|6,r|b|b|b|r|b|b|b|b|b,
-ac57,concealed,concealed -1,0,false,black,1|1|3|1|2|3|1|1|3|7,r|r|b|b|b|b|b|b|b|b,
+ac57,concealed,concealed -1,0,false,black,1|1|3|1|2|3|1|1|3|7,r|r|b|b|b|b|b|b|b|b,german|american|british|french|italian
 ac58,terrain,buildings -2,-0,false,red,1|2|1|2|3|4|2|2|4|8,r|r|r|b|b|b|b|b|b|b,
 ac59,concealed,concealed -1,-1,false,red,1|1|2|3|4|5|3|3|5|9,r|r|r|b|r|b|b|b|b|b,
-ac60,concealed,concealed -1,-2,false,red,1|2|3|4|5|6|4|4|6|0,r|r|r|b|r|b|b|b|b|b,
+ac60,concealed,concealed -1,-2,false,red,1|2|3|4|5|6|4|4|6|0,r|r|r|b|r|b|b|b|b|b,german|american|british|french|italian
 ac61,concealed,concealed -1,-3,false,red,1|1|1|1|1|1|5|5|7|1,b|b|b|b|b|b|b|b|b|b,
 ac62,concealed,concealed -1,-0,false,red,1|2|2|2|2|2|6|6|8|2,b|b|b|b|b|b|b|b|b|b,
 ac63,concealed,concealed -2,4,false,black,1|1|3|3|3|3|7|7|9|3,r|r|b|b|b|b|b|b|b|b,
 ac64,terrain,pillbox,-0,false,red,1|2|1|4|4|4|1|8|1|4,r|r|r|b|b|b|b|b|b|b,
-ac65,concealed,concealed -2,2,false,black,1|1|2|1|5|5|2|1|2|5,r|r|r|r|b|b|b|b|b|b,
+ac65,concealed,concealed -2,2,false,black,1|1|2|1|5|5|2|1|2|5,r|r|r|r|b|b|b|b|b|b,american|italian
 ac66,concealed,concealed -2,-2,false,red,1|2|3|2|1|6|3|2|3|6,r|r|r|r|r|b|b|b|b|b,
 ac67,concealed,concealed -2,-4,false,red,1|1|1|3|2|1|4|3|4|7,r|b|b|r|r|r|b|b|b|b,
 ac68,concealed,concealed -3,1,false,black,1|2|2|4|3|2|5|4|5|8,r|b|b|r|r|r|b|b|b|b,
@@ -126,13 +126,13 @@ ac124,terrain,gully,-4,false,red,1|2|1|4|4|4|5|4|7|4,r|r|r|r|b|b|b|b|b|b,
 ac125,terrain,wall,-2,false,red,1|1|2|1|5|5|6|5|8|5,r|r|r|b|b|b|b|b|b|b,
 ac126,wire,wire,-2,false,red,1|2|3|2|1|6|7|6|9|6,r|r|r|b|r|b|b|b|b|b,
 ac127,terrain,brush,1,false,black,1|1|1|3|2|1|1|7|1|7,r|b|b|b|r|r|b|b|b|b,
-ac128,smoke,smoke,3,false,black,1|2|2|4|3|2|2|8|2|8,r|b|b|b|r|r|b|b|b|b,
+ac128,smoke,smoke,3,false,black,1|2|2|4|3|2|2|8|2|8,r|b|b|b|r|r|b|b|b|b,russian|japanese|italian
 ac129,terrain,brush,0,false,black,1|1|3|1|4|3|3|1|3|9,r|r|b|r|b|r|b|b|b|b,
-ac130,smoke,smoke,1,false,black,1|2|1|2|5|4|4|2|4|0,r|r|r|r|b|r|b|b|b|b,
+ac130,smoke,smoke,1,false,black,1|2|1|2|5|4|4|2|4|0,r|r|r|r|b|r|b|b|b|b,russian|japanese|italian
 ac131,terrain,brush,0,false,black,1|1|2|3|1|5|5|3|5|1,b|r|r|r|b|r|b|b|b|b,
-ac132,smoke,smoke,-1,false,red,1|2|3|4|2|6|6|4|6|2,b|r|r|r|b|r|b|b|b|b,
+ac132,smoke,smoke,-1,false,red,1|2|3|4|2|6|6|4|6|2,b|r|r|r|b|r|b|b|b|b,german|russian|japanese|french|italian
 ac133,terrain,brush,-0,false,red,1|1|1|1|3|1|7|5|7|3,r|b|b|b|b|b|b|b|b|b,
-ac134,smoke,smoke,-3,false,red,1|2|2|2|4|2|1|6|8|4,r|b|b|b|b|b|b|b|b|b,
+ac134,smoke,smoke,-3,false,red,1|2|2|2|4|2|1|6|8|4,r|b|b|b|b|b|b|b|b|b,german|russian|japanese|french|italian
 ac135,terrain,brush,-0,false,red,1|1|3|3|5|3|2|7|9|5,r|r|b|b|b|b|b|b|b|b,
 ac136,terrain,stream,0,false,black,1|2|1|4|1|4|3|8|1|6,r|r|r|b|b|b|b|b|b|b,
 ac137,terrain,marsh,0,false,black,1|1|2|1|2|5|4|1|2|7,r|r|r|r|b|b|b|b|b|b,

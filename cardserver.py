@@ -73,7 +73,7 @@ AXIS = ["german", "japanese", "italian"]
 
 class Card:
     
-    def __init__(self, card_id, card_type, card_subtype, rnc, breeze, color, rpn):
+    def __init__(self, card_id, card_type, card_subtype, rnc, breeze, color, rpn, cower):
 
         self.id = card_id
         self.type = card_type
@@ -84,6 +84,9 @@ class Card:
 
         # Random position numbers: index = group size, rpn[10] = 0r (printed 0 = 10)
         self.rpn = [None] + [10 if n == "0" else int(n) for n in rpn.split("|")]
+
+        # Nations treating this card as cower card
+        self.cower = cower.split("|")
 
         self.location = "deck" # deck, discard, void, hand, table
         self.group = None
@@ -237,7 +240,7 @@ class GameServer:
         self.left_clients = {}
 
         # Card table
-        self.card_table = pd.read_csv("assets/cards/card_table.csv", sep=",")
+        self.card_table = pd.read_csv("assets/cards/card_table.csv", sep=",", keep_default_na=False)
         self.card_table.set_index("id", inplace=True)
         
         # Unit table
@@ -405,7 +408,7 @@ class GameServer:
         for i in range(162):
             card_id = f"ac{i+1:02d}"
             row = self.card_table.loc[card_id]
-            card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["breeze"], row["color"], row["rpn"])
+            card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["breeze"], row["color"], row["rpn"], row["cower"])
             self.card_list.append(card)
             
         # Create every unit
@@ -615,6 +618,10 @@ class GameServer:
         
         # Get card mode
         card_mode = action.get("card_mode")
+
+        # Cower cards can only be discarded
+        if client.nation in played_card.cower and self.game_subphase == "action":
+            return
         
         # Resolve card
         if self.pending_action["type"] is not None:
