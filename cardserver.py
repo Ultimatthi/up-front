@@ -73,7 +73,7 @@ AXIS = ["german", "japanese", "italian"]
 
 class Card:
     
-    def __init__(self, card_id, card_type, card_subtype, rnc, breeze, color, rpn, cower):
+    def __init__(self, card_id, card_type, card_subtype, rnc, breeze, color, rpn, cower, split):
 
         self.id = card_id
         self.type = card_type
@@ -87,6 +87,10 @@ class Card:
 
         # Nations treating this card as cower card
         self.cower = cower.split("|")
+
+        # Card types per nation for split cards (nations per subtype side)
+        sides = zip(card_subtype.split(" / "), split.split(" / "))
+        self.split = {side.split()[0]: nations.split("|") for side, nations in sides if nations}
 
         self.location = "deck" # deck, discard, void, hand, table
         self.group = None
@@ -408,7 +412,7 @@ class GameServer:
         for i in range(162):
             card_id = f"ac{i+1:02d}"
             row = self.card_table.loc[card_id]
-            card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["breeze"], row["color"], row["rpn"], row["cower"])
+            card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["breeze"], row["color"], row["rpn"], row["cower"], row["split"])
             self.card_list.append(card)
             
         # Create every unit
@@ -1093,7 +1097,7 @@ class GameServer:
         firestrength = self.pending_action["strength"] 
         
         # Get concealed firestrength
-        concealed_firestrength = int(concealed_card.subtype.split()[-1]) if concealed_card else 0
+        concealed_firestrength = int(re.findall(r"-\d+", concealed_card.subtype)[0]) if concealed_card else 0
         
         # Defensive units
         defensive_units = [unit for unit in self.unit_list if unit.group == self.pending_action["defensive_group"].id]
@@ -1241,6 +1245,7 @@ class GameServer:
             for card in self.card_list:
                 card_info = {
                     "card_id": card.id,
+                    "type": card.type,
                     "owner": "player" if client.name == card.owner else "opponent",
                     "location": card.location,
                     "group": card.group,
@@ -1349,6 +1354,11 @@ class GameServer:
             card = deck.pop()
             card.location = "hand"
             card.owner = client.name
+
+            # Split cards get the type of the owner's nation
+            split_types = [split_type for split_type, nations in card.split.items() if client.nation in nations]
+            if split_types:
+                card.type = split_types[0]
             
             # Index card
             self.draw_counter += 1

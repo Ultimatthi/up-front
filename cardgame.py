@@ -1114,6 +1114,7 @@ class GameView(arcade.View):
             if key in card_map:
                 card = card_map[key]
                 card.owner = logical_card["owner"]
+                card.type = logical_card["type"]
                 card.location = logical_card["location"]
                 card.group = logical_card["group"]
                 card.stack_index = logical_card["stack_index"]
