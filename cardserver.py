@@ -715,6 +715,18 @@ class GameServer:
         if target_group.terrain == "marsh" and not target_group.moving and card_mode != "sideways":
             return False
 
+        # Stream can only be left by fording (sideways)
+        fording = target_group.terrain == "stream" and not target_group.moving
+        if fording and card_mode != "sideways":
+            return False
+
+        # Fording without ford card needs a black RNC (otherwise card is lost, action counts)
+        if fording and played_card.subtype != "ford":
+            rnc_card = self.draw_rnc_card()
+            if rnc_card.color != "black":
+                self.move_card_to_discard(played_card)
+                return True
+
         # Second movement card: group leaves its terrain
         if target_group.moving:
             target_group.terrain = None
