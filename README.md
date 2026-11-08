@@ -21,6 +21,29 @@ Currently, work is focused on implementing Scenario A of the base game.
 
 Expect missing rules and bugs until the first stable release.
 
+## Rule Deviations
+
+The game follows the rulebook up to chapter 16 (Scenario A). The following rules are deliberately not implemented.
+
+### Edge Cases
+
+Rare situations that would add complexity without noticeably changing play:
+
+* **Aborting an attack (6.5):** The attacker may not cancel an attack after its final strength is known.
+* **Cumulative Smoke and Wire (13.25, 13.6):** A group holds at most one Smoke and one Wire card; a second one is rejected.
+* **Squad Leader lost during own turn (15.2):** The hand size reduction applies from the next refill, not already at the end of the turn in which the Squad Leader is lost.
+* **Rally All for two groups (10.23):** Rally All affects only the active group.
+* **Deck running out during an attack (16.2):** Cards played so far are not shuffled into the new deck immediately.
+
+### Design Choices
+
+Common situations that are simplified on purpose:
+
+* **One Fire card per attack (6.3):** Fire cards cannot be combined into a single attack.
+* **Refill (4.5):** Hands are always refilled to the full hand size; drawing is not optional.
+* **Hero (10.4, 10.42, 10.45):** Hero cards can only be played during the own turn; their effects are not split into rally and fire cases.
+* **Range reset (5.6.2):** The optional reset of range chits at the end of a deck is not used.
+
 ## Project Structure
 
 ```text

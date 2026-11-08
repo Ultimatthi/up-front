@@ -1,12 +1,1 @@
 ﻿ID;Status;Kategorie;Regel;Aufgabe;;;;
-12;Ignoriert;Abweichung;6.5;Angreifer darf nach finaler Staerke abbrechen (Karte verwerfen, Aktion verbraucht);;;;
-13;Ignoriert;Abweichung;6.3;Mehrere Fire-Karten pro Angriff (Summe Staerke und FP);;;;
-14;Ignoriert;Abweichung;5.2/6.43/7.2;"Movement-Karten zaehlen: +1 pro Karte fuer Verteidiger; bei 2 Karten Terrain verloren";;;;
-20;Ignoriert;Abweichung;13.25/13.6;Smoke und Wire kumulativ (Code: Boolean, zweite wird abgelehnt);;;;
-23;Ignoriert;Abweichung;15.2;SL im eigenen Zug gerade KIA/Panik -> -1 Karte beim Refill;;;;
-24;Ignoriert;Abweichung;4.5;Nachziehen optional (dann bis zur vollen Hand);;;;
-28;Ignoriert;Abweichung;10.4/10.42/10.45;"Hero jederzeit (auch Gegnerzug, vor Angriffsaufloesung, nach Draw mit Extra-Draw); Rally nur gepinnt; Doppel-FP nur beim Feuern";;;;
-29;Ignoriert;Abweichung;10.23;Rally All fuer zwei Gruppen;;;;
-31;Ignoriert;Abweichung;16.2;Deck leer mitten im Angriff: bisher gespielte Karten sofort einmischen;;;;
-32;Ignoriert;Abweichung;16.5;"Beide Squads gleichzeitig gebrochen = Niederlage fuer beide (Q&A); Code gibt dem ersten Spieler der Liste den Sieg";;;;
-44;Ignoriert;Fehlt;5.6.2;Optional: Range-Reset beim Deckwechsel (Konsens);;;;
