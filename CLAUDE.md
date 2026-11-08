@@ -25,6 +25,17 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 - Der bestehenden Philosophie und Programmierweise möglichst treu bleiben: vorhandene Muster (z. B. `pending_action`, `resolve_*`-Funktionen, Kartenmodi, Kommentarstil) wiederverwenden statt neue Konzepte einzuführen.
 - Möglichst flache Hierarchien, wenig Verschachtelung: früh mit `return`/`continue` aussteigen statt Bedingungen ineinander zu verschachteln; Zwischenwerte in eigene Variablen statt lange verschachtelte Ausdrücke.
 
+## Kein Code-Bloat
+
+- Nur umsetzen, was die Aufgabe verlangt: keine zusätzlichen Features, Optionen, Parameter oder „für später“ gedachten Erweiterungen. Ideen dafür höchstens als Vorschlag nennen oder in `TODO.csv` notieren.
+- Vor neuem Code prüfen, ob es schon eine passende Funktion, Konstante oder ein passendes Muster gibt, und diese wiederverwenden statt zu duplizieren.
+- Keine neuen Hilfsfunktionen, Klassen oder Abstraktionen für Logik, die nur an einer Stelle gebraucht wird. Erst bei echter Wiederholung zusammenfassen.
+- Keine defensive Programmierung für Fälle, die laut Spiellogik nicht eintreten können: keine überflüssigen `None`-Prüfungen, `try/except` oder Fallbacks.
+- Kommentare nur dort, wo das *Warum* nicht offensichtlich ist. Keinen Code nacherzählen.
+- Was durch eine Änderung ungenutzt wird (Funktionen, Variablen, Parameter, Imports, auskommentierter Code), gleich mit entfernen.
+- Diffs klein halten: kein Umformatieren oder Refactoring nebenbei. Sinnvolle Aufräumarbeiten separat vorschlagen.
+- Vor der Vorschau selbst prüfen, ob sich dasselbe mit weniger Code gleich gut lesbar ausdrücken lässt.
+
 ## Projektentscheidungen
 
 - Der Client gilt als vertrauenswürdig: keine serverseitige Prüfung, ob `group_ids` dem richtigen Spieler gehören.
