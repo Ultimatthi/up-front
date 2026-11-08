@@ -1,6 +1,6 @@
 """Short, snappy promo clip for the Up Front card game, rendered from game assets.
 
-Usage (from anywhere):  python sources/promo/promo.py
+Usage (from anywhere):  python sources/promo/gameplay/promo.py
 Renders the frames with Arcade, then audio.py mixes the soundtrack and writes up_front_promo_16x9.mp4
 next to this file. Needs ffmpeg: on PATH, via the FFMPEG environment variable, or Kdenlive's copy.
 """
@@ -10,7 +10,7 @@ import arcade
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PROJECT = os.path.abspath(os.environ.get("UPFRONT_ROOT", os.path.join(HERE, "..", "..")))
+PROJECT = os.path.abspath(os.environ.get("UPFRONT_ROOT", os.path.join(HERE, "..", "..", "..")))
 BUILD = os.path.join(tempfile.gettempdir(), "upfront_promo")          # intermediate files
 FFMPEG = os.environ.get("FFMPEG") or shutil.which("ffmpeg") or r"C:\Program Files\kdenlive\bin\ffmpeg.exe"
 
