@@ -1679,10 +1679,15 @@ class GameServer:
         if target_group.terrain == "gully" and source_group.terrain != "hill" and relative_range != 5:
             return None
         
+        # Count movement cards
+        movements = [card for card in self.card_list if card.group == target_group.id and card.type == "movement"]
+        
         # Movement modifier
         if source_group.moving:
             firestrength //= 2
         if target_group.moving:
+            firestrength += 1
+        if len(movements) >= 2:
             firestrength += 1
             
         # Terrain modifier (outgoing)
