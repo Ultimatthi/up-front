@@ -28,6 +28,7 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 ## Kein Code-Bloat
 
 - Nur umsetzen, was die Aufgabe verlangt: keine zusätzlichen Features, Optionen, Parameter oder „für später“ gedachten Erweiterungen. Ideen dafür höchstens als Vorschlag nennen oder in `TODO.csv` notieren.
+- Ändern statt anhängen: Erst den betroffenen Ablauf über die ganze Aufrufkette verstehen (Server und Client). Dann die bestehende Stelle oder Abstraktion umbauen, statt daneben neuen Code, Sonderfälle oder Wrapper zu ergänzen, und alle Aufrufer mit anpassen. Ein Diff, der nur hinzufügt, muss begründet werden.
 - Vor neuem Code prüfen, ob es schon eine passende Funktion, Konstante oder ein passendes Muster gibt, und diese wiederverwenden statt zu duplizieren.
 - Keine neuen Hilfsfunktionen, Klassen oder Abstraktionen für Logik, die nur an einer Stelle gebraucht wird. Erst bei echter Wiederholung zusammenfassen.
 - Keine defensive Programmierung für Fälle, die laut Spiellogik nicht eintreten können: keine überflüssigen `None`-Prüfungen, `try/except` oder Fallbacks.
@@ -44,7 +45,7 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 ## Dateiformate
 
 - `TODO.csv` und `assets/cards/card_table.csv`: UTF-8 mit BOM, CRLF – beim Schreiben beibehalten (Excel).
-- `TODO.csv`: Trennzeichen `;`, Spalten `ID;Status;Kategorie;Regel;Aufgabe`, Status leer = offen bzw. `Ignoriert`. Texte mit `;` in Anführungszeichen setzen.
+- `TODO.csv`: Trennzeichen `;`, Spalten `ID;Status;Kategorie;Regel;Aufgabe`, nur offene Aufgaben. Bewusst nicht umgesetzte Regeln stehen im `README.md` unter „Rule Deviations“. Texte mit `;` in Anführungszeichen setzen.
 - Wire-Karten haben in `card_table.csv` den Typ `wire` (nicht `terrain`); Terrain-Subtypen ohne Eintrag in `TERRAIN_MOD` werden abgelehnt.
 
 ## Spiel starten
