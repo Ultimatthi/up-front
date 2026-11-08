@@ -222,6 +222,7 @@ class GameServer:
         self.broadcast_timer = 0.0
         self.client_list = []
         self.current_turn = None
+        self.first_turn = None
         self.current_sound = None
         self.action_deck_counter = 0
         self.breeze = False # breeze drawn in current player turn
@@ -439,6 +440,7 @@ class GameServer:
         axis = [client for client in self.client_list if client.nation in AXIS]
         first_client = random.choice(axis or self.client_list)
         self.current_turn = first_client.name
+        self.first_turn = first_client.name
             
         # Distribute units
         scenario = "scenario " + self.scenario
@@ -461,9 +463,9 @@ class GameServer:
         for client in self.client_list:
             self.draw_cards(client)
             
-        # Start playing phase
+        # Start playing phase with initial terrain
         self.game_phase = "gameplay"
-        self.game_subphase = "action" # action, discard
+        self.game_subphase = "terrain" # terrain, action, discard
         self.broadcast()
     
     
@@ -518,8 +520,12 @@ class GameServer:
         if action_type == "play_card":
             self.play_card(action, client)
             
+        # Pass during initial terrain
+        if action_type == "advance_turn" and self.game_subphase == "terrain":
+            self.pass_terrain(client)
+
         # End player's turn
-        if action_type == "advance_turn":
+        elif action_type == "advance_turn":
             self.advance_turn(action, client)
 
         # Group action without card
@@ -636,9 +642,11 @@ class GameServer:
         # Resolve card
         if self.pending_action["type"] is not None:
             self.counter_card(played_card, target_groups, client)
+        elif self.game_subphase == "terrain":
+            self.place_terrain(played_card, card_mode, target_groups, client)
         elif self.game_subphase == "action":
             self.execute_card(played_card, card_mode, target_groups, target_units, client)
-        else:
+        elif self.game_subphase == "discard":
             self.discard_card(played_card, card_mode, target_groups, client)
 
         # Restore card still in hand
@@ -778,8 +786,8 @@ class GameServer:
         
     def check_terrain_entry(self, played_card, target_group):
 
-        # Terrain can only be entered by a moving group
-        if not target_group.moving:
+        # Terrain can only be entered by a moving group (except initial terrain)
+        if not target_group.moving and self.game_subphase != "terrain":
             return False
 
         # Terrain types without implemented rules cannot be played
@@ -933,6 +941,63 @@ class GameServer:
 
         # Set sound
         self.current_sound = "play_card"
+
+
+
+    def place_terrain(self, played_card, card_mode, target_groups, client):
+
+        # Check if it's this player's turn
+        if client.name != self.current_turn:
+            return
+
+        # Get target group (own or enemy)
+        target_group = target_groups[1] if card_mode == "enemy" else target_groups[0]
+
+        # One terrain card per group
+        if target_group.terrain:
+            return
+
+        # Enter terrain (cannot be rejected)
+        if not self.resolve_terrain(played_card, target_group):
+            return
+
+        # Add card to the group
+        played_card.location = "table"
+        played_card.group = target_group.id
+        played_card.owner = target_group.owner
+
+        # Opponent's turn to place terrain
+        client.passed = False
+        self.current_turn = next(c.name for c in self.client_list if c is not client)
+
+        # Set sound
+        self.current_sound = "play_card"
+
+
+
+    def pass_terrain(self, client):
+
+        # Check if it's this player's turn
+        if client.name != self.current_turn:
+            return
+
+        # Switch turn
+        opponent = next(c for c in self.client_list if c is not client)
+        client.passed = True
+        self.current_turn = opponent.name
+
+        # Placement continues until both players passed in a row
+        if not opponent.passed:
+            return
+
+        # Refill hands
+        for c in self.client_list:
+            c.passed = False
+            self.draw_cards(c)
+
+        # First player starts the game
+        self.current_turn = self.first_turn
+        self.game_subphase = "action"
 
 
 

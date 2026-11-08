@@ -59,6 +59,7 @@ CARD_BACK_TEXTURE = arcade.load_texture("assets/cards/cardback.png")
 
 # Card modes per subphase (first mode is default)
 CARD_MODES = {
+    "terrain": {"terrain":  ["own", "enemy"]},
     "action":  {"movement": ["forward", "sideways", "backward", "open ground"],
                 None:       ["", "open ground"]},
     "discard": {"terrain":  ["discard", "enemy"],
