@@ -50,7 +50,8 @@ TERRAIN_MOD = {
     "gully":     (0,  -2),  # with conditions
     "wall":      (0,  -2),  # with conditions
     "pillbox":   (0, - 4),
-    "minefield": (0,   0)   # with conditions
+    "minefield": (0,   0),  # with conditions
+    "open":      (0,   0)
 }
 
 # Cards treated as cower cards (subtypes)
@@ -623,9 +624,14 @@ class GameServer:
         # Get card mode
         card_mode = action.get("card_mode")
 
-        # Cower cards can only be discarded
-        if client.nation in played_card.cower and self.game_subphase == "action":
+        # Cower cards can only be discarded or played as open ground
+        if client.nation in played_card.cower and self.game_subphase == "action" and card_mode != "open ground":
             return
+
+        # Open ground is terrain (card type restored if card stays in hand)
+        card_type, card_subtype = played_card.type, played_card.subtype
+        if card_mode == "open ground":
+            played_card.type, played_card.subtype = "terrain", "open"
         
         # Resolve card
         if self.pending_action["type"] is not None:
@@ -634,6 +640,10 @@ class GameServer:
             self.execute_card(played_card, card_mode, target_groups, target_units, client)
         else:
             self.discard_card(played_card, card_mode, target_groups, client)
+
+        # Restore card still in hand
+        if played_card.location == "hand":
+            played_card.type, played_card.subtype = card_type, card_subtype
         
  
     
@@ -1654,6 +1664,11 @@ class GameServer:
         card.group = None
         card.stack_index = 0
         card.location = "discard"
+
+        # Open ground shows its printed side again
+        if card.subtype == "open":
+            row = self.card_table.loc[card.id]
+            card.type, card.subtype = row["type"], row["subtype"]
 
         # Cards to be removed by the scenario go out of the game
         if self.check_card_removal(card):

@@ -59,7 +59,8 @@ CARD_BACK_TEXTURE = arcade.load_texture("assets/cards/cardback.png")
 
 # Card modes per subphase (first mode is default)
 CARD_MODES = {
-    "action":  {"movement": ["forward", "sideways", "backward"]},
+    "action":  {"movement": ["forward", "sideways", "backward", "open ground"],
+                None:       ["", "open ground"]},
     "discard": {"terrain":  ["discard", "enemy"],
                 "wire":     ["enemy", "discard"],
                 "sniper":   ["enemy", "discard"]}
@@ -999,8 +1000,9 @@ class GameView(arcade.View):
         if self.hover_card.owner != "player":
             return
         
-        # Get modes for hovered card
-        modes = CARD_MODES.get(self.game_subphase).get(self.hover_card.type)
+        # Get modes for hovered card (fallback for all other card types)
+        subphase_modes = CARD_MODES.get(self.game_subphase)
+        modes = subphase_modes.get(self.hover_card.type, subphase_modes.get(None))
         
         # Check if hovered card has modes
         if not modes:
@@ -1091,6 +1093,11 @@ class GameView(arcade.View):
         if game_state.get("type") == "ping":
             return
         
+        # Reset card modes on subphase change
+        if game_state.get("game_subphase") != self.game_subphase:
+            for card in self.card_list:
+                card.mode = None
+
         # Update game state variables
         self.game_phase = game_state.get("game_phase")
         self.game_subphase = game_state.get("game_subphase")
@@ -1316,8 +1323,9 @@ class GameView(arcade.View):
                 card.position = (-10000, -10000)
                 continue
             
-            # Set facing
-            card.facing = "up"
+            # Set facing (open ground lies face down)
+            open_ground = card.type == "terrain" and active_group.terrain == "open"
+            card.facing = "down" if open_ground else "up"
             
             # Get position (player's view)
             if card.type in ["movement", "terrain", "smoke", "wire"]:
@@ -1527,7 +1535,7 @@ class GameView(arcade.View):
             
             
         # Card mode (only where it applies)
-        if self.hover_card is not None and self.hover_card.mode is not None:
+        if self.hover_card is not None and self.hover_card.mode:
             label = "[" + self.hover_card.mode + "]"
             x = self.hover_card.center_x
             y = self.hover_card.top + 20 * self.layout.scale
