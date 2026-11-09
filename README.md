@@ -24,7 +24,6 @@ The following rules are deliberately not implemented, either because they cover 
 
 * **Refill (4.5):** Hands are always refilled to the full hand size; drawing is not optional.
 * **Range reset (5.6.2):** The optional reset of range chits at the end of a deck is not used.
-* **One Fire card per attack (6.3):** Fire cards cannot be combined into a single attack.
 * **Aborting an attack (6.5):** The attacker may not cancel an attack after its final strength is known.
 * **Rally All for two groups (10.23):** Rally All affects only the active group.
 * **Hero (10.4):** Hero cards can only be played during the own turn.

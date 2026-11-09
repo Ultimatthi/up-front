@@ -630,6 +630,9 @@ class GameServer:
         # Get card mode
         card_mode = action.get("card_mode")
 
+        # Fire cards marked for a combined attack
+        extra_cards = [card for card in self.card_list if card.id in action.get("extra_card_ids")]
+
         # Cower cards can only be discarded or played as open ground
         if client.nation in played_card.cower and self.game_subphase == "action" and card_mode != "open ground":
             return
@@ -645,7 +648,7 @@ class GameServer:
         elif self.game_subphase == "terrain":
             self.place_terrain(played_card, card_mode, target_groups, client)
         elif self.game_subphase == "action":
-            self.execute_card(played_card, card_mode, target_groups, target_units, client)
+            self.execute_card(played_card, card_mode, target_groups, target_units, client, extra_cards)
         elif self.game_subphase == "discard":
             self.discard_card(played_card, card_mode, target_groups, client)
 
@@ -655,7 +658,7 @@ class GameServer:
         
  
     
-    def execute_card(self, played_card, card_mode, target_groups, target_units, client):
+    def execute_card(self, played_card, card_mode, target_groups, target_units, client, extra_cards):
         
         # Check if it's this player's turn
         if client.name != self.current_turn:
@@ -681,7 +684,7 @@ class GameServer:
         elif played_card.type == "hero":
             success = self.resolve_hero(played_card, target_units)
         elif played_card.type == "fire":
-            success = self.prepare_fire(played_card, target_groups)
+            success = self.prepare_fire([played_card] + extra_cards, target_groups)
         else:
             success = False
             
@@ -689,10 +692,11 @@ class GameServer:
         if not success:
             return
             
-        # Add card to the group (if not already discarded)
-        if played_card.location == "hand":
-            played_card.location = "table"
-            played_card.group = target_groups[0].id
+        # Add cards to the group (if not already discarded)
+        for card in [played_card] + extra_cards:
+            if card.location == "hand":
+                card.location = "table"
+                card.group = target_groups[0].id
         
         # Fill history
         target_groups[0].last_action = ACTIONS[played_card.type]
@@ -1101,10 +1105,12 @@ class GameServer:
 
 
 
-    def prepare_fire(self, played_card, target_groups):
+    def prepare_fire(self, fire_cards, target_groups):
         
-        # Get fire attributes
-        card_firestrength, card_firepower = [int(n) for n in re.findall(r"\d+", played_card.subtype)]
+        # Get fire attributes (summed over all fire cards of the attack)
+        values = [[int(n) for n in re.findall(r"\d+", card.subtype)] for card in fire_cards]
+        card_firestrength = sum(strength for strength, _ in values)
+        card_firepower = sum(firepower for _, firepower in values)
         
         # Player units
         player_units = [unit for unit in self.unit_list if unit.group == target_groups[0].id]
@@ -1127,7 +1133,7 @@ class GameServer:
         
         # Set pending action
         self.pending_action["type"] = "fire"
-        self.pending_action["card"] = played_card
+        self.pending_action["card"] = fire_cards[0]
         self.pending_action["strength"] = firestrength
         self.pending_action["offensive_group"] = target_groups[0]
         self.pending_action["defensive_group"] = target_groups[1]
