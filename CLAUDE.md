@@ -60,12 +60,12 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 - Kein pyautogui installiert → Steuerung per `ctypes` (SetForegroundWindow, SetCursorPos, mouse_event, keybd_event), Screenshots per `PIL.ImageGrab`. Prozess DPI-aware setzen.
 - Fenster sind standardmäßig größer als der Bildschirm (Buttons unter der Taskleiste) → auf ca. 1280×720 verkleinern.
 - Beide Fenster nicht übereinander legen: Ein Klick nach Fensterwechsel kann im falschen Fenster landen (z. B. ungewollte Einheiten-Auswahl).
-- Bedienung: Linksklick auf Handkarte = ausspielen auf aktive Gruppe; Klick auf Gruppen-Kachel = aktive Gruppe wechseln; Klick auf Einheit = (de)selektieren (für Rally/Hero); Rechtsklick = Bewegungsmodus wechseln; **Leertaste** = Aktionsphase → Ablagephase → Zugende bzw. Passen auf gegnerisches Feuer; **S** = Sniper Check der aktiven Gruppe.
+- Bedienung: Linksklick auf Handkarte = ausspielen auf aktive Gruppe; **Shift+Klick** auf eigene Feuerkarte in der Hand = für kombiniertes Feuer (de)selektieren (Karte hebt sich), der nächste normale Klick auf eine Feuerkarte spielt alle selektierten mit; Klick auf Gruppen-Kachel = aktive Gruppe wechseln; Klick auf Einheit = (de)selektieren (für Rally/Hero); Rechtsklick = Bewegungsmodus wechseln; **Leertaste** = Aktionsphase → Ablagephase → Zugende bzw. Passen auf gegnerisches Feuer; **S** = Sniper Check der aktiven Gruppe.
 - Abgelehnte Aktionen geben keine Rückmeldung – nur am unveränderten Zustand erkennbar.
 
 ## Headless-Tests (bevorzugt für Regel-Logik)
 
-Schneller und deterministisch: `GameServer` direkt instanziieren, zwei `Client`-Objekte mit Fake-Socket (`sendall` = no-op) und `userdata/unit_allocation.yaml` anlegen, `broadcast` stubben, `setup_logic()` aufrufen, dann Aktionen über `process_action(action, client)` + `process_aftermath()` schicken. Karten gezielt per `location="hand"`, `owner=<name>` zuteilen; `draw_rnc` für feste Würfe überschreiben.
+Schneller und deterministisch: `GameServer` direkt instanziieren, zwei `Client`-Objekte mit Fake-Socket (`sendall` = no-op) und `userdata/unit_allocation.yaml` anlegen, `broadcast` stubben, `setup_logic()` aufrufen, dann Aktionen über `process_action(action, client)` + `process_aftermath()` schicken. `play_card`-Aktionen brauchen immer `extra_card_ids` (leere Liste bei Einzelkarten). Karten gezielt per `location="hand"`, `owner=<name>` zuteilen; `draw_rnc` für feste Würfe überschreiben.
 
 ## Spielmechanik, die beim Testen wichtig ist
 

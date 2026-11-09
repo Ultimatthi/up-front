@@ -7,6 +7,7 @@
 Key                 Function
 ----------------    ---------------------------------
 LMB (hand card)     Play/discard card on active group
+Shift+LMB (hand)    Select fire card for combined fire
 LMB (group tile)    Activate group
 LMB (unit)          Select/deselect unit
 RMB (hand card)     Cycle card mode (movement / discard on enemy)
@@ -15,8 +16,8 @@ Ctrl+Wheel          Cycle enemy active group (A–D)
 Alt (hold)          Zoom card/unit
 Space               End turn/phase, pass/accept enemy card
 S                   Sniper check (active group)
-C                   Crew/uncrew (two selected units, active group)
-P                   Voluntary panic (selected pinned units, active group)
+C                   Crew/uncrew (two selected rallied units)
+P                   Voluntary panic (selected pinned units)
 R                   Reject terrain discarded on own group
 Esc                 Leave game, back to menu
 F1                  Show help
