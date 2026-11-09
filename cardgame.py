@@ -110,7 +110,7 @@ class Card(arcade.Sprite):
         self.location = "deck" # deck, discard, void, hand, table
         self.group = None
         self.mode = None
-        self.selected = False # marked for a combined attack
+        self.selected = False # selected for a combined attack
         self.stack_index = 0
         self.draw_index = 0
 
@@ -776,14 +776,14 @@ class GameView(arcade.View):
         button_ = self.get_hovered_sprite(x, y, self.button_list)
         unit = self.get_hovered_sprite(x, y, self.unit_list)
             
-        # Mark own fire card in hand for a combined attack (shift)
-        markable = card is not None and card.type == "fire" and card.location == "hand" and card.owner == "player"
-        if markable and key_modifiers & arcade.key.MOD_SHIFT:
+        # Select own fire card in hand for a combined attack (shift)
+        selectable = card is not None and card.type == "fire" and card.location == "hand" and card.owner == "player"
+        if selectable and key_modifiers & arcade.key.MOD_SHIFT:
             card.selected = not card.selected
             self.play_sound("select") # Client side
 
         # Play card
-        elif card is not None:
+        if card is not None and not key_modifiers & arcade.key.MOD_SHIFT:
             self.play_card(card, self.active_groups)
     
         # Switch to clicked group
@@ -1019,14 +1019,14 @@ class GameView(arcade.View):
             
     def play_card(self, card, active_groups):
     
-        # Marked fire cards join a fire attack
-        marked_ids = [other.id for other in self.card_list if other.selected and other is not card]
+        # Selected fire cards join a fire attack
+        extra_card_ids = [other.id for other in self.card_list if other.selected and other is not card]
 
         # Create action for server
         action = {
             "type": "play_card",
             "card_id": card.id,
-            "extra_card_ids": marked_ids if card.type == "fire" else [],
+            "extra_card_ids": extra_card_ids if card.type == "fire" else [],
             "card_mode": card.mode,
             "group_ids": [group.id for group in active_groups.values()],
             "unit_ids": [unit.id for unit in self.unit_list if unit.selected]
@@ -1038,7 +1038,7 @@ class GameView(arcade.View):
         except Exception as e:
             print(f"Error sending to server: {e}")
 
-        # Reset marks
+        # Reset selections
         for other in self.card_list:
             other.selected = False
 

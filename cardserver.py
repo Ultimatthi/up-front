@@ -647,7 +647,7 @@ class GameServer:
         # Get card mode
         card_mode = action.get("card_mode")
 
-        # Fire cards marked for a combined attack
+        # Fire cards selected for a combined attack
         extra_cards = [card for card in self.card_list if card.id in action.get("extra_card_ids")]
 
         # Cower cards can only be discarded or played as open ground
