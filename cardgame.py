@@ -544,11 +544,6 @@ class GameView(arcade.View):
         self.button_surrender = Button("surrender", image_path, self.layout.scale)
         self.button_list.append(self.button_surrender)
         
-        # Create button: RNC
-        image_path =  r'assets/boardelements/button.rnc.png'
-        self.button_rnc = Button("rng", image_path, self.layout.scale)
-        self.button_list.append(self.button_rnc)
-        
         # Overlay elements
         self.unit_overlay = arcade.Sprite("assets/overlays/unit.overlay.png", self.layout.unit_scale)
         self.crew_chit = arcade.Sprite("assets/chits/chit.crew.png", self.layout.unit_scale)
@@ -625,11 +620,6 @@ class GameView(arcade.View):
         self.button_surrender.scale = self.layout.scale
         self.button_surrender.right = self.window.width - 120 * self.layout.scale
         self.button_surrender.bottom = 20 * self.layout.scale
-
-        # Button: RNC
-        self.button_rnc.scale = self.layout.scale
-        self.button_rnc.right = self.window.width - 260 * self.layout.scale
-        self.button_rnc.bottom = 20 * self.layout.scale
         
         # Rotate advance turn button
         angle = 180 if self.current_turn == "player" else 0
@@ -1617,10 +1607,10 @@ class GameView(arcade.View):
   
 class HelpView(arcade.View):
 
-    def __init__(self, game_view):
+    def __init__(self, previous_view):
         
         super().__init__()
-        self.game_view = game_view
+        self.previous_view = previous_view
         
         # Set background color
         self.background_color = arcade.color.ARSENIC
@@ -1657,7 +1647,7 @@ class HelpView(arcade.View):
     def on_key_press(self, key, modifiers):
         
         if key in (arcade.key.F1, arcade.key.ESCAPE):
-            self.window.show_view(self.game_view)
+            self.window.show_view(self.previous_view)
 
 
 
@@ -1669,8 +1659,8 @@ class HelpView(arcade.View):
         self.layout.x = height*0.1
         self.layout.y = height*0.1
         
-        # Resize game window in the background
-        self.game_view.on_resize(width, height)
+        # Resize previous view in the background
+        self.previous_view.on_resize(width, height)
         
         
         
@@ -1999,6 +1989,10 @@ class MenuView(arcade.View):
         # Handle Enter (join game)
         if key == arcade.key.ENTER:
             self.start_game()
+
+        # Open help
+        elif key == arcade.key.F1:
+            self.window.show_view(HelpView(self))
 
         # Handle Ctrl+V (paste)
         elif key == arcade.key.V and modifiers & arcade.key.MOD_CTRL:
