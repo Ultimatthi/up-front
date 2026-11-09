@@ -532,6 +532,10 @@ class GameServer:
         if action_type == "group_action":
             self.group_action(action, client)
 
+        # Client action without group
+        if action_type == "client_action":
+            self.client_action(action, client)
+
 
 
     def group_action(self, action, client):
@@ -586,6 +590,19 @@ class GameServer:
 
         # Set sound
         self.current_sound = "play_card"
+
+
+
+    def client_action(self, action, client):
+
+        # Check game phase
+        if self.game_phase != "gameplay":
+            return
+
+        # Surrender is possible at any time: the opponent wins
+        if action.get("action") == "surrender":
+            self.winner = next(c.name for c in self.client_list if c is not client)
+            self.game_phase = "finished"
 
             
             
@@ -1856,7 +1873,7 @@ class GameServer:
         
     def calculate_victory_points(self, client):
         
-        # TODO: AFV, prisoners, wounded men
+        # TODO: AFV, prisoners, wounded units
         
         points = 0
         

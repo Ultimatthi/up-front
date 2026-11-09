@@ -801,7 +801,7 @@ class GameView(arcade.View):
             if button_.name == "advance":
                 self.advance_turn()
             if button_.name == "surrender":
-                pass # TODO
+                self.client_action("surrender")
     
         # Clicked on the empty board: dust and knock
         if card is None and group is None and button_ is None and unit is None:
@@ -1052,6 +1052,22 @@ class GameView(arcade.View):
             "action": name,
             "group_ids": [group.id for group in self.active_groups.values()],
             "unit_ids": [unit.id for unit in self.unit_list if unit.selected]
+        }
+
+        # Send action to server
+        try:
+            self.socket.sendall(pickle.dumps(action))
+        except Exception as e:
+            print(f"Error sending to server: {e}")
+
+
+
+    def client_action(self, name):
+
+        # Create action for server
+        action = {
+            "type": "client_action",
+            "action": name
         }
 
         # Send action to server
