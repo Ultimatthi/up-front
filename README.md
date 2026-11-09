@@ -16,34 +16,34 @@ It is designed as a peer-to-peer experience without a central online lobby or ma
 
 ## Status
 
-This project is in early development and not yet fully playable.
-Currently, work is focused on implementing Scenario A of the base game.
-
-Expect missing rules and bugs until the first stable release.
+The game is implemented scenario by scenario. Currently, the rules up to chapter 16 (Scenario A of the base game) are implemented.
 
 ## Rule Deviations
 
-The game follows the rulebook up to chapter 16 (Scenario A). The following rules are deliberately not implemented, either because they cover rare edge cases or as a design choice:
+The following rules are deliberately not implemented, either because they cover rare edge cases or as a design choice:
 
 * **Refill (4.5):** Hands are always refilled to the full hand size; drawing is not optional.
 * **Range reset (5.6.2):** The optional reset of range chits at the end of a deck is not used.
 * **One Fire card per attack (6.3):** Fire cards cannot be combined into a single attack.
 * **Aborting an attack (6.5):** The attacker may not cancel an attack after its final strength is known.
 * **Rally All for two groups (10.23):** Rally All affects only the active group.
-* **Hero (10.4, 10.42, 10.45):** Hero cards can only be played during the own turn; their effects are not split into rally and fire cases.
+* **Hero (10.4):** Hero cards can only be played during the own turn.
 * **Cumulative Smoke and Wire (13.25, 13.6):** A group holds at most one Smoke and one Wire card; a second one is rejected.
-* **Losing the Squad Leader (15.2):** The hand is not reduced in the turn in which the Squad Leader is lost.
-* **Deck running out during an attack (16.2):** Cards played so far are not shuffled into the new deck immediately.
+* **Losing the Squad Leader (15.2):** The Assistant Squad Leader takes over his role immediately.
+* **Deck running out during an attack (16.2):** Action cards played during the current turn stay on the table until the end of the turn and are not shuffled into the new deck.
 
 ## Project Structure
 
 ```text
 up-front/
-├── assets/            # Finalized images, sounds, and media files used directly in the game
-├── logic/             # Game logic and core functionality
-├── sources/           # Working files (e.g. SVG files and other editable sources)
+├── assets/            # Finalized images, sounds, and data tables used directly in the game
+├── modules/           # Additional client modules
+├── rules/             # Rulebook and scenarios (PDF)
+├── sources/           # Working files (e.g. SVG files, promo videos and other editable sources)
+├── userdata/          # Unit allocation and local lobby settings
 ├── cardgame.py        # Main script (Client)
 ├── cardserver.py      # Main script (Server)
+├── start.bat          # Starts a server and two clients (Windows, for testing)
 ├── requirements.txt   # Python dependencies
 ├── LICENSE            # MIT License
 └── README.md
