@@ -1,1 +1,7 @@
 ﻿ID;Status;Kategorie;Regel;Aufgabe;;;;
+50;;Bug;16.1;Abwurf einer Gebaeudekarte (Entfernung aktiv) landet trotz void als Tischkarte auf der Gegnergruppe (discard_card prueft nur location != "discard");;;;
+51;;Bug;16.42;Siegbedingung Szenario A zaehlt Range Chit >= 4, verlangt ist genau 4;;;;
+55;;Abweichung;13.241;Abgelehntes Gelaende ueber Smoke laesst Smoke liegen, sollte ihn entfernen;;;;
+56;;Abweichung;14.2;Sniper zieht auch bei Gruppen mit nur einer Unit eine RPC-Karte (Deckverbrauch, Breeze);;;;
+57;;Abweichung;13.32;LMG auf Wire feuert mit vollem Crew-Wert statt geklammertem Wert;;;;
+58;;Abweichung;8.22;Verlassen des Gully mit zwei Movement-Karten ergibt +2 statt nur +1 der zweiten Karte;;;;

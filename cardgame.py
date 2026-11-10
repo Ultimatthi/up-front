@@ -1026,7 +1026,7 @@ class GameView(arcade.View):
         action = {
             "type": "play_card",
             "card_id": card.id,
-            "extra_card_ids": extra_card_ids if card.type == "fire" else [],
+            "extra_card_ids": extra_card_ids if card.type == "fire" and card.mode != "open ground" else [],
             "card_mode": card.mode,
             "group_ids": [group.id for group in active_groups.values()],
             "unit_ids": [unit.id for unit in self.unit_list if unit.selected]

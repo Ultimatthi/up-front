@@ -823,8 +823,8 @@ class GameServer:
         if self.check_card_removal(played_card):
             return False
 
-        # No terrain on wire (remove wire with movement card first)
-        if target_group.wire:
+        # No terrain on wire (remove wire with movement card first), only open ground goes beneath it
+        if target_group.wire and played_card.subtype != "open":
             return False
 
         # No new terrain on marsh before two movement cards
@@ -854,14 +854,19 @@ class GameServer:
         if not self.check_terrain_entry(played_card, target_group):
             return False
 
-        # Modify group attributes
+        # Modify group attributes (smoke stays only above open ground)
         target_group.terrain = played_card.subtype
         target_group.moving = None
-        target_group.smoke = False
+        target_group.smoke = target_group.smoke and played_card.subtype == "open"
 
         # Remove all cards beneath the new terrain card
         for card in self.card_list:
-            if card is not played_card and card.group == target_group.id and card.type in ["movement", "smoke", "terrain"]:
+            if card is played_card or card.group != target_group.id:
+                continue
+            # Smoke lies right above the open ground (two more movement cards remove it)
+            if card.type == "smoke" and target_group.smoke:
+                card.stack_index = 1
+            elif card.type in ["movement", "smoke", "terrain"]:
                 self.move_card_to_discard(card)
 
         # Terrain card lies at the bottom of the stack
@@ -1760,10 +1765,11 @@ class GameServer:
         card.stack_index = 0
         card.location = "discard"
 
-        # Open ground shows its printed side again
+        # Open ground shows its printed side again (not removed by the scenario, as it was played)
         if card.subtype == "open":
             row = self.card_table.loc[card.id]
             card.type, card.subtype = row["type"], row["subtype"]
+            return
 
         # Cards to be removed by the scenario go out of the game
         if self.check_card_removal(card):
