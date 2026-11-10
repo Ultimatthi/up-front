@@ -940,6 +940,12 @@ class GameServer:
         # Discard terrain card
         self.move_card_to_discard(self.pending_action["card"])
 
+        # Terrain played above smoke removes it, even if rejected
+        target_group.smoke = False
+        for card in self.card_list:
+            if card.type == "smoke" and card.group == target_group.id:
+                self.move_card_to_discard(card)
+
         # Get cards of target group
         group_cards = [card for card in self.card_list if card.group == target_group.id]
 
