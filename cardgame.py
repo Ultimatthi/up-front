@@ -1349,7 +1349,7 @@ class GameView(arcade.View):
                 continue
             
             # Set facing (open ground lies face down)
-            open_ground = card.type == "terrain" and active_group.terrain == "open"
+            open_ground = card.type == "terrain" and self.card_table.loc[card.id]["type"] != "terrain"
             card.facing = "down" if open_ground else "up"
             
             # Get position (player's view)
