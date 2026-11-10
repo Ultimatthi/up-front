@@ -148,9 +148,9 @@ class Unit:
         else:
             values = self.firepower[self.mode]
 
-        # Light machine guns moving or in water: bracketed values, only when fully crewed
+        # Light machine guns moving, in water or on wire: bracketed values, only when fully crewed
         in_water = group.terrain in ["marsh", "stream"]
-        if self.weapon == "Light Machinegun" and (group.moving or in_water):
+        if self.weapon == "Light Machinegun" and (group.moving or in_water or group.wire):
             if self.mode != "crewed" or (group.moving and in_water):
                 return 0
             values = self.firepower["uncrewed"]
