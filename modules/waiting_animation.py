@@ -59,10 +59,12 @@ class WaitingAnimation:
 
     def draw(self, width, height, scale):
 
-        # Smooth easing between 0 and 1
-        def smoothstep(x):
+        # Accelerates strongly and brakes strongly (cubic ease in-out)
+        def ease_in_out(x):
             x = min(max(x, 0.0), 1.0)
-            return x * x * (3 - 2 * x)
+            if x < 0.5:
+                return 4 * x ** 3
+            return 1 - (2 - 2 * x) ** 3 / 2
 
         cx, cy = width / 2, height / 2 + 30 * scale
         w = self.texture.width * self.card_scale * scale
@@ -74,10 +76,11 @@ class WaitingAnimation:
         arcade.draw_lrbt_rectangle_filled(0, width, 0, height, self.background_color)
         arcade.draw_texture_rect(self.background_texture, arcade.LBWH(0, 0, width, height))
 
-        # Top card slides out, then tucks back under the pile
-        out = smoothstep(p / 0.4)
-        back = smoothstep((p - 0.4) / 0.35)
-        lift = math.sin(math.pi * min(p / 0.75, 1))
+        # Top card swings out until it is clear of the pile (on the half-bar drum hit),
+        # then straight back under it, landing on the downbeat as the next card starts
+        out = ease_in_out(p / 0.5)
+        back = ease_in_out((p - 0.5) / 0.5)
+        lift = math.sin(math.pi * p)
 
         # Remaining cards sink one level while the top card moves to the bottom
         cards = []
@@ -85,10 +88,10 @@ class WaitingAnimation:
             level = i + back
             cards.append((level, cx - level * step, cy + level * step, level - 2, 0.0))
         level = (WAITING_CARDS - 1) * (1 - back)
-        x = cx - level * step + (out - back) * w * 1.15
+        x = cx - level * step + (out - back) * w * 1.3
         y = cy + level * step + lift * 10 * scale
-        angle = (out - back) * 12 + level - 2
-        cards.append((level if p >= 0.4 else WAITING_CARDS, x, y, angle, lift))
+        angle = (out - back) * 8 + level - 2
+        cards.append((level if p >= 0.5 else WAITING_CARDS, x, y, angle, lift))
 
         # Draw cards bottom to top with shadows
         for _, x, y, angle, l in sorted(cards, key=lambda card: card[0]):
