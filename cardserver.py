@@ -151,7 +151,7 @@ class Unit:
         # Light machine guns moving, in water or on wire: bracketed values, only when fully crewed
         in_water = group.terrain in ["marsh", "stream"]
         if self.weapon == "Light Machinegun" and (group.moving or in_water or group.wire):
-            if self.mode != "crewed" or (group.moving and in_water):
+            if self.mode != "crewed" or (group.moving and (in_water or group.wire)):
                 return 0
             values = self.firepower["uncrewed"]
 
@@ -747,9 +747,9 @@ class GameServer:
         # Get enemy groups still in play
         enemy_groups = [group for group in self.group_list if group.owner != target_group.owner and not group.empty]
 
-        # Check retreat I: relative range to closest enemy group must not drop below 0
-        closest_range = max(self.get_relative_range([target_group, enemy]) for enemy in enemy_groups)
-        if card_mode == "backward" and closest_range <= 0:
+        # Check retreat I: relative range to closest enemy group must not drop below 0 (lateral deduction never does)
+        closest_total = max(target_group.range + enemy.range for enemy in enemy_groups)
+        if card_mode == "backward" and closest_total <= 0:
             return False
 
         # Check retreat II: at range number 0 or less only with red RNC
@@ -1138,7 +1138,11 @@ class GameServer:
 
 
     def prepare_fire(self, fire_cards, target_groups):
-        
+
+        # Empty target group cannot be attacked
+        if target_groups[1].empty:
+            return
+
         # Get fire attributes (summed over all fire cards of the attack)
         values = [[int(n) for n in re.findall(r"\d+", card.subtype)] for card in fire_cards]
         card_firestrength = sum(strength for strength, _ in values)

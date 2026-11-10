@@ -22,6 +22,7 @@ The game is implemented scenario by scenario. Currently, the rules up to chapter
 
 The following rules are deliberately not implemented, either because they cover rare edge cases or as a design choice:
 
+* **Announcing discards (4.3, 14.5 Q&A):** Discards are resolved one at a time: the opponent decides on a discarded Terrain card immediately, and further discards may follow. They are not announced together before resolution.
 * **Wire and Terrain in one discard phase (4.32 Q&A, 13.34):** Terrain is never accepted on a group holding Wire, even if the Wire was discarded in the same phase. Discard the Terrain first, then the Wire.
 * **Refill (4.5):** Hands are always refilled to the full hand size; drawing is not optional.
 * **Range reset (5.6.2):** The optional reset of range chits at the end of a deck is not used.
