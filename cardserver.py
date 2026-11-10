@@ -1515,7 +1515,7 @@ class GameServer:
         client.discard_count += 1
         
         # Add card to the group (if discarded on group)
-        if played_card.location != "discard":
+        if played_card.location == "hand":
             played_card.location = "table"
             played_card.group = target_groups[1].id
             played_card.owner = target_groups[1].owner 

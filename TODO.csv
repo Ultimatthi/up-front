@@ -1,3 +1,2 @@
 ﻿ID;Status;Kategorie;Regel;Aufgabe;;;;
-50;;Bug;16.1;Abwurf einer Gebaeudekarte (Entfernung aktiv) landet trotz void als Tischkarte auf der Gegnergruppe (discard_card prueft nur location != "discard");;;;
 58;;Abweichung;8.22;Verlassen des Gully mit zwei Movement-Karten ergibt +2 statt nur +1 der zweiten Karte;;;;
