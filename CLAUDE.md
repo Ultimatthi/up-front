@@ -25,6 +25,20 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 - Der bestehenden Philosophie und Programmierweise möglichst treu bleiben: vorhandene Muster (z. B. `pending_action`, `resolve_*`-Funktionen, Kartenmodi, Kommentarstil) wiederverwenden statt neue Konzepte einzuführen.
 - Möglichst flache Hierarchien, wenig Verschachtelung: früh mit `return`/`continue` aussteigen statt Bedingungen ineinander zu verschachteln; Zwischenwerte in eigene Variablen statt lange verschachtelte Ausdrücke.
 
+## Code readability
+
+Prioritize readability, clarity and maintainability over compactness or execution efficiency.
+
+* Write straightforward, explicit code. Avoid clever, overly concise or unnecessarily compressed expressions.
+* Each statement should have one clear responsibility. Do not combine multiple logically distinct operations into a single line or expression.
+* Prefer simple `if`/`else` blocks over complex conditional expressions or comprehensions when they improve readability.
+* Use descriptive variable names that make the purpose of each operation clear.
+* Avoid unnecessary abstractions, helper functions and nested logic.
+* Do not optimize for performance unless explicitly requested or there is a demonstrated performance issue.
+* Preserve existing code style and structure where possible.
+
+The goal is code that is easy to read, understand and modify, not code that uses the fewest lines.
+
 ## Kein Code-Bloat
 
 - Nur umsetzen, was die Aufgabe verlangt: keine zusätzlichen Features, Optionen, Parameter oder „für später“ gedachten Erweiterungen. Ideen dafür höchstens als Vorschlag nennen oder in `TODO.csv` notieren.

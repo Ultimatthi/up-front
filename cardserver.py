@@ -857,17 +857,21 @@ class GameServer:
         # Modify group attributes (smoke stays only above open ground)
         target_group.terrain = played_card.subtype
         target_group.moving = None
-        target_group.smoke = target_group.smoke and played_card.subtype == "open"
+        target_group.smoke = False if played_card.subtype != "open" else target_group.smoke
 
-        # Remove all cards beneath the new terrain card
+        # Remove all cards beneath the new terrain card (except smoke staying above open ground)
         for card in self.card_list:
             if card is played_card or card.group != target_group.id:
                 continue
-            # Smoke lies right above the open ground (two more movement cards remove it)
             if card.type == "smoke" and target_group.smoke:
-                card.stack_index = 1
-            elif card.type in ["movement", "smoke", "terrain"]:
+                continue
+            if card.type in ["movement", "smoke", "terrain"]:
                 self.move_card_to_discard(card)
+
+        # Only the open ground card lies beneath the smoke now
+        if target_group.smoke:
+            smoke = next(card for card in self.card_list if card.type == "smoke" and card.group == target_group.id)
+            smoke.stack_index = 1
 
         # Terrain card lies at the bottom of the stack
         played_card.stack_index = 0

@@ -1020,13 +1020,16 @@ class GameView(arcade.View):
     def play_card(self, card, active_groups):
     
         # Selected fire cards join a fire attack
-        extra_card_ids = [other.id for other in self.card_list if other.selected and other is not card]
+        if card.type == "fire" and card.mode != "open ground":
+            extra_card_ids = [other.id for other in self.card_list if other.selected and other is not card]
+        else:
+            extra_card_ids = []
 
         # Create action for server
         action = {
             "type": "play_card",
             "card_id": card.id,
-            "extra_card_ids": extra_card_ids if card.type == "fire" and card.mode != "open ground" else [],
+            "extra_card_ids": extra_card_ids,
             "card_mode": card.mode,
             "group_ids": [group.id for group in active_groups.values()],
             "unit_ids": [unit.id for unit in self.unit_list if unit.selected]
