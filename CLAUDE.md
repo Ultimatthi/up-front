@@ -54,6 +54,7 @@ The goal is code that is easy to read, understand and modify, not code that uses
 ## Projektentscheidungen
 
 - Der Client gilt als vertrauenswürdig: keine serverseitige Prüfung, ob `group_ids` dem richtigen Spieler gehören.
+- Siegbedingung Szenario A: Range Chit ≥ 4 zählt (bewusste Auslegung von 16.42, kein Bug – nicht erneut melden).
 - Erledigtes wird aus `TODO.csv` gelöscht; IDs bleiben stabil (nicht neu nummerieren).
 
 ## Dateiformate

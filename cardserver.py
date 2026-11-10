@@ -1536,10 +1536,13 @@ class GameServer:
         # Sort units by position within the group
         units.sort(key=lambda unit: unit.slot)
 
-        # Select unit by RPC (position for the group size, drawn like a RNC)
-        rpc_card = self.draw_rnc_card()
-        rpc = rpc_card.rpn[len(units)]
-        unit = units[rpc - 1]
+        # Select unit by RPC (position for the group size, drawn like a RNC), no draw for a single unit
+        if len(units) > 1:
+            rpc_card = self.draw_rnc_card()
+            rpc = rpc_card.rpn[len(units)]
+            unit = units[rpc - 1]
+        else:
+            unit = units[0]
         
         # Random number check
         rnc_card = self.draw_rnc_card()
