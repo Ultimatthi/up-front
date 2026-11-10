@@ -1722,7 +1722,12 @@ class GameServer:
         
         # Count movement cards
         movements = [card for card in self.card_list if card.group == target_group.id and card.type == "movement"]
-        
+
+        # The first movement card out of a gully does not count (group was still in the gully), unless fire into the gully is allowed
+        gully = any(card.group == target_group.id and card.subtype == "gully" for card in self.card_list)
+        if gully and source_group.terrain != "hill" and relative_range != 5:
+            movements.pop()
+
         # Movement modifier
         if source_group.moving:
             firestrength //= 2
