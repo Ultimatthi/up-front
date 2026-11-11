@@ -46,6 +46,9 @@ UNIT_ZOOM = 2
 GROUP_ENLARGE = 1.1
 BUTTON_ENLARGE = 1.1
 DUST_DRAG = 4
+SHAKE_TIME = 0.3 # s, a rejected card shakes sideways
+SHAKE_PERIOD = 0.18 # s, two swings on the two knocks of the reject sound
+SHAKE_WIDTH = 12
 
 # Lobby parameters
 LOBBY_WIDTH = 1280
@@ -112,6 +115,7 @@ class Card(arcade.Sprite):
         self.group = None
         self.mode = None
         self.selected = False # selected for a combined attack
+        self.shake_time = None # s since the card was rejected, None = not shaking
         self.stack_index = 0
         self.draw_index = 0
 
@@ -462,7 +466,7 @@ class GameView(arcade.View):
         self.current_turn = None
 
         # Card sent to the server, not yet answered
-        self.card_sent = False
+        self.card_sent = None
         
         # Hovered card
         self.hover_card = None
@@ -722,6 +726,9 @@ class GameView(arcade.View):
                 
         # Update dust particles
         self.dust_list.update(delta_time)
+
+        # Shake rejected cards
+        self.adjust_shaking_cards(delta_time)
 
         # Update waiting animation
         self.waiting_animation.active = self.game_phase in ("assignment", "setup")
@@ -1051,7 +1058,7 @@ class GameView(arcade.View):
             self.socket.sendall(pickle.dumps(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
-        self.card_sent = True
+        self.card_sent = card
 
         # Reset selections
         for other in self.card_list:
@@ -1144,9 +1151,10 @@ class GameView(arcade.View):
         
         # Play sound (a played card the server answers without a sound was rejected)
         sound = game_state.get("sound")
-        if self.card_sent and sound is None:
+        if self.card_sent is not None and sound is None:
             sound = "reject"
-        self.card_sent = False
+            self.card_sent.shake_time = 0.0
+        self.card_sent = None
         self.play_sound(sound)
             
         # Get logical card variables
@@ -1421,6 +1429,24 @@ class GameView(arcade.View):
         for card in void:
             card.position = (-10000, -10000)
             
+
+            
+    def adjust_shaking_cards(self, delta_time):
+
+        # Rejected cards shake sideways around their place in the hand, fading out
+        for card in self.card_list:
+            if card.shake_time is None:
+                continue
+            card.shake_time += delta_time
+            self.adjust_card_position()
+            if card.shake_time >= SHAKE_TIME:
+                card.shake_time = None
+                continue
+            damping = 1 - card.shake_time / SHAKE_TIME
+            swing = math.sin(2 * math.pi * card.shake_time / SHAKE_PERIOD)
+            card.center_x += swing * damping * SHAKE_WIDTH * self.layout.scale
+
+
 
             
     def adjust_unit_position(self):
