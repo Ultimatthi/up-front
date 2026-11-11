@@ -1220,12 +1220,9 @@ class GameView(arcade.View):
             if card.group != active_group.id:
                 continue
             for _ in range(28):
-                if random.random() < 0.5:
-                    x = random.uniform(card.left, card.right)
-                    y = random.choice((card.bottom, card.top))
-                else:
-                    x = random.choice((card.left, card.right))
-                    y = random.uniform(card.bottom, card.top)
+                side = random.choice(("left", "right", "top", "bottom"))
+                x = random.uniform(card.left, card.right) if side in ("top", "bottom") else getattr(card, side)
+                y = random.uniform(card.bottom, card.top) if side in ("left", "right") else getattr(card, side)
                 angle = math.atan2(y - card.center_y, x - card.center_x) + random.uniform(-0.4, 0.4)
                 speed = random.uniform(120, 300)
                 self.dust_list.append(DustParticle(x, y, angle, speed))
