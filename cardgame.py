@@ -45,6 +45,7 @@ UNIT_ENLARGE = 1.05
 UNIT_ZOOM = 2
 GROUP_ENLARGE = 1.1
 BUTTON_ENLARGE = 1.1
+DUST_DRAG = 4
 
 # Lobby parameters
 LOBBY_WIDTH = 1280
@@ -323,11 +324,11 @@ class BoardElement(arcade.Sprite):
 
 class DustParticle(arcade.SpriteCircle):
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, angle, speed):
         
         radius = random.uniform(4, 8)
 
-        offset = random.randint(10, 30)
+        offset = random.randint(70, 90)
         color = (50 + offset, 59 + offset, 64 + offset)
         
         super().__init__(radius, color)
@@ -335,16 +336,19 @@ class DustParticle(arcade.SpriteCircle):
         self.center_x = x
         self.center_y = y
 
-        angle = random.uniform(0, 2 * math.pi)
-        speed = random.uniform(20, 60)  # pixel/s
         self.change_x = math.cos(angle) * speed
         self.change_y = math.sin(angle) * speed
 
-        self.lifetime = 1.2 # s
+        self.lifetime = 0.8 # s
         self.age = 0.0
 
     def update(self, delta_time):
         
+        # Burst out fast, then settle
+        drag = math.exp(-DUST_DRAG * delta_time)
+        self.change_x *= drag
+        self.change_y *= drag
+
         self.center_x += self.change_x * delta_time
         self.center_y += self.change_y * delta_time
 
@@ -806,7 +810,9 @@ class GameView(arcade.View):
         # Clicked on the empty board: dust and knock
         if card is None and group is None and button_ is None and unit is None:
             for _ in range(24):
-                self.dust_list.append(DustParticle(x, y))
+                angle = random.uniform(0, 2 * math.pi)
+                speed = random.uniform(60, 160)
+                self.dust_list.append(DustParticle(x, y, angle, speed))
             self.play_sound("knock")
     
         # Adjust positions
@@ -1139,18 +1145,25 @@ class GameView(arcade.View):
         
         # Setup map for fast access
         card_map = {card.id: card for card in self.card_list}
+
+        # Find cards landing on the table (dust effect)
+        landed_cards = []
+        for logical_card in logical_card_list:
+            key = logical_card["card_id"]
+            card = card_map[key]
+            if card.location != "table" and logical_card["location"] == "table":
+                landed_cards.append(card)
         
         # Update card variables
         for logical_card in logical_card_list:
             key = logical_card["card_id"]
-            if key in card_map:
-                card = card_map[key]
-                card.owner = logical_card["owner"]
-                card.type = logical_card["type"]
-                card.location = logical_card["location"]
-                card.group = logical_card["group"]
-                card.stack_index = logical_card["stack_index"]
-                card.draw_index = logical_card["draw_index"]
+            card = card_map[key]
+            card.owner = logical_card["owner"]
+            card.type = logical_card["type"]
+            card.location = logical_card["location"]
+            card.group = logical_card["group"]
+            card.stack_index = logical_card["stack_index"]
+            card.draw_index = logical_card["draw_index"]
                 
                 
         # Get logical card variables
@@ -1162,13 +1175,12 @@ class GameView(arcade.View):
         # Update unit card variables
         for logical_unit in logical_unit_list:
             key = logical_unit["unit_id"]
-            if key in unit_map:
-                unit = unit_map[key]
-                unit.owner = logical_unit["owner"]
-                unit.group = logical_unit["group"]
-                unit.slot = logical_unit["slot"]
-                unit.state = logical_unit["state"]
-                unit.crew_partner = logical_unit["crew_partner"]
+            unit = unit_map[key]
+            unit.owner = logical_unit["owner"]
+            unit.group = logical_unit["group"]
+            unit.slot = logical_unit["slot"]
+            unit.state = logical_unit["state"]
+            unit.crew_partner = logical_unit["crew_partner"]
                 
                         
         # Get logical group variables
@@ -1180,14 +1192,13 @@ class GameView(arcade.View):
         # Update group variables
         for logical_group in logical_group_list:
             key = logical_group["group_id"]
-            if key in group_map:
-                group = group_map[key]
-                group.owner = logical_group["owner"]
-                group.empty = logical_group["empty"]
-                group.range = logical_group["range"]
-                group.moving = logical_group["moving"]
-                group.terrain = logical_group["terrain"]
-                group.last_action = logical_group["last_action"]
+            group = group_map[key]
+            group.owner = logical_group["owner"]
+            group.empty = logical_group["empty"]
+            group.range = logical_group["range"]
+            group.moving = logical_group["moving"]
+            group.terrain = logical_group["terrain"]
+            group.last_action = logical_group["last_action"]
                 
                 
         # Init active groups (only once)
@@ -1201,6 +1212,22 @@ class GameView(arcade.View):
 
         # Update card position
         self.adjust_card_position()
+
+        # Dust bursts out from the edges of cards landing on a shown group
+        for card in landed_cards:
+            active_group = self.active_groups[card.owner]
+            if card.group != active_group.id:
+                continue
+            for _ in range(28):
+                if random.random() < 0.5:
+                    x = random.uniform(card.left, card.right)
+                    y = random.choice((card.bottom, card.top))
+                else:
+                    x = random.choice((card.left, card.right))
+                    y = random.uniform(card.bottom, card.top)
+                angle = math.atan2(y - card.center_y, x - card.center_x) + random.uniform(-0.4, 0.4)
+                speed = random.uniform(120, 300)
+                self.dust_list.append(DustParticle(x, y, angle, speed))
         
         # Update card position
         self.adjust_unit_position()
