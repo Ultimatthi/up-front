@@ -384,6 +384,7 @@ class GameView(arcade.View):
         self.sound_play = arcade.load_sound(r'assets/sounds/play_card.mp3')
         self.sound_select = arcade.load_sound(r'assets/sounds/select.mp3')
         self.sound_switch = arcade.load_sound(r'assets/sounds/switch.mp3')
+        self.sound_tick = arcade.load_sound(r'assets/sounds/tick.mp3')
         
         # Layout
         self.layout = Layout(self.window.width, self.window.height)
@@ -1268,6 +1269,8 @@ class GameView(arcade.View):
             arcade.play_sound(self.sound_select)
         elif sound == 'switch':
             arcade.play_sound(self.sound_switch)
+        elif sound == 'tick':
+            arcade.play_sound(self.sound_tick)
                   
             
     

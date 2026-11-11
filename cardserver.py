@@ -1017,6 +1017,9 @@ class GameServer:
         if client.name != self.current_turn:
             return
 
+        # Set sound
+        self.current_sound = "tick"
+
         # Switch turn
         opponent = next(c for c in self.client_list if c is not client)
         client.passed = True
@@ -1276,7 +1279,10 @@ class GameServer:
         # Check if passing is allowed
         if self.game_subphase == "discard" and client.passed and opponent.passed:
             return
-                
+
+        # Set sound
+        self.current_sound = "tick"
+
         # Advance turn
         if self.game_subphase == "action":
             self.game_subphase = "discard"
