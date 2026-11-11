@@ -1,1 +1,3 @@
 ﻿ID;Status;Kategorie;Regel;Aufgabe;;;;
+61;;UI;-;Abgelehnte Aktionen begründen: Kann eine Karte nicht gespielt werden, dem Spieler den Grund anzeigen (z. B. Feuerkraft zu gering, Gruppe hat schon gehandelt, Gruppe nicht in Bewegung).
+62;;UI;-;Ausspielen von Karten kosmetisch snappier machen (Animation/Rückmeldung beim Ausspielen).
