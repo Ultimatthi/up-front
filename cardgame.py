@@ -385,6 +385,7 @@ class GameView(arcade.View):
         self.sound_select = arcade.load_sound(r'assets/sounds/select.mp3')
         self.sound_switch = arcade.load_sound(r'assets/sounds/switch.mp3')
         self.sound_tick = arcade.load_sound(r'assets/sounds/tick.mp3')
+        self.sound_reject = arcade.load_sound(r'assets/sounds/reject.mp3')
         
         # Layout
         self.layout = Layout(self.window.width, self.window.height)
@@ -459,6 +460,9 @@ class GameView(arcade.View):
         
         # Init game state
         self.current_turn = None
+
+        # Card sent to the server, not yet answered
+        self.card_sent = False
         
         # Hovered card
         self.hover_card = None
@@ -1047,6 +1051,7 @@ class GameView(arcade.View):
             self.socket.sendall(pickle.dumps(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
+        self.card_sent = True
 
         # Reset selections
         for other in self.card_list:
@@ -1137,8 +1142,11 @@ class GameView(arcade.View):
         self.current_turn = game_state.get("current_turn")
         self.winner = game_state.get("winner")
         
-        # Play sound
+        # Play sound (a played card the server answers without a sound was rejected)
         sound = game_state.get("sound")
+        if self.card_sent and sound is None:
+            sound = "reject"
+        self.card_sent = False
         self.play_sound(sound)
             
         # Get logical card variables
@@ -1268,6 +1276,8 @@ class GameView(arcade.View):
             arcade.play_sound(self.sound_switch)
         elif sound == 'tick':
             arcade.play_sound(self.sound_tick)
+        elif sound == 'reject':
+            arcade.play_sound(self.sound_reject)
                   
             
     

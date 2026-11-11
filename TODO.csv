@@ -1,4 +1,3 @@
 ﻿ID;Status;Kategorie;Regel;Aufgabe;;;;
 61;;UI;-;Abgelehnte Aktionen begründen: Kann eine Karte nicht gespielt werden, dem Spieler den Grund anzeigen (z. B. Feuerkraft zu gering, Gruppe hat schon gehandelt, Gruppe nicht in Bewegung).
 63;;UI;-;Sound-Effekt je Kartentyp (movement, fire, terrain usw.): Server schickt bereits 'sound' im Game-State, Zuordnung und Sounddateien ergänzen
-64;;UI;-;Abgelehnte Karte wackelt kurz seitlich, dazu Nope-Sound (braucht die Ablehnung vom Server aus 61)

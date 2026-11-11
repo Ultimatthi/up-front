@@ -1208,6 +1208,9 @@ class GameServer:
         # Add card to the group
         played_card.location = "table"
         played_card.group = target_groups[0].id
+
+        # Set sound
+        self.current_sound = "play_card"
             
 
     
