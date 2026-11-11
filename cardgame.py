@@ -497,13 +497,6 @@ class GameView(arcade.View):
             card.position = (-10000, -10000)
             self.card_list.append(card)
             
-        # Create every unit
-        for unit_id in self.unit_table.index:
-            row = self.unit_table.loc[unit_id]
-            unit = Unit(unit_id, row["nation"], None, self.layout.scale)
-            unit.position = (-10000, -10000)
-            self.unit_list.append(unit)
-                
         # Create every group tile
         for label in ["A", "B", "C", "D"]:
             for section in [0, 1]:
@@ -1192,7 +1185,13 @@ class GameView(arcade.View):
         # Update unit card variables
         for logical_unit in logical_unit_list:
             key = logical_unit["unit_id"]
-            unit = unit_map[key]
+            unit = unit_map.get(key)
+            # Created on first sight: the server only sends units of the nations in play
+            if unit is None:
+                row = self.unit_table.loc[key]
+                unit = Unit(key, row["nation"], None, self.layout.scale)
+                unit.position = (-10000, -10000)
+                self.unit_list.append(unit)
             unit.owner = logical_unit["owner"]
             unit.group = logical_unit["group"]
             unit.slot = logical_unit["slot"]
