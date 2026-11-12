@@ -4,7 +4,7 @@ UpFront: Server
 
 import socket
 import threading
-import pickle
+import json
 import time
 import re
 import random
@@ -24,7 +24,7 @@ MAX_HAND = {"german": 5, "american": 6, "russian": 4, "british": 5,
 MAX_DISCARD = {"german": 1, "american": 2, "russian": 4, "british": 2,
                "japanese": 2, "french": 1, "italian": 2}
 
-NATIONS = ["german", "american"] # implemented nations
+NATIONS = ["german", "american", "british", "french", "italian", "japanese", "russian"]
 SIDES = ["1", "2"]
 
 ACTIONS = {
@@ -68,6 +68,13 @@ TIME_LIMIT = 3
 
 # Axis nations (French not treated as Vichy France)
 AXIS = ["german", "japanese", "italian"]
+
+
+# ──[ Functions ]──────────────────────────────────────────────────────────────
+
+def encode_message(message):
+    # One JSON message per line, the receiver reads it with readline()
+    return (json.dumps(message) + "\n").encode("utf-8")
 
 
 # ──[ Classes ]────────────────────────────────────────────────────────────────
@@ -285,8 +292,8 @@ class GameServer:
             while True:
                 try:
                     c, addr = s.accept()
-                    data = c.recv(1024)
-                    player_data = pickle.loads(data)
+                    reader = c.makefile("r", encoding="utf-8")
+                    player_data = json.loads(reader.readline())
                     player_name = player_data.get("player_name")
                     player_nation = player_data.get("player_nation")
                     unit_allocation = player_data.get("unit_allocation")
@@ -336,7 +343,7 @@ class GameServer:
                     self.broadcast()
                     
                     # Starte a new thread for each client
-                    client_thread = threading.Thread(target=self.handle_client, args=(c, player_name), daemon=True)
+                    client_thread = threading.Thread(target=self.handle_client, args=(reader, player_name), daemon=True)
                     client_thread.start()
                 except:
                     pass
@@ -396,7 +403,7 @@ class GameServer:
 
         for client in list(self.client_list):
             try:
-                client.socket.sendall(pickle.dumps({"type": "ping"}))
+                client.socket.sendall(encode_message({"type": "ping"}))
             except Exception:
                 print(f"Heartbeat failed for {client.name}")
                 self.remove_client(client.name)
@@ -479,13 +486,13 @@ class GameServer:
 
                 
                 
-    def handle_client(self, c, player_name):
+    def handle_client(self, reader, player_name):
 
         while True:
             
             try:
                 # Receive data
-                data = c.recv(1024)
+                data = reader.readline()
                 
                 if data:
                     
@@ -496,7 +503,7 @@ class GameServer:
                     client = next((client for client in self.client_list if client.name == player_name), None)
                     
                     # Process client action
-                    action = pickle.loads(data)
+                    action = json.loads(data)
                     with self.lock:
                         self.process_action(action, client)
                         self.process_aftermath()
@@ -1410,9 +1417,9 @@ class GameServer:
             
             # Send game state to client
             try:
-                size = pickle.dumps(game_state)
-                print(f"Sending game state ({len(size)} bytes)")
-                client.socket.sendall(pickle.dumps(game_state))
+                message = encode_message(game_state)
+                print(f"Sending game state ({len(message)} bytes)")
+                client.socket.sendall(message)
             except Exception:
                 print(f"Error sending to {client.name}")
                 self.remove_client(client.name)

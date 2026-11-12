@@ -6,7 +6,6 @@ UpFront: Client
 import os
 import ctypes
 import json
-import pickle
 import random
 import re
 import socket
@@ -78,6 +77,13 @@ TURN_LABELS = {
     "terrain": ("[Wait for terrain decision]", "[Accept (Space) / reject (R) terrain]"),
 }
 
+
+
+# ──[ Functions ]──────────────────────────────────────────────────────────────
+
+def encode_message(message):
+    # One JSON message per line, the receiver reads it with readline()
+    return (json.dumps(message) + "\n").encode("utf-8")
 
 
 # ──[ Classes ]────────────────────────────────────────────────────────────────
@@ -418,7 +424,7 @@ class GameView(arcade.View):
             print('No connection possible')
             return False
         
-        self.reader = self.socket.makefile("rb")
+        self.reader = self.socket.makefile("r", encoding="utf-8")
         
         # Init game -----------------------------------------------------------
         
@@ -567,7 +573,7 @@ class GameView(arcade.View):
             "player_nation": self.player_nation,
             "unit_allocation": self.unit_allocation
         }
-        self.socket.sendall(pickle.dumps(data))
+        self.socket.sendall(encode_message(data))
         
         # Start thread to receive messages
         self.recv_thread = threading.Thread(target=self.receive_state, daemon=True)
@@ -965,7 +971,7 @@ class GameView(arcade.View):
             
             # Disconnect
             try:
-                self.socket.sendall(pickle.dumps(action))
+                self.socket.sendall(encode_message(action))
             except Exception:
                 pass
             finally:
@@ -1049,7 +1055,7 @@ class GameView(arcade.View):
 
         # Send action to server
         try:
-            self.socket.sendall(pickle.dumps(action))
+            self.socket.sendall(encode_message(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
         self.card_sent = card
@@ -1072,7 +1078,7 @@ class GameView(arcade.View):
 
         # Send action to server
         try:
-            self.socket.sendall(pickle.dumps(action))
+            self.socket.sendall(encode_message(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
 
@@ -1088,7 +1094,7 @@ class GameView(arcade.View):
 
         # Send action to server
         try:
-            self.socket.sendall(pickle.dumps(action))
+            self.socket.sendall(encode_message(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
 
@@ -1103,7 +1109,7 @@ class GameView(arcade.View):
         
         # Send action to server
         try:
-            self.socket.sendall(pickle.dumps(action))
+            self.socket.sendall(encode_message(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
             
@@ -1117,7 +1123,7 @@ class GameView(arcade.View):
         
         while self.running:
             try:
-                game_state = pickle.load(self.reader)
+                game_state = json.loads(self.reader.readline())
             except:
                 print("Connection lost")
                 break
