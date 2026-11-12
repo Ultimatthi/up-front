@@ -111,13 +111,13 @@ class Card:
         
 class Unit:
 
-    def __init__(self, unit_id, nation, rank, name, weapon, malfunction, 
+    def __init__(self, unit_id, nation, function, name, weapon, malfunction, 
                  ccv, firepower, morale, panic, rout, kia, points):
         
         # Attributes
         self.id = unit_id
         self.nation = nation
-        self.rank = rank
+        self.function = function # SL, ASL
         self.name = name
         self.weapon = weapon
         self.ccv = ccv # rallied|pinned|rallied(disarmed)|pinned(disarmed)
@@ -433,7 +433,7 @@ class GameServer:
             row = self.unit_table.loc[unit_id]
             if row["nation"] not in nations:
                 continue
-            unit = Unit(unit_id, row["nation"], row["rank"], row["name"], row["weapon"], 
+            unit = Unit(unit_id, row["nation"], row["function"], row["name"], row["weapon"], 
                         row["malfunction"], row["ccv"], row["firepower"], row["morale"], 
                         row["panic"], row["rout"], row["kia"], row["points"])
             self.unit_list.append(unit)
@@ -1452,8 +1452,8 @@ class GameServer:
         max_hand = MAX_HAND[client.nation]
         
         # Get squad leader and assistant squad leader
-        sl = next(unit for unit in self.unit_list if unit.owner == client.name and unit.rank == "SGT")
-        asl = next(unit for unit in self.unit_list if unit.owner == client.name and unit.rank == "CPL")
+        sl = next(unit for unit in self.unit_list if unit.owner == client.name and unit.function == "SL")
+        asl = next(unit for unit in self.unit_list if unit.owner == client.name and unit.function == "ASL")
         
         # Check for max hand size reduction
         if sl.state == "rallied":
@@ -1847,7 +1847,7 @@ class GameServer:
             group.empty = len(units) == 0
         
             # Group has active leader?
-            group.leader = any(unit.rank in ("SGT", "CPL") and unit.state == "rallied" for unit in units)
+            group.leader = any(unit.function in ("SL", "ASL") and unit.state == "rallied" for unit in units)
   
             # Discard placed cards of empty group
             if group.empty:
