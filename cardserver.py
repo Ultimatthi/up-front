@@ -260,10 +260,13 @@ class GameServer:
 
 
     def start_server(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+
+        # Accept IPv4 clients on the IPv6 socket as well
+        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
 
         # Set ip adress
-        host = "0.0.0.0"
+        host = "::"
         
         # Set port (user input)
         port_input = input("Enter port (press Enter for default 52000): ").strip()

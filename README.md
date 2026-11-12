@@ -94,6 +94,7 @@ Open a terminal (Linux/macOS) or command prompt (Windows) in the directory where
 3. Join the game session by connecting to the server at `<host-ip>:<port>`
 
    * For online play: Use the host's public IP address (e.g., `203.0.113.42:52000`)
+   * For online play via IPv6: Put the address in square brackets (e.g., `[2001:db8::42]:52000`)
    * For local network: Use the host's local IP address (e.g., `192.168.1.10:52000`)
    * For singleplayer, or as the host yourself: Use localhost (e.g., `localhost:52000`)
 

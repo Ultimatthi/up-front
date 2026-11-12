@@ -376,8 +376,9 @@ class GameView(arcade.View):
         # Transfer parameters
         self.player_name = username
         self.player_nation = nation
-        host_str, port_str = server.split(":")
-        self.host = host_str
+        # Split at the last colon: IPv6 addresses contain colons themselves ([address]:port)
+        host_str, port_str = server.rsplit(":", 1)
+        self.host = host_str.strip("[]")
         self.port = int(port_str)
 
         # Play mat colour
@@ -411,8 +412,8 @@ class GameView(arcade.View):
         
         # Connect to socket
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((self.host, self.port))
+            # Handles IPv4, IPv6 and host names like localhost
+            self.socket = socket.create_connection((self.host, self.port))
         except:
             print('No connection possible')
             return False
