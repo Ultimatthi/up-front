@@ -93,7 +93,7 @@ Schneller und deterministisch: `GameServer` direkt instanziieren, zwei `Client`-
 
 ## Unit-Allocations (`userdata/unit_allocation.yaml`)
 
-- Aufstellung je Szenario und Nation steht auf der Szenariokarte: `workbench/Vassal/Up_Front_v4_1/images/Scenario <X>.gif` (Kartennummern, z. B. Szenario A: Deutsche 1–10, Amerikaner 1–12). Einträge sind Unit-Namen (müssen je Nation eindeutig sein), Gruppen `A`, `B`, `C` …; Listenreihenfolge = Position, vorne zuerst.
+- Aufstellung je Szenario und Nation steht auf der Szenariokarte: `workbench/Vassal/Up_Front_v4_1/images/Scenario <X>.gif` (Kartennummern, z. B. Szenario A: Deutsche 1–10, Amerikaner 1–12). Einträge sind Unit-Namen aus `unit_table.csv` (müssen eindeutig sein; jp24 heißt dort „Yoruba II“, weil jp03 auch Yoruba heißt), Gruppen `A`, `B`, `C` …; Listenreihenfolge = Position, vorne zuerst.
 - Gruppe A (Bewegungsgruppe), 4 Units: SL und die drei Schützen (Gewehr/MP) mit der höchsten Morale.
 - Gruppe B (Feuerbasis): alle übrigen, inkl. ASL und Unterstützungswaffen (LMG, BAR, MMG).
 - Dritte Gruppe nur, wenn B sonst sehr groß würde und genug für eine zweite Feuerbasis da ist (z. B. ein zweites LMG). Nationen mit 4 Handkarten können selten drei Gruppen aktivieren; eine Gruppe ohne Leader ist schwächer (z. B. kein Rauch).

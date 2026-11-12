@@ -2,4 +2,3 @@
 61;;UI;-;Abgelehnte Aktionen begründen: Kann eine Karte nicht gespielt werden, dem Spieler den Grund anzeigen (z. B. Feuerkraft zu gering, Gruppe hat schon gehandelt, Gruppe nicht in Bewegung).
 63;;UI;-;Sound-Effekt je Kartentyp (movement, fire, terrain usw.): Server schickt bereits 'sound' im Game-State, Zuordnung und Sounddateien ergänzen
 66;;Daten;-;"Geschütze (15 Karten, z. B. 37mm PAK 36, Q.F. 2 pr) in unit_table.csv aufnehmen; Werte in workbench/guns.txt, umrahmte Morale/Panic/KIA und Effect Numbers passen nicht ins Tabellenformat"
-68;;Daten;-;Unit-Verteilung per Name ist nicht eindeutig: Japaner jp03 und jp24 heißen beide Yoruba
