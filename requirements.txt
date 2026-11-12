@@ -1,7 +1,5 @@
 arcade~=3.1.0
-markdown~=3.11
-numpy~=2.2
-pandas~=3.0
-pillow~=11.0
-pyperclip~=1.9
-pyyaml~=6.0
+markdown>=3.0
+pandas>=2.1
+pyperclip>=1.8
+pyyaml>=5.1

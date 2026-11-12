@@ -19,13 +19,11 @@ import math
 from collections import defaultdict
 
 # Third-party
-import numpy as np
 import pandas as pd
 import pyperclip
 import yaml
 import arcade
 import arcade.gui
-from PIL import Image, ImageDraw
 from arcade.exceptions import PerformanceWarning
 from arcade.future.light import Light, LightLayer
 import markdown

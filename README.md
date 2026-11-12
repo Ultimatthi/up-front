@@ -61,7 +61,7 @@ Open a terminal (Linux/macOS) or command prompt (Windows) in the directory where
    cd up-front
    ```
 
-2. Install a Python runtime environment (version 3.11 or newer): <https://www.python.org/>
+2. Install a Python runtime environment (version 3.10 or newer): <https://www.python.org/>
 
 3. Install required dependencies:
 
