@@ -2,15 +2,17 @@
 UpFront: Server
 """
 
+# Standard library
+import json
+import random
+import re
 import socket
 import threading
-import json
 import time
-import re
-import random
-import yaml
-import pandas as pd
 import traceback
+
+# Third-party
+import pandas as pd
 
 
 # ──[ Parameter ]──────────────────────────────────────────────────────────────

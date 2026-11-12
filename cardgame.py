@@ -3,32 +3,27 @@ UpFront: Client
 """
 
 # Standard library
-import os
 import ctypes
 import json
+import math
+import queue
 import random
-import re
 import socket
 import sys
 import threading
-import time
-import warnings
-import queue
-from datetime import datetime
-import math
-from collections import defaultdict
 
 # Third-party
-import pandas as pd
-import pyperclip
-import yaml
 import arcade
 import arcade.gui
-from arcade.exceptions import PerformanceWarning
-from arcade.future.light import Light, LightLayer
 import markdown
+import pandas as pd
 import pyglet
+import pyperclip
+import yaml
+from arcade.future.light import Light, LightLayer
 from pyglet.text.layout import ScrollableTextLayout
+
+# Local
 from modules.waiting_animation import WaitingAnimation
 
 # ──[ Parameters ]─────────────────────────────────────────────────────────────
