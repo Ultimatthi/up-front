@@ -3,10 +3,10 @@ scenario A:
     A:
       - Bernhoff
       - Wolff
-      - Schumacher
+      - Streich
       - Diettinger
     B:
-      - Streich
+      - Schumacher
       - Wollak
       - Schultz
       - Beck
@@ -15,15 +15,99 @@ scenario A:
   american:
     A:
       - Myers
-      - Greenwood
-      - McElroy
+      - Frattali
+      - Anderson
       - Burnett
     B:
-      - Anderson
-      - Frattali
+      - McElroy
+      - Greenwood
       - Burke
       - Edwards
       - Watson
       - Smith
       - Fox
       - Moores
+  british:
+    A:
+      - Hodge
+      - Tresham
+      - Willis
+      - Vasey
+    B:
+      - Cottrell
+      - Bell
+      - Moon
+      - Cleary
+      - Scarborough
+      - Barnard
+  french:
+    A:
+      - Laforte
+      - Cassavant
+      - Bienvenue
+      - Villeneuve
+    B:
+      - Piccard
+      - Decautaux
+      - Rousselle
+      - Meileure
+      - Kastler
+      - Corbeil
+      - Larue
+      - Dubois
+  italian:
+    A:
+      - Paolini
+      - Sarducci
+      - Giganti
+      - Ferraro
+    B:
+      - Marino
+      - Farinacci
+      - Pasini
+      - Ciappi
+      - Celozzi
+      - Natale
+      - Capitano
+      - Antonio
+    C:
+      - Giorgio
+      - Abruzzi
+      - Nardo
+      - Costanzi
+      - Gionelli
+      - Napoli
+  japanese:
+    A:
+      - Kobayashi
+      - Fujiyama
+      - Asanti
+      - Okimoto
+    B:
+      - Togami
+      - Sakai
+      - Korata
+      - Yumani
+      - Fusano
+      - Fuchida
+      - Fujita
+      - Yoruba
+      - Togo
+  russian:
+    A:
+      - Petrovsky
+      - Chernenko
+      - Vakuta
+      - Rostov
+    B:
+      - Yastreboft
+      - Zaharoff
+      - Storchillo
+      - Kristov
+      - Soloviev
+      - Uihailoft
+      - Nosenko
+      - Zayakov
+      - Sokoloff
+      - Kvasnikov
+      - Burlak
