@@ -467,6 +467,9 @@ class GameView(arcade.View):
 
         # Card sent to the server, not yet answered
         self.card_sent = None
+
+        # Reason for the last rejected card (kept until the next card is played)
+        self.help_text = None
         
         # Hovered card
         self.hover_card = None
@@ -819,6 +822,7 @@ class GameView(arcade.View):
                 speed = random.uniform(60, 160)
                 self.dust_list.append(DustParticle(x, y, angle, speed))
             self.play_sound("knock")
+            self.help_text = None
     
         # Adjust positions
         self.adjust_card_position()
@@ -1052,6 +1056,7 @@ class GameView(arcade.View):
         except Exception as e:
             print(f"Error sending to server: {e}")
         self.card_sent = card
+        self.help_text = None
 
         # Reset selections
         for other in self.card_list:
@@ -1147,6 +1152,7 @@ class GameView(arcade.View):
         if self.card_sent is not None and sound is None:
             sound = "reject"
             self.card_sent.shake_time = 0.0
+            self.help_text = game_state.get("help_text")
         self.card_sent = None
         self.play_sound(sound)
             
@@ -1648,10 +1654,17 @@ class GameView(arcade.View):
             color = color=arcade.color.WHITE
             text = self.annotate_text(label, x, y, 0, 18, color, True, "right")
             text.draw()
+
+        # Reason for the last rejected card
+        if self.help_text is not None:
+            x = self.window.width - 20 * self.layout.scale
+            y = self.window.height / 2 - 220 * self.layout.scale
+            text = self.annotate_text(self.help_text, x, y, 0, 18, arcade.color.WHITE, True, "right", True)
+            text.draw()
         
             
     
-    def annotate_text(self, label, x, y, angle, size, color=arcade.color.WHITE, bold=True, anchor_x="center"):
+    def annotate_text(self, label, x, y, angle, size, color=arcade.color.WHITE, bold=True, anchor_x="center", italic=False):
         
         # Set to "" if None
         label = "" if label is None else label
@@ -1672,7 +1685,7 @@ class GameView(arcade.View):
             color=color,
             font_size=size*self.layout.scale, font_name="Arial",
             anchor_x=anchor_x, anchor_y="center",
-            align="center", rotation=angle, bold=bold
+            align="center", rotation=angle, bold=bold, italic=italic
         )
         
         # Return

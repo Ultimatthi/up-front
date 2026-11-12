@@ -233,6 +233,7 @@ class GameServer:
         self.current_turn = None
         self.first_turn = None
         self.current_sound = None
+        self.help_text = None # reason for a rejected card
         self.action_deck_counter = 0
         self.breeze = False # breeze drawn in current player turn
         self.draw_counter = 0
@@ -500,6 +501,7 @@ class GameServer:
                     
                     # Reset sound
                     self.current_sound = None
+                    self.help_text = None
                     
                     # Get client
                     client = next((client for client in self.client_list if client.name == player_name), None)
@@ -622,6 +624,7 @@ class GameServer:
         
         # Check game phase
         if self.game_phase != "gameplay":
+            self.help_text = "Game is not running"
             return
         
         # Find card
@@ -654,6 +657,7 @@ class GameServer:
             
         # Check if card is in player's hand
         if played_card.owner != client.name or played_card.location != "hand":
+            self.help_text = "Card is not in your hand"
             return
         
         # Get card mode
@@ -664,6 +668,7 @@ class GameServer:
 
         # Cower cards can only be discarded or played as open ground
         if client.nation in played_card.cower and self.game_subphase == "action" and card_mode != "open ground":
+            self.help_text = "Cower card: discard it or play it as open ground"
             return
 
         # Open ground is terrain (card type restored if card stays in hand)
@@ -691,14 +696,17 @@ class GameServer:
         
         # Check if it's this player's turn
         if client.name != self.current_turn:
+            self.help_text = "Not your turn"
             return
         
         # Check if group is empty
         if target_groups[0].empty:
+            self.help_text = "Group is empty"
             return
         
         # Check if group has already acted
         if target_groups[0].acted and played_card.type != "hero":
+            self.help_text = "Group has already acted"
             return
         
         # Resolve actions
@@ -715,6 +723,7 @@ class GameServer:
         elif played_card.type == "fire":
             success = self.prepare_fire([played_card] + extra_cards, target_groups)
         else:
+            self.help_text = "Card cannot be played as an action"
             success = False
             
         # Check if card was resolved successfully
@@ -744,6 +753,7 @@ class GameServer:
         
         # No movement with pinned units
         if any(unit.state == "pinned" and unit.group == target_group.id for unit in self.unit_list):
+            self.help_text = "No movement with pinned units"
             return False
         
         # Get wire card (if present):
@@ -762,24 +772,29 @@ class GameServer:
         # Check retreat I: relative range to closest enemy group must not drop below 0 (lateral deduction never does)
         closest_total = max(target_group.range + enemy.range for enemy in enemy_groups)
         if card_mode == "backward" and closest_total <= 0:
+            self.help_text = "Retreat would drop the relative range below 0"
             return False
 
         # Check retreat II: at range number 0 or less only with red RNC
         if card_mode == "backward" and target_group.range <= 0 and played_card.color != "red":
+            self.help_text = "Retreat at range chit 0 or less needs a red card"
             return False
 
         # Check blocking: relative range to opposite group must not exceed 5
         opposite = next((group for group in enemy_groups if group.label == target_group.label), None)
         if card_mode == "forward" and opposite and target_group.range + 1 + opposite.range > 5:
+            self.help_text = "Advance would exceed relative range 5 to the opposite group"
             return False
 
         # First movement card on marsh must be sideways
         if target_group.terrain == "marsh" and not target_group.moving and card_mode != "sideways":
+            self.help_text = "First movement on marsh must be sideways"
             return False
 
         # Stream can only be left by fording (sideways)
         fording = target_group.terrain == "stream" and not target_group.moving
         if fording and card_mode != "sideways":
+            self.help_text = "Stream can only be left sideways (fording)"
             return False
 
         # Fording without ford card needs a black RNC (otherwise card is lost, action counts)
@@ -819,28 +834,34 @@ class GameServer:
         
     def check_terrain_entry(self, played_card, target_group):
 
-        # Terrain can only be entered by a moving group (except initial terrain)
-        if not target_group.moving and self.game_subphase != "terrain":
-            return False
-
         # Terrain types without implemented rules cannot be played
         if played_card.subtype not in TERRAIN_MOD:
+            self.help_text = "Terrain type not implemented"
             return False
 
         # Cower cards of the scenario cannot be played
         if played_card.subtype in COWER_CARDS.get(self.scenario, []):
+            self.help_text = "Cower card in this scenario"
             return False
 
         # Cards to be removed by the scenario are cower cards until then
         if self.check_card_removal(played_card):
+            self.help_text = "Cower card until the scenario removes it"
+            return False
+
+        # Terrain can only be entered by a moving group (except initial terrain)
+        if not target_group.moving and self.game_subphase != "terrain":
+            self.help_text = "Terrain needs a moving group"
             return False
 
         # No terrain on wire (remove wire with movement card first), only open ground goes beneath it
         if target_group.wire and played_card.subtype != "open":
+            self.help_text = "No terrain on wire (remove it with a movement card)"
             return False
 
         # No new terrain on marsh before two movement cards
         if target_group.terrain == "marsh":
+            self.help_text = "No new terrain on marsh before two movement cards"
             return False
 
         return True
@@ -896,6 +917,7 @@ class GameServer:
 
         # Check if target group is empty
         if target_group.empty:
+            self.help_text = "Target group is empty"
             return
 
         # Check if enemy group can enter terrain
@@ -996,6 +1018,12 @@ class GameServer:
 
         # Check if it's this player's turn
         if client.name != self.current_turn:
+            self.help_text = "Not your turn"
+            return
+
+        # Only terrain cards can be placed
+        if played_card.type != "terrain":
+            self.help_text = "Only terrain cards can be placed now"
             return
 
         # Get target group (own or enemy)
@@ -1003,6 +1031,7 @@ class GameServer:
 
         # One terrain card per group
         if target_group.terrain:
+            self.help_text = "Group already has a terrain card"
             return
 
         # Enter terrain (cannot be rejected)
@@ -1055,17 +1084,21 @@ class GameServer:
     def resolve_smoke(self, played_card, target_group):
         
         if target_group.leader is False:
+            self.help_text = "Smoke needs a leader"
             return
         
         if target_group.smoke:
+            self.help_text = "Group already has smoke"
             return
 
         # No smoke in marsh
         if target_group.terrain == "marsh":
+            self.help_text = "No smoke in marsh"
             return
 
         # No smoke in a player turn with breeze
         if self.breeze:
+            self.help_text = "No smoke after a breeze this turn"
             return
 
         # Modify group attributes
@@ -1097,15 +1130,19 @@ class GameServer:
         
         # Validity check: At least 1 pinned unit required
         if not pinned:
+            self.help_text = "No pinned units to rally"
             return
         
         # Validity check: Capacity must be used fully
-        if len(target_units) != min(max_capacity, len(pinned)):
+        required_count = min(max_capacity, len(pinned))
+        if len(target_units) != required_count:
+            self.help_text = f"Number of selected pinned units must be {required_count}"
             return
         
         # Validity check: Selected units must rallyable
         for unit in target_units:
             if unit.group != target_group.id or unit.state != "pinned":
+                self.help_text = "Select only pinned units"
                 return
         
         for unit in target_units:
@@ -1119,14 +1156,17 @@ class GameServer:
         
         # Validity check (1): At least one unit
         if len(target_units) != 1:
+            self.help_text = "Select exactly one unit"
             return
         
         # Validity check (2): Only units owned by player
         if target_units[0].owner != self.current_turn:
+            self.help_text = "Select one of your own units"
             return
 
         # Validity check (3): Only units still in play
         if target_units[0].state not in ("rallied", "pinned") or target_units[0].group is None:
+            self.help_text = "Unit is no longer in play"
             return
 
         # Modify attributes
@@ -1156,6 +1196,7 @@ class GameServer:
 
         # Empty target group cannot be attacked
         if target_groups[1].empty:
+            self.help_text = "Target group is empty"
             return
 
         # Get fire attributes (summed over all fire cards of the attack)
@@ -1175,6 +1216,7 @@ class GameServer:
         # Check firepower
         firepower = sum(unit.get_firepower(target_groups[0], relative_range) for unit in player_units)
         if firepower < card_firepower:
+            self.help_text = f"Firepower {firepower} at range {relative_range}, card needs {card_firepower}"
             return
         
         # Calculate firestrength
@@ -1200,18 +1242,22 @@ class GameServer:
         
         # Validity check (1)
         if client.name == self.current_turn:
+            self.help_text = "Wait for the opponent's response"
             return
-        
+
         # Validity check (2)
-        if played_card.type != "concealed":
+        if self.pending_action["type"] != "fire":
+            self.help_text = "Accept or reject the terrain first"
             return
         
         # Validity check (3)
-        if target_groups[0] != self.pending_action["defensive_group"]:
+        if played_card.type != "concealed":
+            self.help_text = "Respond with a concealed card or pass"
             return
-
+        
         # Validity check (4)
-        if self.pending_action["type"] != "fire":
+        if target_groups[0] != self.pending_action["defensive_group"]:
+            self.help_text = "Make the attacked group your active group"
             return
     
         # Resolve counter
@@ -1376,6 +1422,7 @@ class GameServer:
                 "sound": self.current_sound,
                 "side": client.side,
                 "pending_action": self.pending_action["type"],
+                "help_text": self.help_text,
                 "winner": "draw" if self.winner == "draw" else "player" if client.name == self.winner else "opponent"
             }
             
@@ -1508,6 +1555,7 @@ class GameServer:
         
         # Check if it's this player's turn
         if client.name != self.current_turn:
+            self.help_text = "Not your turn"
             return
         
         # Get discard maximum for this nation
@@ -1515,10 +1563,12 @@ class GameServer:
         
         # Check if discard is legal (1)
         if max_discard < 1:
+            self.help_text = "Discard limit reached"
             return
         
         # Check if discard is legal (2)
         if client.acted and client.nation != "german":
+            self.help_text = "No discard after an action"
             return
                 
         # Discard card (on enemy group or discard pile)
@@ -1554,6 +1604,7 @@ class GameServer:
         
         # Check if target group is empty
         if target_group.empty:
+            self.help_text = "Target group is empty"
             return
         
         # KIA and PIN thresholds from card, e.g. "sniper (kia 5 pin 3)"
@@ -1688,15 +1739,19 @@ class GameServer:
         
         # Check if target group is empty
         if target_group.empty:
+            self.help_text = "Target group is empty"
             return
         
         if target_group.wire:
+            self.help_text = "Group already has wire"
             return
         
         if target_group.terrain in ["marsh", "pillbox"]:
+            self.help_text = f"No wire on {target_group.terrain}"
             return
         
         if target_group.terrain == "stream" and not target_group.moving:
+            self.help_text = "No wire on a group in a stream"
             return
         
         target_group.wire = True
@@ -1739,10 +1794,12 @@ class GameServer:
         
         # No fire from gully
         if source_group.terrain == "gully" and relative_range != 5:
+            self.help_text = "No fire from gully (except at range 5)"
             return None
         
         # No fire against gully
         if target_group.terrain == "gully" and source_group.terrain != "hill" and relative_range != 5:
+            self.help_text = "No fire into gully (except from hill or at range 5)"
             return None
         
         # Count movement cards
