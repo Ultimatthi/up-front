@@ -528,7 +528,7 @@ class GameView(arcade.View):
         # Create board element: Contour
         image_path =  r'assets/boardelements/board.contour.png'
         self.board_contour = BoardElement(image_path, self.layout.scale)
-        self.board_contour.alpha = 20
+        self.board_contour.alpha = 30
         self.board_elements.append(self.board_contour)
         
         # Create board element: Group frame (player)
