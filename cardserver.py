@@ -1420,6 +1420,7 @@ class GameServer:
                 "game_subphase": self.game_subphase,
                 "current_turn": "player" if client.name == self.current_turn else "opponent",
                 "sound": self.current_sound,
+                "breeze": self.breeze,
                 "side": client.side,
                 "pending_action": self.pending_action["type"],
                 "help_text": self.help_text,

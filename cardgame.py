@@ -390,6 +390,7 @@ class GameView(arcade.View):
         self.sound_switch = arcade.load_sound(r'assets/sounds/switch.mp3')
         self.sound_tick = arcade.load_sound(r'assets/sounds/tick.mp3')
         self.sound_reject = arcade.load_sound(r'assets/sounds/reject.mp3')
+        self.sound_breeze = arcade.load_sound(r'assets/sounds/breeze.mp3')
         
         # Layout
         self.layout = Layout(self.window.width, self.window.height)
@@ -464,6 +465,7 @@ class GameView(arcade.View):
         
         # Init game state
         self.current_turn = None
+        self.breeze = False
 
         # Card sent to the server, not yet answered
         self.card_sent = None
@@ -1155,6 +1157,12 @@ class GameView(arcade.View):
             self.help_text = game_state.get("help_text")
         self.card_sent = None
         self.play_sound(sound)
+
+        # Breeze sounds once when it comes up, on top of the sound of the action that drew it
+        breeze = game_state.get("breeze")
+        if breeze and not self.breeze:
+            self.play_sound("breeze")
+        self.breeze = breeze
             
         # Get logical card variables
         logical_card_list = game_state.get("cards")
@@ -1291,6 +1299,8 @@ class GameView(arcade.View):
             arcade.play_sound(self.sound_tick)
         elif sound == 'reject':
             arcade.play_sound(self.sound_reject)
+        elif sound == 'breeze':
+            arcade.play_sound(self.sound_breeze)
                   
             
     
