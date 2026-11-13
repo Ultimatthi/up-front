@@ -1,113 +1,23 @@
 scenario A:
   german:
-    A:
-      - Bernhoff
-      - Wolff
-      - Streich
-      - Diettinger
-    B:
-      - Schumacher
-      - Wollak
-      - Schultz
-      - Beck
-      - Schüssel
-      - Hessel
+    A: [ge06, ge10, ge09, ge01]
+    B: [ge04, ge08, ge05, ge07, ge03, ge02]
   american:
-    A:
-      - Myers
-      - Frattali
-      - Anderson
-      - Burnett
-    B:
-      - McElroy
-      - Greenwood
-      - Burke
-      - Edwards
-      - Watson
-      - Smith
-      - Fox
-      - Moores
+    A: [us09, us05, us07, us01]
+    B: [us04, us11, us08, us12, us10, us06, us03, us02]
   british:
-    A:
-      - Hodge
-      - Tresham
-      - Willis
-      - Vasey
-    B:
-      - Cottrell
-      - Bell
-      - Moon
-      - Cleary
-      - Scarborough
-      - Barnard
+    A: [br05, br04, br06, br01]
+    B: [br08, br09, br10, br07, br03, br02]
   french:
-    A:
-      - Laforte
-      - Cassavant
-      - Bienvenue
-      - Villeneuve
-    B:
-      - Piccard
-      - Decautaux
-      - Rousselle
-      - Meileure
-      - Kastler
-      - Corbeil
-      - Larue
-      - Dubois
+    A: [fr07, fr04, fr09, fr01]
+    B: [fr06, fr08, fr12, fr10, fr11, fr05, fr03, fr02]
   italian:
-    A:
-      - Paolini
-      - Sarducci
-      - Giganti
-      - Ferraro
-    B:
-      - Marino
-      - Farinacci
-      - Pasini
-      - Ciappi
-      - Celozzi
-      - Natale
-      - Capitano
-      - Antonio
-    C:
-      - Giorgio
-      - Abruzzi
-      - Nardo
-      - Costanzi
-      - Gionelli
-      - Napoli
+    A: [it08, it04, it18, it01]
+    B: [it07, it13, it12, it15, it10, it16, it03, it02]
+    C: [it11, it06, it05, it17, it14, it09]
   japanese:
-    A:
-      - Kobayashi
-      - Fujiyama
-      - Asanti
-      - Okimoto
-    B:
-      - Togami
-      - Sakai
-      - Korata
-      - Yumani
-      - Fusano
-      - Fuchida
-      - Fujita
-      - Yoruba
-      - Togo
+    A: [jp04, jp06, jp07, jp01]
+    B: [jp05, jp08, jp10, jp11, jp13, jp09, jp12, jp03, jp02]
   russian:
-    A:
-      - Petrovsky
-      - Chernenko
-      - Vakuta
-      - Rostov
-    B:
-      - Yastreboft
-      - Zaharoff
-      - Storchillo
-      - Kristov
-      - Soloviev
-      - Uihailoft
-      - Nosenko
-      - Zayakov
-      - Sokoloff
-      - Kvasnikov
-      - Burlak
+    A: [ru03, ru08, ru12, ru01]
+    B: [ru04, ru13, ru05, ru07, ru06, ru15, ru09, ru14, ru11, ru10, ru02]

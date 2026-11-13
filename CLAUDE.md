@@ -56,6 +56,8 @@ The goal is code that is easy to read, understand and modify, not code that uses
 
 - Der Client gilt als vertrauenswürdig: keine serverseitige Prüfung, ob `group_ids` dem richtigen Spieler gehören.
 - Siegbedingung Szenario A: Range Chit ≥ 4 zählt (bewusste Auslegung von 16.42, kein Bug – nicht erneut melden).
+- Kartenwerte bewusst so übernommen (nicht erneut melden): ge34 PzKw VG Flanke von der Vorderseite (i3/s4/k5, Rückseite i;s4/k5 gilt als Druckfehler); fr24 Lebesque Panic 1 und PT 4 wie gedruckt (Errata PT 3 nicht übernommen, PT wird im Spiel nicht verwendet).
+- Ebenfalls wie gedruckt und kein Fehler: Bog ge43/jp31 (CE 0/w0, BU 9/w9) und us36 (BU 8/w0); leeres `available` = kein Jahr auf der Karte; fr34 `assault_gun=0`, weil nur das 75mm Assault Gun ist (siehe `notes`); AFV-Namen = Bezeichnung + Beiname der Rückseite (z. B. PzKw VG Panther); wo die Rückseite einen anderen Namen trägt (Franzosen, it31/32) oder nur ein „aka“ ergänzt (ru32, ru39), gilt die Vorderseite. `fr31.jpg`/`fr31b.jpg` sind aus dem fr32-Scan und Fotos der Originalkarte zusammengesetzt.
 - Erledigtes wird aus `TODO.csv` gelöscht; IDs bleiben stabil (nicht neu nummerieren).
 
 ## Dateiformate
@@ -95,7 +97,7 @@ Schneller und deterministisch: `GameServer` direkt instanziieren, zwei `Client`-
 
 ## Unit-Allocations (`userdata/unit_allocation.yaml`)
 
-- Aufstellung je Szenario und Nation steht auf der Szenariokarte: `workbench/Vassal/Up_Front_v4_1/images/Scenario <X>.gif` (Kartennummern, z. B. Szenario A: Deutsche 1–10, Amerikaner 1–12). Einträge sind Unit-Namen aus `unit_table.csv` (müssen eindeutig sein; jp24 heißt dort „Yoruba II“, weil jp03 auch Yoruba heißt), Gruppen `A`, `B`, `C` …; Listenreihenfolge = Position, vorne zuerst.
+- Aufstellung je Szenario und Nation steht auf der Szenariokarte: `workbench/Vassal/Up_Front_v4_1/images/Scenario <X>.gif` (Kartennummern, z. B. Szenario A: Deutsche 1–10, Amerikaner 1–12). Einträge sind Unit-IDs aus `unit_table.csv` (z. B. `ge01` = Kartennummer 1), eine Zeile pro Gruppe als Liste (`A: [ge06, ge10, …]`); Gruppen `A`, `B`, `C` …; Listenreihenfolge = Position, vorne zuerst.
 - Gruppe A (Bewegungsgruppe), 4 Units: SL und die drei Schützen (Gewehr/MP) mit der höchsten Morale.
 - Gruppe B (Feuerbasis): alle übrigen, inkl. ASL und Unterstützungswaffen (LMG, BAR, MMG).
 - Dritte Gruppe nur, wenn B sonst sehr groß würde und genug für eine zweite Feuerbasis da ist (z. B. ein zweites LMG). Nationen mit 4 Handkarten können selten drei Gruppen aktivieren; eine Gruppe ohne Leader ist schwächer (z. B. kein Rauch).

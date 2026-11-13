@@ -26,6 +26,7 @@ F1                  Show help
 ## Unit allocation:
 
 - Allocate units to groups A–D using "userdata\unit_allocation.yaml".
+- Units are listed by card ID (e.g. ge01), one line per group, front position first.
 - The file may define allocations for multiple scenarios and nations.
 
 ## Unit resolve order:

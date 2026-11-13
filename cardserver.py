@@ -264,6 +264,12 @@ class GameServer:
         self.unit_table = df.map(self.parse_cell)
         self.unit_table["name"] = df["name"]
         self.unit_table.set_index("id", inplace=True)
+
+        # AFV table
+        df = pd.read_csv("assets/units/afv_table.csv", sep=",", keep_default_na=False)
+        self.afv_table = df.map(self.parse_cell)
+        self.afv_table["name"] = df["name"]
+        self.afv_table.set_index("id", inplace=True)
         
         # Thread lock (to avoid race conditions)
         self.lock = threading.Lock()
@@ -458,13 +464,13 @@ class GameServer:
             
         # Distribute units
         scenario = "scenario " + self.scenario
-        units = {unit.name: unit for unit in self.unit_list}
+        units = {unit.id: unit for unit in self.unit_list}
         for client in self.client_list:
-            for group, names in client.unit_allocation[scenario][client.nation].items():
-                for slot, name in enumerate(names or []):
-                    units[name].group = group + client.side
-                    units[name].owner = client.name
-                    units[name].slot = slot
+            for group, unit_ids in client.unit_allocation[scenario][client.nation].items():
+                for slot, unit_id in enumerate(unit_ids or []):
+                    units[unit_id].group = group + client.side
+                    units[unit_id].owner = client.name
+                    units[unit_id].slot = slot
                     
         # Set empty groups
         for group in self.group_list:
