@@ -1,2 +1,11 @@
 ﻿ID;Status;Kategorie;Regel;Aufgabe;;;;
-66;;Daten;-;"Geschütze (15 Karten, z. B. 37mm PAK 36, Q.F. 2 pr) in unit_table.csv aufnehmen; Werte in workbench/guns.txt, umrahmte Morale/Panic/KIA und Effect Numbers passen nicht ins Tabellenformat"
+69;;Daten;-;"ge34 PzKw VG: Flankenpanzerung vorne i3/s4/k5, hinten i;s4/k5 gedruckt; Vorderseite übernommen, prüfen"
+70;;Daten;-;ge43 PzKw 38(t)E und us36 M4A3(76): Bog-Werte prüfen (ge43 vorne 0/w0, hinten 9/w9; us36 Buttoned Up 8/w0 statt w9)
+71;;Daten;-;"br34 Bren Carrier I: To Hit 6|5|5|4|4|3, Effect nur rote 0 ohne boxed-Wert, Panzerung i/s0/k1 mit rotem i als i;s0 gelesen; prüfen"
+72;;Daten;28.2;"fr34 Char B1-bis: Assault Gun? Q&A zu 25.8 nennt sie als Assault Gun, in afv_table.csv assault_gun=0; 47mm-Geschütz (Effect 2 [2]) und 75mm To Hit -1 stehen nur in notes"
+73;;Daten;-;fr31 fehlt: kein Kartenbild in assets/units/french, deshalb nicht in den Tabellen
+74;;Daten;-;br20 PIAT: Effect Numbers von br11 übernommen, nicht auf der Karte geprüft
+75;;Daten;-;jp31, jp33, jp38 heißen vorne alle Type 97: Namen der Rückseite verwendet (Te-Ke, Shinhoto-Chi-Ha, Chi-Ha)
+76;;Daten;-;fr24 Lebesque: laut Q&A 3 statt 4 Punkte
+77;;Daten;-;afv_table.csv beim Einlesen wie unit_table.csv laden: keep_default_na=False und Spalte name nicht mit parse_cell zerlegen (Namen mit /, z. B. SPW 251/1, L3/Lf)
+78;;Daten;-;Unsichere Kartenwerte (69–74) mit dem Wargame-Vault-Remaster (inkl. Community-Errata) abgleichen

@@ -1,10 +1,11 @@
 # Up Front – Hinweise für Claude
 
-Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardserver.py`, Client: `cardgame.py`. Aktuell nur Szenario A, Nationen: Deutsche vs. Amerikaner.
+Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardserver.py`, Client: `cardgame.py`. Szenario A ist abgeschlossen; Ziel ist das ganze Spiel mit allen Nationen.
 
 ## Umfang
 
-- Vorerst nur Regeln bis zum „STOP“-Hinweis für Szenario A umsetzen: Kapitel 1–16 (Regelbuch-PDF S. 1–28, Ende nach 16.5). Regeln ab Kapitel 17 (Flanking Fire usw.) nicht implementieren, auch wenn sie im Code oder in Q&As erwähnt werden – höchstens als Hinweis notieren.
+- Das ganze Spiel umsetzen (Regelbuch inkl. Erweiterungen), ohne Kampagnenspiel (Kapitel 42).
+- Szenarioweise vorgehen: Die „STOP“-Hinweise im Regelbuch legen fest, welche Kapitel für das nächste Szenario nötig sind.
 
 ## Git
 
@@ -61,6 +62,7 @@ The goal is code that is easy to read, understand and modify, not code that uses
 
 - `TODO.csv` und `assets/cards/card_table.csv`: UTF-8 mit BOM, CRLF – beim Schreiben beibehalten (Excel).
 - `TODO.csv`: Trennzeichen `;`, Spalten `ID;Status;Kategorie;Regel;Aufgabe`, nur offene Aufgaben. Bewusst nicht umgesetzte Regeln stehen im `README.md` unter „Rule Deviations“. Texte mit `;` in Anführungszeichen setzen.
+- `assets/units/unit_table.csv` (Personality-Karten inkl. Geschütze) und `assets/units/afv_table.csv` (AFVs): UTF-8 mit BOM, CRLF. Werte je Reichweite 0–5 mit `|`, crewed/uncrewed mit `/`; `firepower` = Feuerkraft, `to_hit` = To Hit Number der Ordnance; Effect Numbers unboxed/boxed in eigenen Spalten, britische rote Effect 0 als `0r`. Panzerung `i|s|k`, gleiche Werte für i und s bedeuten die Form `i;s`. Kartenwerte nur aus den Bildern in `assets/units/<nation>/` ablesen (Rückseite `…b.jpg`), nicht aus dem Vassal-Modul.
 - Wire-Karten haben in `card_table.csv` den Typ `wire` (nicht `terrain`); Terrain-Subtypen ohne Eintrag in `TERRAIN_MOD` werden abgelehnt.
 
 ## Spiel starten

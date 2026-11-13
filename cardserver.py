@@ -260,8 +260,9 @@ class GameServer:
         self.card_table.set_index("id", inplace=True)
         
         # Unit table
-        df = pd.read_csv("assets/units/unit_table.csv", sep=",")
+        df = pd.read_csv("assets/units/unit_table.csv", sep=",", keep_default_na=False)
         self.unit_table = df.map(self.parse_cell)
+        self.unit_table["name"] = df["name"]
         self.unit_table.set_index("id", inplace=True)
         
         # Thread lock (to avoid race conditions)
