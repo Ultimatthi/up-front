@@ -58,12 +58,14 @@ TERRAIN_MOD = {
 
 # Cards treated as cower cards (subtypes)
 COWER_CARDS = {
-    "A": ["pillbox", "minefield"]
+    "A": ["pillbox", "minefield"],
+    "B": ["pillbox", "minefield", "marsh"]
 }
 
 # Cards to remove from the game when first discarded or drawn as RNC (kind: count)
 REMOVE_CARDS = {
-    "A": {"buildings": 5}
+    "A": {"buildings": 5},
+    "B": {"woods": 4}
 }
 
 TIME_LIMIT = 3
@@ -223,7 +225,7 @@ class GameServer:
     def __init__(self):
         
         # Scenario
-        self.scenario = "A" # TODO: introduce more scenarios
+        self.scenario = "A"
         
         # Game variables
         self.game_phase = "assignment"
@@ -288,6 +290,10 @@ class GameServer:
         # Set port (user input)
         port_input = input("Enter port (press Enter for default 52000): ").strip()
         port = 52000 if not port_input else int(port_input)
+
+        # Set scenario (user input)
+        scenario_input = input("Enter scenario (press Enter for default A): ").strip().upper()
+        self.scenario = "A" if not scenario_input else scenario_input
         
         s.bind((host, port))
         s.listen(5)
@@ -1996,6 +2002,9 @@ class GameServer:
             if group.owner != client.name:
                 continue
             if group.moving:
+                continue
+            # Scenario B: territorial points only for units in buildings
+            if self.scenario == "B" and group.terrain not in ["buildings -2", "buildings -3"]:
                 continue
             points += group.range * sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
                 

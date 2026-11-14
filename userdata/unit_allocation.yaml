@@ -21,3 +21,26 @@ scenario A:
   russian:
     A: [ru03, ru08, ru12, ru01]
     B: [ru04, ru13, ru05, ru07, ru06, ru15, ru09, ru14, ru11, ru10, ru02]
+scenario B:
+  german:
+    A: [ge17, ge06, ge10, ge01]
+    B: [ge09, ge04, ge18, ge22, ge03, ge02]
+  american:
+    A: [us09, us05, us07, us01]
+    B: [us21, us04, us11, us08, us22, us06, us03, us02]
+  british:
+    A: [br17, br05, br04, br01]
+    B: [br06, br16, br18, br07, br03, br02]
+  french:
+    A: [fr07, fr20, fr04, fr21]
+    B: [fr09, fr06, fr08, fr12, fr18, fr11, fr05, fr03, fr02]
+  italian:
+    A: [it08, it04, it18, it21]
+    B: [it07, it13, it12, it15, it24, it14, it23, it19, it03, it02]
+    C: [it11, it06, it05, it17, it10, it16, it20, it09]
+  japanese:
+    A: [jp20, jp04, jp18, jp01]
+    B: [jp06, jp07, jp05, jp08, jp10, jp19, jp09, jp03, jp02]
+  russian:
+    A: [ru03, ru08, ru12, ru26]
+    B: [ru04, ru23, ru05, ru07, ru06, ru15, ru24, ru22, ru09, ru11, ru02]
