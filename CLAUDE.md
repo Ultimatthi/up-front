@@ -66,11 +66,12 @@ The goal is code that is easy to read, understand and modify, not code that uses
 - `TODO.csv`: Trennzeichen `;`, Spalten `ID;Status;Kategorie;Regel;Aufgabe`, nur offene Aufgaben. Bewusst nicht umgesetzte Regeln stehen im `README.md` unter „Rule Deviations“. Texte mit `;` in Anführungszeichen setzen.
 - `assets/units/unit_table.csv` (Personality-Karten inkl. Geschütze) und `assets/units/afv_table.csv` (AFVs): UTF-8 mit BOM, CRLF. Werte je Reichweite 0–5 mit `|`, crewed/uncrewed mit `/`; `firepower` = Feuerkraft, `to_hit` = To Hit Number der Ordnance; Effect Numbers unboxed/boxed in eigenen Spalten, britische rote Effect 0 als `0r`. Panzerung `i|s|k`, gleiche Werte für i und s bedeuten die Form `i;s`. Kartenwerte nur aus den Bildern in `assets/units/<nation>/` ablesen (Rückseite `…b.jpg`), nicht aus dem Vassal-Modul.
 - Wire-Karten haben in `card_table.csv` den Typ `wire` (nicht `terrain`); Terrain-Subtypen ohne Eintrag in `TERRAIN_MOD` werden abgelehnt.
+- `assets/scenarios.yaml`: Szenariodaten je Szenario (Decks, Cower-Karten, entfernte Karten, Terrain für Siegpunkte, erlaubte Units je Nation laut Szenariokarte); Szenario-Logik wie Sofortsieg bleibt im Code.
 
 ## Spiel starten
 
 - `start.bat` startet 1 Server + 2 Clients. Aus der Claude-Umgebung startete die Datei keine Prozesse – dann direkt starten:
-  - Server: `python -u cardserver.py` (wartet auf Port-Eingabe → leere stdin-Datei umleiten = Port 52000)
+  - Server: `python -u cardserver.py` (wartet auf Port- und Szenario-Eingabe → Datei mit zwei Leerzeilen umleiten = Port 52000, Szenario A; bei DYO folgt das Punktelimit)
   - Client (2×): `python cardgame.py "Player A"` bzw. `"Player B"` (Name optional, sonst aus `lobby_settings.json`), im Lobby-Fenster **Enter** drücken (oder „Join“) → verbindet zum Server im zweiten Feld (Default `localhost:52000`). Name/Server/Nation werden in `userdata/lobby_settings.json` gespeichert – beide Test-Clients teilen sich die Datei.
 - Server-Fehler landen nur auf stderr (`traceback.print_exc` in `handle_client`) → stderr in Datei umleiten und nach jeder Aktion prüfen.
 

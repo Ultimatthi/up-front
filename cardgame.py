@@ -430,6 +430,8 @@ class GameView(arcade.View):
         self.game_subphase = None
         self.pending_action = False
         self.winner = None
+        self.scenario = None
+        self.dyo_points = None
         
         # Mouse position
         self.mouse_x = 0
@@ -771,7 +773,10 @@ class GameView(arcade.View):
         # Waiting animation until the game is ready
         if self.waiting_animation.active:
             self.waiting_animation.draw(self.window.width, self.window.height, self.layout.scale)
-            
+            if self.help_text is not None:
+                text = self.annotate_text(self.help_text, self.window.width / 2, 120 * self.layout.scale, 0, 18, arcade.color.WHITE, True, "center", True)
+                text.draw()
+
         # self.light_layer.draw()
 
         
@@ -1148,6 +1153,8 @@ class GameView(arcade.View):
         self.pending_action = game_state.get("pending_action")
         self.current_turn = game_state.get("current_turn")
         self.winner = game_state.get("winner")
+        self.scenario = game_state.get("scenario")
+        self.dyo_points = game_state.get("dyo_points")
         
         # Play sound (a played card the server answers without a sound was rejected)
         sound = game_state.get("sound")
@@ -1157,6 +1164,10 @@ class GameView(arcade.View):
             self.help_text = game_state.get("help_text")
         self.card_sent = None
         self.play_sound(sound)
+
+        # Reason why the game does not start yet
+        if self.game_phase in ("assignment", "setup"):
+            self.help_text = game_state.get("help_text")
 
         # Breeze sounds once when it comes up, on top of the sound of the action that drew it
         breeze = game_state.get("breeze")
@@ -1578,6 +1589,16 @@ class GameView(arcade.View):
         y = self.board_piles.top - 60*self.layout.scale
         text = self.annotate_text(label, x, y, 0, 18)
         text.draw()
+
+        # Scenario
+        if self.scenario is not None:
+            label = "[Scenario " + self.scenario + "]"
+            if self.dyo_points is not None:
+                label = "[DYO " + str(self.dyo_points) + " Points]"
+            x = self.board_piles.left
+            y = self.board_piles.bottom - 35 * self.layout.scale
+            text = self.annotate_text(label, x, y, 0, 18, arcade.color.WHITE, True, "left")
+            text.draw()
         
         # Counter: Dead units
         for side in ["player", "opponent"]:

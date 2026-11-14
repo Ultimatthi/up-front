@@ -1,0 +1,37 @@
+# Scenario rules
+# decks: time limit, cower: cower cards, remove: cards removed when first discarded or drawn (kind: count),
+# territory: terrain earning territorial victory points (null = any), units: units per nation
+
+A:
+  decks: 3
+  cower: [pillbox, minefield]
+  remove: {buildings: 5}
+  territory: null
+  units:
+    german:   [ge01, ge02, ge03, ge04, ge05, ge06, ge07, ge08, ge09, ge10]
+    american: [us01, us02, us03, us04, us05, us06, us07, us08, us09, us10, us11, us12]
+    british:  [br01, br02, br03, br04, br05, br06, br07, br08, br09, br10]
+    french:   [fr01, fr02, fr03, fr04, fr05, fr06, fr07, fr08, fr09, fr10, fr11, fr12]
+    italian:  [it01, it02, it03, it04, it05, it06, it07, it08, it09, it10, it11, it12, it13, it14, it15, it16, it17, it18]
+    japanese: [jp01, jp02, jp03, jp04, jp05, jp06, jp07, jp08, jp09, jp10, jp11, jp12, jp13]
+    russian:  [ru01, ru02, ru03, ru04, ru05, ru06, ru07, ru08, ru09, ru10, ru11, ru12, ru13, ru14, ru15]
+
+B:
+  decks: 3
+  cower: [pillbox, minefield, marsh]
+  remove: {woods: 4}
+  territory: [buildings -2, buildings -3]
+  units:
+    german:   [ge01, ge02, ge03, ge04, ge06, ge09, ge10, ge17, ge18, ge22]
+    american: [us01, us02, us03, us04, us05, us06, us07, us08, us09, us11, us21, us22]
+    british:  [br01, br02, br03, br04, br05, br06, br07, br16, br17, br18]
+    french:   [fr02, fr03, fr04, fr05, fr06, fr07, fr08, fr09, fr11, fr12, fr18, fr20, fr21]
+    italian:  [it02, it03, it04, it05, it06, it07, it08, it09, it10, it11, it12, it13, it14, it15, it16, it17, it18, it19, it20, it21, it23, it24]
+    japanese: [jp01, jp02, jp03, jp04, jp05, jp06, jp07, jp08, jp09, jp10, jp18, jp19, jp20]
+    russian:  [ru02, ru03, ru04, ru05, ru06, ru07, ru08, ru09, ru11, ru12, ru15, ru22, ru23, ru24, ru26]
+
+DYO:
+  decks: 3
+  cower: [pillbox, minefield]
+  remove: {}
+  territory: null

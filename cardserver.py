@@ -13,6 +13,7 @@ import traceback
 
 # Third-party
 import pandas as pd
+import yaml
 
 
 # ──[ Parameter ]──────────────────────────────────────────────────────────────
@@ -55,20 +56,6 @@ TERRAIN_MOD = {
     "minefield": (0,   0),  # with conditions
     "open":      (0,   0)
 }
-
-# Cards treated as cower cards (subtypes)
-COWER_CARDS = {
-    "A": ["pillbox", "minefield"],
-    "B": ["pillbox", "minefield", "marsh"]
-}
-
-# Cards to remove from the game when first discarded or drawn as RNC (kind: count)
-REMOVE_CARDS = {
-    "A": {"buildings": 5},
-    "B": {"woods": 4}
-}
-
-TIME_LIMIT = 3
 
 # Axis nations (French not treated as Vichy France)
 AXIS = ["german", "japanese", "italian"]
@@ -225,7 +212,9 @@ class GameServer:
     def __init__(self):
         
         # Scenario
-        self.scenario = "A"
+        self.scenario = None
+        self.dyo_points = None # point limit in DYO scenarios
+        self.scenarios = yaml.safe_load(open("assets/scenarios.yaml", encoding="utf-8"))
         
         # Game variables
         self.game_phase = "assignment"
@@ -292,8 +281,12 @@ class GameServer:
         port = 52000 if not port_input else int(port_input)
 
         # Set scenario (user input)
-        scenario_input = input("Enter scenario (press Enter for default A): ").strip().upper()
+        scenario_input = input(f"Enter scenario {', '.join(self.scenarios)} (press Enter for default A): ").strip().upper()
         self.scenario = "A" if not scenario_input else scenario_input
+
+        # Set point limit for DYO (user input)
+        if self.scenario == "DYO":
+            self.dyo_points = int(input("Enter DYO point limit: ").strip())
         
         s.bind((host, port))
         s.listen(5)
@@ -341,10 +334,11 @@ class GameServer:
                         player_side = next(side for side in SIDES if side not in sides)
 
                         # Create new client
-                        client = Client(c, player_name, player_nation, player_side, unit_allocation, False)
+                        groups = unit_allocation.get("scenario " + self.scenario, {}).get(player_nation, {})
+                        client = Client(c, player_name, player_nation, player_side, groups, False)
 
                         # Rejoining player gets his old client back (nation, side and state)
-                        if player_name in self.left_clients:
+                        if player_name in self.left_clients and self.game_phase != "assignment":
                             client = self.left_clients.pop(player_name)
                             client.socket = c
 
@@ -427,13 +421,48 @@ class GameServer:
             
             
     def assignment_logic(self):
-        
-        # missing
-        
+
+        # Game starts only with valid unit allocations (the reason is shown while waiting)
+        for client in self.client_list:
+            reason = self.check_unit_allocation(client)
+            if reason is None:
+                continue
+            help_text = client.name + ": " + reason
+            if self.help_text != help_text:
+                self.help_text = help_text
+                self.broadcast()
+            return
+
+        # Clear the reason on the waiting clients
+        self.help_text = None
         self.game_phase = "setup"
-        
-        
-    
+        self.broadcast()
+
+
+
+    def check_unit_allocation(self, client):
+
+        # Get units of the allocation
+        unit_ids = []
+        for group in client.unit_allocation.values():
+            unit_ids.extend(group or [])
+        units = self.unit_table.reindex(unit_ids)
+
+        # DYO: own units within the point limit
+        if self.scenario == "DYO":
+            if (units["nation"] != client.nation).any():
+                return f"only {client.nation} units allowed"
+            if units["points"].sum() > self.dyo_points:
+                return f"more than {self.dyo_points} points"
+            return None
+
+        # Scenario: exactly the units of the scenario card
+        if sorted(units.index) != sorted(self.scenarios[self.scenario]["units"][client.nation]):
+            return f"units do not match scenario {self.scenario}"
+        return None
+
+
+
     def setup_logic(self):
         
         # Create every card
@@ -461,22 +490,32 @@ class GameServer:
                 owner = client.name
                 group = Group(group_id, label, owner)
                 self.group_list.append(group)
-        
-        # Axis moves first (scenarios A and B), otherwise random
-        axis = [client for client in self.client_list if client.nation in AXIS]
-        first_client = random.choice(axis or self.client_list)
-        self.current_turn = first_client.name
-        self.first_turn = first_client.name
-            
+
         # Distribute units
-        scenario = "scenario " + self.scenario
         units = {unit.id: unit for unit in self.unit_list}
         for client in self.client_list:
-            for group, unit_ids in client.unit_allocation[scenario][client.nation].items():
+            for group, unit_ids in client.unit_allocation.items():
                 for slot, unit_id in enumerate(unit_ids or []):
                     units[unit_id].group = group + client.side
                     units[unit_id].owner = client.name
                     units[unit_id].slot = slot
+
+        # DYO: the player with fewer points moves first, otherwise random
+        if self.scenario == "DYO":
+            a, b = self.client_list
+            pa = sum(unit.points for unit in self.unit_list if unit.owner == a.name)
+            pb = sum(unit.points for unit in self.unit_list if unit.owner == b.name)
+            candidates = [a, b]
+            if pa < pb:
+                candidates = [a]
+            if pb < pa:
+                candidates = [b]
+        # Scenarios A and B: Axis moves first, otherwise random
+        else:
+            candidates = [client for client in self.client_list if client.nation in AXIS] or self.client_list
+        first_client = random.choice(candidates)
+        self.current_turn = first_client.name
+        self.first_turn = first_client.name
                     
         # Set empty groups
         for group in self.group_list:
@@ -853,7 +892,7 @@ class GameServer:
             return False
 
         # Cower cards of the scenario cannot be played
-        if played_card.subtype in COWER_CARDS.get(self.scenario, []):
+        if played_card.subtype in self.scenarios[self.scenario]["cower"]:
             self.help_text = "Cower card in this scenario"
             return False
 
@@ -884,7 +923,7 @@ class GameServer:
     def check_card_removal(self, card):
 
         # Scenario removes the first cards of this kind from the game
-        remove_cards = REMOVE_CARDS.get(self.scenario, {})
+        remove_cards = self.scenarios[self.scenario]["remove"]
         kind = card.subtype.split()[0]
         if kind not in remove_cards:
             return False
@@ -1435,6 +1474,8 @@ class GameServer:
                 "sound": self.current_sound,
                 "breeze": self.breeze,
                 "side": client.side,
+                "scenario": self.scenario,
+                "dyo_points": self.dyo_points,
                 "pending_action": self.pending_action["type"],
                 "help_text": self.help_text,
                 "winner": "draw" if self.winner == "draw" else "player" if client.name == self.winner else "opponent"
@@ -1943,7 +1984,7 @@ class GameServer:
                 return
         
         # Time limit victory
-        if self.action_deck_counter > TIME_LIMIT:
+        if self.action_deck_counter > self.scenarios[self.scenario]["decks"]:
             a, b = self.client_list
             pa, pb = self.calculate_victory_points(a), self.calculate_victory_points(b)
             self.winner = a.name if pa > pb else b.name if pb > pa else "draw"
@@ -2003,8 +2044,9 @@ class GameServer:
                 continue
             if group.moving:
                 continue
-            # Scenario B: territorial points only for units in buildings
-            if self.scenario == "B" and group.terrain not in ["buildings -2", "buildings -3"]:
+            # Territorial points only for units in the scenario's terrain
+            territory = self.scenarios[self.scenario]["territory"]
+            if territory and group.terrain not in territory:
                 continue
             points += group.range * sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
                 
