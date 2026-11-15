@@ -16,6 +16,7 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 ## Änderungen an Dateien
 
 - Vor jeder Dateiänderung zuerst eine Vorschau zeigen: betroffene Dateien und die geplanten Änderungen als Diff (wie `git diff`), kurz begründet.
+- Bei Code-Änderungen den geplanten Diff vorher vom Subagent `simplicity-reviewer` prüfen lassen (Diff als Datei im Scratchpad übergeben). Berechtigte Einwände einarbeiten und in der Vorschau kurz nennen, was übernommen oder bewusst verworfen wurde. Nicht nötig für reine Daten- oder Doku-Änderungen.
 - Danach warten und erst nach ausdrücklicher Zustimmung umsetzen.
 - Ausnahme: Hilfsdateien im Scratchpad (Testskripte, Notizen).
 
