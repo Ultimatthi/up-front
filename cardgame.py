@@ -732,7 +732,7 @@ class GameView(arcade.View):
 
         # Update waiting animation
         self.waiting_animation.active = self.game_phase in ("assignment", "setup")
-        self.waiting_animation.update(delta_time)
+        self.waiting_animation.update()
                 
                 
         

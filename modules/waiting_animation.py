@@ -28,7 +28,7 @@ class WaitingAnimation:
         self.background_color = background_color
         self.background_texture = arcade.load_texture(WAITING_TEXTURE)
 
-        # Elapsed time (loops every WAITING_PERIOD)
+        # Animation time, taken from the playback position of the sound
         self.time = 0.0
 
         # Looping drum sound, in sync with the shuffle
@@ -37,7 +37,7 @@ class WaitingAnimation:
         self.player = None
         self.active = False
 
-    def update(self, delta_time):
+    def update(self):
 
         # Game got ready: stop the loop and signal the connection
         if not self.active and self.player is not None:
@@ -46,10 +46,11 @@ class WaitingAnimation:
 
         # Start sound and animation together
         if self.active and self.player is None:
-            self.time = 0.0
             self.player = arcade.play_sound(self.sound, volume=WAITING_VOLUME, loop=True)
 
-        self.time += delta_time
+        # Follow the sound (no drift): its main drum hits fall on the start of the top card
+        if self.player is not None:
+            self.time = self.player.time
 
     def stop(self):
 
