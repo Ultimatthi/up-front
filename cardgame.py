@@ -26,6 +26,8 @@ from pyglet.text.layout import ScrollableTextLayout
 # Local
 from modules.waiting_animation import WaitingAnimation
 
+
+
 # ──[ Parameters ]─────────────────────────────────────────────────────────────
 
 # General
@@ -90,17 +92,20 @@ def encode_message(message):
     return (json.dumps(message) + "\n").encode("utf-8")
 
 
+
 # ──[ Classes ]────────────────────────────────────────────────────────────────
 
 class Layout:
-    
+
     def __init__(self, width: int, height: int):
         self.update(width, height)
 
+
+
     def update(self, width: int, height: int):
-        
+
         resize = min(height / 1080, width / 1920)
-        
+
         self.width = width
         self.height = height
         self.scale = resize
@@ -135,31 +140,33 @@ class Card(arcade.Sprite):
 
         # Image to use for the sprite when face up (not yet loaded)
         self.texture_front = None
-        
+
         # Image to use for the sprite when face down
         self.texture_back = CARD_BACK_TEXTURE
-        
+
         # Call the parent
         super().__init__(self.texture_back, scale*CARD_SCALE, hit_box_algorithm="None")
-        
+
+
+
     def adjust_texture(self):
-        
+
         # Load front texture for the first time
         if self.facing == "up" and self.texture_front is None:
             self.texture_front = arcade.load_texture(f'assets/cards/{self.id}.png')
-            
+
         # Change texture
         if self.facing == "up":
             target_texture = self.texture_front
         else:
             target_texture = self.texture_back
-    
+
         # Set new texture (only when needed)
         if self.texture != target_texture:
             self.texture = target_texture
 
-    
-    
+
+
 class Unit(arcade.Sprite):
 
     def __init__(self, unit_id, nation, owner, scale=1):
@@ -181,28 +188,34 @@ class Unit(arcade.Sprite):
 
         # Image to use for the sprite when face down
         self.texture_back = arcade.load_texture(f'{base}b.jpg')
-        
+
         # Call the parent
         super().__init__(self.texture_front, scale*UNIT_SCALE, hit_box_algorithm="None")
-        
+
+
+
     def adjust_texture(self):
-        
+
         # Get new texture
         if self.state != "pinned":
             target_texture = self.texture_front
         else:
             target_texture = self.texture_back
-            
+
         # Set new texture (only when needed)
         if self.texture != target_texture:
             self.texture = target_texture
-            
+
+
+
     def draw_overlay(self, overlay):
-        
+
         if self.selected:
             overlay.position = self.position
             overlay.scale = self.scale
             arcade.draw_sprite(overlay)
+
+
 
     def draw_crew_chit(self, chit):
 
@@ -213,11 +226,11 @@ class Unit(arcade.Sprite):
             arcade.draw_sprite(chit)
 
 
-        
+
 class Group(arcade.Sprite):
-    
+
     def __init__(self, group_id, label, scale=1):
-        
+
         # Attribute
         self.id = group_id
         self.label = label
@@ -228,7 +241,7 @@ class Group(arcade.Sprite):
         self.terrain = None
         self.active = True
         self.last_action = None
-        
+
         # Textures
         self.textures_map = {}
         for owner in ("player", "opponent"):
@@ -236,12 +249,14 @@ class Group(arcade.Sprite):
                 for direction in ("none", "forward", "sideways", "backward"):
                     path = f'assets/tiles/tile.{owner}.{state}.{direction}.png'
                     self.textures_map[(owner, state, direction)] = arcade.load_texture(path)
-        
+
         # Call the parent
         super().__init__(None, scale, hit_box_algorithm="None")
-        
+
+
+
     def set_position(self, layout):
-        
+
         if self.owner == None:
             return
 
@@ -250,73 +265,84 @@ class Group(arcade.Sprite):
         sign = 1 if self.owner == "player" else -1
         self.center_x = layout.width / 2 - 180 * layout.scale + i * 120 * layout.scale
         self.center_y = layout.height / 2 - sign * 180 * layout.scale
-        
+
+
+
     def adjust_alpha(self):
-        
+
         if self.empty:
             self.alpha = 80
         else:
             self.alpha = 255
-        
+
+
+
     def adjust_texture(self):
-        
+
         if self.owner is None:
             return
-        
+
         # Find state
         state = "active" if self.active else "inactive"
-        
+
         # Find movement direction
         direction = self.moving if self.moving else "none"
-        
+
         target_texture = self.textures_map[(self.owner, state, direction)]
-        
+
         if self.texture != target_texture:
             self.texture = target_texture
-            
-            
-            
+
+
+
 class Chit(arcade.Sprite):
-    
+
     def __init__(self, chit_type, group, scale=1):
-        
+
         # Attribute
         self.type = chit_type
         self.group = group
-        
+
         # Textures
         if self.type == "range":
             texture = arcade.load_texture(r'assets/chits/chit.range.0.png')
-        
+
         # Call the parent
         super().__init__(texture, scale, hit_box_algorithm="None")
-        
+
+
+
     def set_position(self, layout):
-        
+
         sign = 1 if self.group.owner == "player" else -1
-        
+
         self.center_x = self.group.center_x
         self.center_y = self.group.center_y + sign * 110 * layout.scale
-        
+
+
+
     def adjust_alpha(self):
-        
+
         if self.group.empty:
             self.alpha = 80
         else:
             self.alpha = 255
-        
+
+
+
     def adjust_texture(self):
-        
+
         target_texture = arcade.load_texture(f'assets/chits/chit.range.{self.group.range}.png')
-        
+
         if self.texture != target_texture:
             self.texture = target_texture
-            
+
+
 
 class Button(arcade.Sprite):
 
     def __init__(self, name, image_path, scale):
-        
+
         # Attribute
         self.name = name
 
@@ -325,7 +351,7 @@ class Button(arcade.Sprite):
 
         # Call the parent
         super().__init__(self.image_file_name, scale, hit_box_algorithm = "None")
-            
+
 
 
 class BoardElement(arcade.Sprite):
@@ -338,17 +364,17 @@ class BoardElement(arcade.Sprite):
         # Call the parent
         super().__init__(self.image_file_name, scale, hit_box_algorithm = "None")
 
-    
+
 
 class DustParticle(arcade.SpriteCircle):
 
     def __init__(self, x, y, angle, speed):
-        
+
         radius = random.uniform(4, 8)
 
         offset = random.randint(70, 90)
         color = (50 + offset, 59 + offset, 64 + offset)
-        
+
         super().__init__(radius, color)
 
         self.center_x = x
@@ -360,8 +386,10 @@ class DustParticle(arcade.SpriteCircle):
         self.lifetime = 0.8 # s
         self.age = 0.0
 
+
+
     def update(self, delta_time):
-        
+
         # Burst out fast, then settle
         drag = math.exp(-DUST_DRAG * delta_time)
         self.change_x *= drag
@@ -386,7 +414,7 @@ class GameView(arcade.View):
 
     def __init__(self, username, nation, server):
         super().__init__()
-        
+
         # Transfer parameters
         self.player_name = username
         self.player_nation = nation
@@ -397,7 +425,7 @@ class GameView(arcade.View):
 
         # Play mat colour
         self.background_color = arcade.color.ARSENIC
-        
+
         # Sound effects
         self.sound_knock = arcade.load_sound(r'assets/sounds/knock.mp3')
         self.sound_play = arcade.load_sound(r'assets/sounds/play_card.mp3')
@@ -406,25 +434,25 @@ class GameView(arcade.View):
         self.sound_tick = arcade.load_sound(r'assets/sounds/tick.mp3')
         self.sound_reject = arcade.load_sound(r'assets/sounds/reject.mp3')
         self.sound_breeze = arcade.load_sound(r'assets/sounds/breeze.mp3')
-        
+
         # Layout
         self.layout = Layout(self.window.width, self.window.height)
-        
+
         # Tables
         self.card_table = pd.read_csv("assets/cards/card_table.csv", sep=",")
         self.card_table.set_index("id", inplace=True)
         self.unit_table = pd.read_csv("assets/units/unit_table.csv", sep=",")
         self.unit_table.set_index("id", inplace=True)
-        
+
         # Unit allocation
         self.unit_allocation = yaml.safe_load(open("userdata/unit_allocation.yaml", encoding="utf-8"))
-    
+
 
 
     def setup(self):
-        
+
         # Check connection ----------------------------------------------------
-        
+
         # Connect to socket
         try:
             # Handles IPv4, IPv6 and host names like localhost
@@ -432,14 +460,14 @@ class GameView(arcade.View):
         except:
             print('No connection possible')
             return False
-        
+
         self.reader = self.socket.makefile("r", encoding="utf-8")
-        
+
         # Init game -----------------------------------------------------------
-        
+
         # Server state queue
         self.state_queue = queue.Queue()
-        
+
         # Set game phase
         self.game_phase = "assignment"
         self.game_subphase = None
@@ -447,39 +475,39 @@ class GameView(arcade.View):
         self.winner = None
         self.scenario = None
         self.dyo_points = None
-        
+
         # Mouse position
         self.mouse_x = 0
         self.mouse_y = 0
-        
+
         # Set modifier
         self.ctrl_held = False
         self.alt_held = False
-        
+
         # Sprite list with all the cards, no matter what pile they are in
         self.card_list = arcade.SpriteList()
-        
+
         # Sprite list with all the cards, no matter what pile they are in
         self.unit_list = arcade.SpriteList()
-        
+
         # Sprite list with all the group tile elements
         self.group_list = arcade.SpriteList()
-        
+
         # Sprite list with all the chit elements
         self.chit_list = arcade.SpriteList()
-        
+
         # Sprite list with all the buttons
         self.button_list = arcade.SpriteList()
-        
+
         # Sprite list with all the board elements
         self.board_elements = arcade.SpriteList()
-        
+
         # Sprite list with all the overlay elements
         self.overlay_elements = arcade.SpriteList()
-        
+
         # Create light
         self.create_light()
-        
+
         # Init game state
         self.current_turn = None
         self.breeze = False
@@ -495,22 +523,22 @@ class GameView(arcade.View):
 
         # Ids of the cards drawn as RNC in the last action (red in the histogram)
         self.rnc_card_ids = []
-        
+
         # Hovered card
         self.hover_card = None
-        
+
         # Hovered unit
         self.hover_unit = None
-        
+
         # Hovered group tile
         self.hover_group = None
-        
+
         # Hovered button
         self.hover_button = None
-        
+
         # Thread
         self.running = True
-        
+
         # Sprite list with all the dust particles (visual effect only)
         self.dust_list = arcade.SpriteList()
 
@@ -524,7 +552,7 @@ class GameView(arcade.View):
             card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["color"], self.layout.scale)
             card.position = (-10000, -10000)
             self.card_list.append(card)
-            
+
         # Create every group tile
         for label in ["A", "B", "C", "D"]:
             for section in [0, 1]:
@@ -534,12 +562,12 @@ class GameView(arcade.View):
                 if "A" in group_id:
                     group.active = True
                 self.group_list.append(group)
-                
+
         # Create every range chit
         for group in self.group_list:
             range_chit = Chit("range", group, self.layout.scale)
             self.chit_list.append(range_chit)
-                
+
         # Init active groups
         self.active_groups = {"player": None, "opponent": None}
 
@@ -547,47 +575,47 @@ class GameView(arcade.View):
         image_path =  r'assets/boardelements/board.texture.png'
         self.board_texture = BoardElement(image_path, self.layout.scale)
         self.board_elements.append(self.board_texture)
-        
+
         # Create board element: Contour
         image_path =  r'assets/boardelements/board.contour.png'
         self.board_contour = BoardElement(image_path, self.layout.scale)
         self.board_contour.alpha = 30
         self.board_elements.append(self.board_contour)
-        
+
         # Create board element: Group frame (player)
         image_path =  r'assets/boardelements/board.group.player.png'
         self.board_group_player = BoardElement(image_path, self.layout.scale)
         self.board_elements.append(self.board_group_player)
-        
+
         # Create board element: Group frame (player)
         image_path =  r'assets/boardelements/board.group.opponent.png'
         self.board_group_opponent = BoardElement(image_path, self.layout.scale)
         self.board_elements.append(self.board_group_opponent)
-        
+
         # Create board element: Piles
         image_path =  r'assets/boardelements/board.piles.png'
         self.board_piles = BoardElement(image_path, self.layout.scale)
         self.board_elements.append(self.board_piles)
-        
+
         # Create button: End turn
         image_path =  r'assets/boardelements/button.advance.png'
         self.button_advance = Button("advance", image_path, self.layout.scale)
         self.button_list.append(self.button_advance)
-        
+
         # Create button: Surrender
         image_path =  r'assets/boardelements/button.surrender.png'
         self.button_surrender = Button("surrender", image_path, self.layout.scale)
         self.button_list.append(self.button_surrender)
-        
+
         # Overlay elements
         self.unit_overlay = arcade.Sprite("assets/overlays/unit.overlay.png", self.layout.unit_scale)
         self.crew_chit = arcade.Sprite("assets/chits/chit.crew.png", self.layout.unit_scale)
-        
+
         # Layout elements
         self.layout_elements()
-        
+
         # Start network -------------------------------------------------------
-        
+
         # Send player data to server
         data = {
             "player_name": self.player_name,
@@ -595,17 +623,17 @@ class GameView(arcade.View):
             "unit_allocation": self.unit_allocation
         }
         self.socket.sendall(encode_message(data))
-        
+
         # Start thread to receive messages
         self.recv_thread = threading.Thread(target=self.receive_state, daemon=True)
         self.recv_thread.start()
-        
+
         return True
-        
-    
-    
+
+
+
     def on_show_view(self):
-        
+
         self.ctrl_held = False
         self.alt_held = False
 
@@ -619,132 +647,131 @@ class GameView(arcade.View):
 
 
     def layout_elements(self):
-            
+
         # Board element: Texture
         self.board_texture.width = self.layout.width
         self.board_texture.height = self.layout.height
         self.board_texture.position = self.layout.width / 2, self.layout.height / 2
-        
+
         # Board element: Contour
         self.board_contour.width = self.layout.width
         self.board_contour.height = self.layout.height
         self.board_contour.position = self.layout.width / 2, self.layout.height / 2
-        
+
         # Board element: Board 1
         self.board_group_player.scale = self.layout.scale
         self.board_group_player.left = (20 - 1) * self.layout.scale
         self.board_group_player.bottom = (20 - 1) * self.layout.scale
-     
+
         # Board element: Board 2
         self.board_group_opponent.scale = self.layout.scale
         self.board_group_opponent.right = self.window.width - (20 - 1) * self.layout.scale
         self.board_group_opponent.top = self.window.height - (20 - 1) * self.layout.scale
-        
+
         # Board element: Piles
         self.board_piles.scale = self.layout.scale
         self.board_piles.left = (20 - 1) * self.layout.scale
         self.board_piles.top = self.window.height - (20 - 1) * self.layout.scale
-        
-        
+
         # Button: Advance turn
         self.button_advance.scale = self.layout.scale
         self.button_advance.right = self.window.width - 20 * self.layout.scale
         self.button_advance.bottom = 20 * self.layout.scale
-        
+
         # Button: Surrender
         self.button_surrender.scale = self.layout.scale
         self.button_surrender.right = self.window.width - 120 * self.layout.scale
         self.button_surrender.bottom = 20 * self.layout.scale
-        
+
         # Rotate advance turn button
         angle = 180 if self.current_turn == "player" else 0
         angle += 90 if self.game_subphase == "discard" else 0
         angle += 180 if self.pending_action else 0
         self.button_advance.angle = angle
-            
-        
-        
+
+
+
     def create_light(self):
-        
+
         # Layer to handle light sources
         self.light_layer = LightLayer(self.layout.width, self.layout.height)
-        
+
         # Set background of light layer
         self.light_layer.set_background_color(self.background_color)
-        
+
         # Create main light source
         self.center_light = Light(self.layout.width / 2, self.layout.height / 2,
                              radius=self.layout.light_radius,
                              color=[255, 255, 255, 255],
                              mode='soft')
-        
+
         # Add light sources to light layer
         self.light_layer.add(self.center_light)
-        
-        
-        
+
+
+
     def on_resize(self, width, height):
 
         # Calculate resize factors
         resize_x = width / self.layout.width
         resize_y = height / self.layout.height
-        
+
         # Update layout variables
         self.layout.update(width, height)
-        
+
         # Layout elements
         self.layout_elements()
-        
+
         # Rescale light source
         self.create_light()
-            
+
         # Reposition cards
         self.adjust_card_position()
-        
+
         # Reposition cards
         self.adjust_unit_position()
-        
+
         # Reposition group tiles
         self.adjust_group_position()
-        
+
         # Reposition chits
         self.adjust_chit_position()
-        
-        
-        
+
+
+
     def on_update(self, delta_time):
-        
+
         # Apply pending server states
         while not self.state_queue.empty():
             self.update_state(self.state_queue.get())
-                
+
         # Adjust hovered elements
         self.adjust_hovered_elements()
-                
+
         # Adjust card texture
         for card in self.card_list:
             card.adjust_texture()
-            
+
         # Adjust card texture
         for card in self.card_list:
             card.adjust_texture()
-            
+
         # Adjust card texture
         for unit in self.unit_list:
             unit.adjust_texture()
-            
+
         # Set active group flag
         for group in self.group_list:
             group.active = group in self.active_groups.values()
-                
+
         # Adjust group texture
         for group in self.group_list:
             group.adjust_texture()
-            
+
         # Adjust group texture
         for chit in self.chit_list:
             chit.adjust_texture()
-                
+
         # Update dust particles
         self.dust_list.update(delta_time)
 
@@ -754,44 +781,44 @@ class GameView(arcade.View):
         # Update waiting animation
         self.waiting_animation.active = self.game_phase in ("assignment", "setup")
         self.waiting_animation.update()
-                
-                
-        
+
+
+
     def on_draw(self):
-        
+
         # Clear the screen
         self.clear()
-        
+
         # with self.light_layer:
-            
+
         # Draw board elements
         self.board_elements.draw()
-        
+
         # Draw buttons
         self.button_list.draw()
-        
+
         # Draw group tiles
         self.group_list.draw()
-        
+
         # Draw chit tiles
         self.chit_list.draw()
-        
+
         # Draw the cards
         self.card_list.draw()
-        
+
         # Draw the units
         self.unit_list.draw()
-        
+
         # Draw overlays
         self.draw_overlays()
-        
+
         # Annotations
         self.annotate()
 
         # Histogram in place of the pile counters
         if self.piles_view != "counters":
             self.draw_card_histogram()
-        
+
         # Dust particles
         self.dust_list.draw()
 
@@ -804,22 +831,22 @@ class GameView(arcade.View):
 
         # self.light_layer.draw()
 
-        
+
 
     def on_mouse_press(self, x, y, button, key_modifiers):
-        
+
         # Check right click
         if button == arcade.MOUSE_BUTTON_RIGHT:
             success = self.switch_card_mode()
             if success: self.play_sound("switch") # Client side
             return
-        
+
         # Get topmost sprites we've clicked on
         card = self.get_hovered_sprite(x, y, self.card_list)
         group = self.get_hovered_sprite(x, y, self.group_list)
         button_ = self.get_hovered_sprite(x, y, self.button_list)
         unit = self.get_hovered_sprite(x, y, self.unit_list)
-            
+
         # Select own fire card in hand for a combined attack (shift)
         selectable = card is not None and card.type == "fire" and card.location == "hand" and card.owner == "player"
         if selectable and key_modifiers & arcade.key.MOD_SHIFT:
@@ -829,24 +856,24 @@ class GameView(arcade.View):
         # Play card
         if card is not None and not key_modifiers & arcade.key.MOD_SHIFT:
             self.play_card(card, self.active_groups)
-    
+
         # Switch to clicked group
         if group is not None:
             self.active_groups[group.owner] = group
             self.play_sound("select") # Client side
-            
+
         # Select/deselect unit
         if unit is not None:
             unit.selected = not unit.selected
             self.play_sound("select") # Client side
-    
+
         # Press button
         if button_ is not None:
             if button_.name == "advance":
                 self.advance_turn()
             if button_.name == "surrender":
                 self.client_action("surrender")
-    
+
         # Clicked on the empty board: dust and knock
         if card is None and group is None and button_ is None and unit is None:
             for _ in range(24):
@@ -855,91 +882,91 @@ class GameView(arcade.View):
                 self.dust_list.append(DustParticle(x, y, angle, speed))
             self.play_sound("knock")
             self.help_text = None
-    
+
         # Adjust positions
         self.adjust_card_position()
         self.adjust_unit_position()
 
-    
-    
+
+
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        
+
         # Check if active groups are set
         if None in self.active_groups.values():
             return
-        
+
         # Check if groups are assigned
         if any(group.owner is None for group in self.group_list):
             return
-        
+
         # Select side
         target_owner = "opponent" if self.ctrl_held else "player"
-        
+
         # Change active group
         if scroll_y < 0:
             target_label = chr((ord(self.active_groups[target_owner].label) - ord('A') + 1) % 4 + ord('A'))
         else:
             target_label = chr((ord(self.active_groups[target_owner].label) - ord('A') - 1) % 4 + ord('A'))
-            
+
         # Find group
         target_group = next(group for group in self.group_list if group.label == target_label and group.owner == target_owner)
-    
+
         # Change active group
         self.active_groups[target_owner] = target_group
-            
+
         # Adjust card position
         self.adjust_card_position()
-        
+
         # Adjust card position
         self.adjust_unit_position()
-        
+
         # Play sound
         self.play_sound("select")
 
-        
-        
+
+
     def on_mouse_motion(self, x, y, dx, dy):
-    
+
         # Update mouse position
         self.mouse_x = x
         self.mouse_y = y
-    
+
         # Get hovered sprites
         self.hover_card = self.get_hovered_sprite(x, y, self.card_list)
         self.hover_unit = self.get_hovered_sprite(x, y, self.unit_list)
         self.hover_group = self.get_hovered_sprite(x, y, self.group_list)
         self.hover_button = self.get_hovered_sprite(x, y, self.button_list)
-    
-        # Init card mode 
+
+        # Init card mode
         if self.hover_card and self.hover_card.mode is None:
             self.switch_card_mode()
-    
+
         # Set cursor symbol
         self.update_mouse_cursor()
-    
-    
-    
+
+
+
     def get_hovered_sprite(self, x, y, sprite_list):
 
         # Get the topmost sprite at location x, y
         sprites = arcade.get_sprites_at_point((x, y), sprite_list)
         return sprites[-1] if sprites else None
-    
-    
-    
+
+
+
     def update_mouse_cursor(self):
-        
+
         # Set cursor type to default
         cursor_type = self.window.CURSOR_DEFAULT
-        
+
         # Set cursor type to hand (above group)
         if self.hover_group:
             cursor_type = self.window.CURSOR_HAND
-    
+
         # Set cursor type to hand (above button)
         if self.hover_button and self.current_turn == "player":
             cursor_type = self.window.CURSOR_HAND
-            
+
         # Set cursor type to hand (above player card)
         if (
             self.hover_card
@@ -948,18 +975,18 @@ class GameView(arcade.View):
             and self.hover_card.owner == "player"
         ):
             cursor_type = self.window.CURSOR_HAND
-            
+
         # Set cursor symbol
         self.window.set_mouse_cursor(self.window.get_system_mouse_cursor(cursor_type))
-                
-        
-        
+
+
+
     def on_key_press(self, key, _modifiers):
-        
+
         # Set modifier
         if key == arcade.key.LCTRL:
             self.ctrl_held = True
-            
+
         # Set modifier
         if key == arcade.key.LALT:
             self.alt_held = True
@@ -968,7 +995,7 @@ class GameView(arcade.View):
         if key in PILES_VIEW_KEYS:
             self.piles_view = PILES_VIEW_KEYS[key]
             self.board_piles.visible = self.piles_view == "counters"
-        
+
         # Advance turn
         if key == arcade.key.SPACE:
             self.advance_turn()
@@ -993,16 +1020,16 @@ class GameView(arcade.View):
         if key == arcade.key.F1:
             self.window.show_view(HelpView(self))
             return
-                    
+
         # Leave game
         if key == arcade.key.ESCAPE and self.ctrl_held == False:
-            
+
             # Set running to False to stop thread
             self.running = False
-            
+
             # Send action to server
             action = {"type": "leave_game"}
-            
+
             # Disconnect
             try:
                 self.socket.sendall(encode_message(action))
@@ -1010,7 +1037,7 @@ class GameView(arcade.View):
                 pass
             finally:
                 self.socket.shutdown(socket.SHUT_RDWR)
-                
+
             # De-maximize window
             hwnd = self.window._hwnd
             if ctypes.windll.user32.IsZoomed(hwnd):
@@ -1021,56 +1048,56 @@ class GameView(arcade.View):
             self.window.set_size(LOBBY_WIDTH, LOBBY_HEIGHT)
             self.window.set_caption(LOBBY_TITLE)
             self.window.show_view(menu_view)
-            
-            
-            
+
+
+
     def on_key_release(self, key, _modifiers):
-        
+
         # Set modifier
         if key == arcade.key.LCTRL:
             self.ctrl_held = False
-            
+
         # Set modifier
         if key == arcade.key.LALT:
             self.alt_held = False
-            
-            
-    
+
+
+
     def switch_card_mode(self):
-        
+
         # Check if subphase is set
         if self.game_subphase is None:
             return
-        
+
         # Check if card is hovered
         if self.hover_card is None:
             return
-        
+
         # Check if hovered card is owned by player
         if self.hover_card.owner != "player":
             return
-        
+
         # Get modes for hovered card (fallback for all other card types)
         subphase_modes = CARD_MODES.get(self.game_subphase)
         modes = subphase_modes.get(self.hover_card.type, subphase_modes.get(None))
-        
+
         # Check if hovered card has modes
         if not modes:
             return
-        
+
         # Cycle through modes
         if self.hover_card.mode in modes:
             i = (modes.index(self.hover_card.mode) + 1) % len(modes)
             self.hover_card.mode = modes[i]
         else:
             self.hover_card.mode = modes[0]
-                
+
         return True
-            
-            
-            
+
+
+
     def play_card(self, card, active_groups):
-    
+
         # Selected fire cards join a fire attack
         if card.type == "fire" and card.mode != "open ground":
             extra_card_ids = [other.id for other in self.card_list if other.selected and other is not card]
@@ -1133,21 +1160,21 @@ class GameView(arcade.View):
         except Exception as e:
             print(f"Error sending to server: {e}")
 
-            
-            
+
+
     def advance_turn(self):
 
         # Create action for server
         action = {
             "type": "advance_turn"
         }
-        
+
         # Send action to server
         try:
             self.socket.sendall(encode_message(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
-            
+
         # Reset selections
         for unit in self.unit_list:
             unit.selected = False
@@ -1155,7 +1182,7 @@ class GameView(arcade.View):
 
 
     def receive_state(self):
-        
+
         while self.running:
             try:
                 game_state = json.loads(self.reader.readline())
@@ -1163,15 +1190,15 @@ class GameView(arcade.View):
                 print("Connection lost")
                 break
             self.state_queue.put(game_state)
-        
-                        
-                       
+
+
+
     def update_state(self, game_state):
-        
+
         # Check hearbeat
         if game_state.get("type") == "ping":
             return
-        
+
         # Reset card modes on subphase change
         if game_state.get("game_subphase") != self.game_subphase:
             for card in self.card_list:
@@ -1185,7 +1212,7 @@ class GameView(arcade.View):
         self.winner = game_state.get("winner")
         self.scenario = game_state.get("scenario")
         self.dyo_points = game_state.get("dyo_points")
-        
+
         # Play sound (a played card the server answers without a sound was rejected)
         sound = game_state.get("sound")
         if self.card_sent is not None and sound is None:
@@ -1204,10 +1231,10 @@ class GameView(arcade.View):
         if breeze and not self.breeze:
             self.play_sound("breeze")
         self.breeze = breeze
-            
+
         # Get logical card variables
         logical_card_list = game_state.get("cards")
-        
+
         # Setup map for fast access
         card_map = {card.id: card for card in self.card_list}
 
@@ -1218,7 +1245,7 @@ class GameView(arcade.View):
             card = card_map[key]
             if card.location != "table" and logical_card["location"] == "table":
                 landed_cards.append(card)
-        
+
         # Update card variables
         for logical_card in logical_card_list:
             key = logical_card["card_id"]
@@ -1232,14 +1259,13 @@ class GameView(arcade.View):
 
         # Cards drawn as RNC in this action
         self.rnc_card_ids = game_state.get("rnc_cards")
-                
-                
+
         # Get logical card variables
         logical_unit_list = game_state.get("units")
-        
+
         # Setup map for fast access
         unit_map = {unit.id: unit for unit in self.unit_list}
-        
+
         # Update unit card variables
         for logical_unit in logical_unit_list:
             key = logical_unit["unit_id"]
@@ -1255,14 +1281,13 @@ class GameView(arcade.View):
             unit.slot = logical_unit["slot"]
             unit.state = logical_unit["state"]
             unit.crew_partner = logical_unit["crew_partner"]
-                
-                        
+
         # Get logical group variables
         logical_group_list = game_state.get("groups")
-        
+
         # Setup map for fast access
         group_map = {group.id: group for group in self.group_list}
-        
+
         # Update group variables
         for logical_group in logical_group_list:
             key = logical_group["group_id"]
@@ -1273,13 +1298,12 @@ class GameView(arcade.View):
             group.moving = logical_group["moving"]
             group.terrain = logical_group["terrain"]
             group.last_action = logical_group["last_action"]
-                
-                
+
         # Init active groups (only once)
         if None in self.active_groups.values():
             player_side = game_state.get("side")
             self.init_active_groups(player_side)
-            
+
         # Update hand / vertical card order
         self.card_list.sort(key=lambda card: card.draw_index, reverse=True)
         self.card_list.sort(key=lambda card: card.stack_index)
@@ -1299,38 +1323,38 @@ class GameView(arcade.View):
                 angle = math.atan2(y - card.center_y, x - card.center_x) + random.uniform(-0.4, 0.4)
                 speed = random.uniform(120, 300)
                 self.dust_list.append(DustParticle(x, y, angle, speed))
-        
+
         # Update card position
         self.adjust_unit_position()
-        
+
         # Update group position
         self.adjust_group_position()
-        
+
         # Update chit position
         self.adjust_chit_position()
-        
+
         # Refresh layout
         self.layout_elements()
-        
+
         # End game
         if self.game_phase == "finished":
             result_view = ResultView(self.winner)
             self.window.show_view(result_view)
-        
-        
-            
+
+
+
     def init_active_groups(self, player_side):
-    
+
         opponent_side = "2" if player_side == "1" else "1"
-    
+
         for role, side in [("player", player_side), ("opponent", opponent_side)]:
             group_id = "A" + side
             self.active_groups[role] = next(group for group in self.group_list if group.id == group_id)
-                
-            
+
+
 
     def play_sound(self, sound):
-        
+
         if sound == 'knock':
             arcade.play_sound(self.sound_knock)
         elif sound == 'play_card':
@@ -1345,117 +1369,116 @@ class GameView(arcade.View):
             arcade.play_sound(self.sound_reject)
         elif sound == 'breeze':
             arcade.play_sound(self.sound_breeze)
-                  
-            
-    
+
+
+
     def adjust_hovered_elements(self):
-        
+
         # Shrink previous enlarged card
         for card in self.card_list:
             if card != self.hover_card and card.scale != self.layout.card_scale:
                 card.scale = self.layout.card_scale
                 self.adjust_card_position()
-        
+
         # Enlarge card we are hovering above
         if (self.hover_card != None):
             scale = CARD_ZOOM if self.alt_held else CARD_ENLARGE
             self.hover_card.scale = self.layout.card_scale * scale
             self.keep_sprite_within_window(self.hover_card)
-            
+
         # Shrink previous enlarged group tile
         for group in self.group_list:
             if group != self.hover_group and group.scale != self.layout.scale:
                 group.scale = self.layout.scale
-        
+
         # Enlarge group tile we are hovering above
         if (self.hover_group != None):
             self.hover_group.scale = self.layout.scale*GROUP_ENLARGE
-            
+
         # Shrink previous enlarged button
         for button in self.button_list:
             if button != self.hover_button and button.scale != self.layout.scale:
                 button.scale = self.layout.scale
-        
+
         # Enlarge group tile we are hovering above
         if (self.hover_button != None):
             self.hover_button.scale = self.layout.scale*BUTTON_ENLARGE
-            
-            
+
         # Shrink previous enlarged unit
         for unit in self.unit_list:
             if unit != self.hover_unit and unit.scale != self.layout.unit_scale:
                 unit.scale = self.layout.unit_scale
                 self.adjust_unit_position()
-        
+
         # Enlarge unit we are hovering above
         if (self.hover_unit != None):
             scale = UNIT_ZOOM if self.alt_held else UNIT_ENLARGE
             self.hover_unit.scale = self.layout.unit_scale * scale
             self.keep_sprite_within_window(self.hover_unit)
 
-            
-        
+
+
     def adjust_card_position(self):
-        
+
         # Get cards in player's hand
         player_hand = [card for card in self.card_list if card.location == "hand" and card.owner == "player"]
-        
+
         # Get cards in opponent's hand
         opponent_hand = [card for card in self.card_list if card.location == "hand" and card.owner != "player"]
-        
+
         # Get cards on table (sorted by stack index)
         table = [card for card in self.card_list if card.location == "table"]
 
         # Get cards in piles
         deck = [card for card in self.card_list if card.location == "deck"]
-        
+
         # Get cards in discard pile
         discard = [card for card in self.card_list if card.location == "discard"]
-        
+
         # Get cards in removed card pile
         void = [card for card in self.card_list if card.location == "void"]
-        
+
         # Player's hand
         for i, card in enumerate(player_hand):
-            
+
             # Set facing
             card.facing = "up"
-            
+
             # Get position
             x = (721 + (len(player_hand)-1-i)*154) * self.layout.scale
             y = (132 + 30 * card.selected) * self.layout.scale
-            
+
             # Set position
             card.position = (x, y)
-            
+
         # Opponent's hand
         for i, card in enumerate(opponent_hand):
-            
+
             # Set facing
             card.facing = "down"
-            
+
             # Get position
             x = self.window.width - (721 + (len(opponent_hand)-1-i)*154) * self.layout.scale
             y = self.window.height - 132 * self.layout.scale
-            
+
             # Set position
             card.position = (x, y)
-            
+
         # Table cards
         for card in table:
-            
+
             # Get active group
             active_group = self.active_groups[card.owner]
-            
+
             # Only show cards of the active group
             if active_group is None or card.group != active_group.id:
                 card.position = (-10000, -10000)
                 continue
-            
+
             # Set facing (open ground lies face down)
             open_ground = card.type == "terrain" and self.card_table.loc[card.id]["type"] != "terrain"
             card.facing = "down" if open_ground else "up"
-            
+
             # Get position (player's view)
             if card.type in ["movement", "terrain", "smoke", "wire"]:
                 x = 598 * self.layout.scale
@@ -1463,33 +1486,33 @@ class GameView(arcade.View):
             else:
                 x = 420 * self.layout.scale
                 y = 544 * self.layout.scale
-    
+
             # Mirror position (opponent's view)
             if card.owner == "opponent":
                 x, y = self.window.width - x, self.window.height - y
-                
+
             # Add offset
             offset = 40 * card.stack_index * self.layout.scale
             x = x + offset if card.owner == "player" else x - offset
             y = y - offset
-            
+
             # Set position
             card.position = (x, y)
-                
+
         # Action deck
         for card in deck:
             card.position = (-10000, -10000)
-            
+
         # Discard pile
         for card in discard:
             card.position = (-10000, -10000)
-            
+
         # Removed cards
         for card in void:
             card.position = (-10000, -10000)
-            
 
-            
+
+
     def adjust_shaking_cards(self, delta_time):
 
         # Rejected cards shake sideways around their place in the hand, fading out
@@ -1507,61 +1530,59 @@ class GameView(arcade.View):
 
 
 
-            
     def adjust_unit_position(self):
-        
+
         # Get units of active group (player)
         group_player = sorted(
             (unit for unit in self.unit_list if unit.group == self.active_groups["player"].id),
             key=lambda unit: unit.slot) if self.active_groups["player"] else []
-        
+
         # Get units of active group (opponent)
         group_opponent = sorted(
             (unit for unit in self.unit_list if unit.group == self.active_groups["opponent"].id),
             key=lambda unit: unit.slot) if self.active_groups["opponent"] else []
-        
+
         # Get units of inactive groups
         inactive_groups = set(self.unit_list) - set(group_player) - set(group_opponent)
-        
+
         # Adjust active unit cards (player)
         for i, unit in enumerate(group_player):
             x = (100 + 150 * (i % 4)) * self.layout.scale
             y = (120 + 192 * int(i/4)) * self.layout.scale
             unit.position = (x, y)
-            
+
         # Adjust active unit cards (opponent)
         for i, unit in enumerate(group_opponent):
             x = self.window.width - (100 + 150 * (i % 4)) * self.layout.scale
             y = self.window.height - (120 + 192 * int(i/4)) * self.layout.scale
             unit.position = (x, y)
-            
+
         # Adjust inactive unit cards
         for unit in inactive_groups:
             unit.position = (-10000, -10000)
-            
-            
-            
+
+
+
     def adjust_group_position(self):
-        
+
         # Adjust group tiles and alpha
         for group in self.group_list:
             group.set_position(self.layout)
             group.adjust_alpha()
-    
-    
-        
-        
+
+
+
     def adjust_chit_position(self):
-            
+
         # Adjust range chit tiles
         for chit in self.chit_list:
             chit.set_position(self.layout)
             chit.adjust_alpha()
-            
-            
-            
+
+
+
     def keep_sprite_within_window(self, sprite):
-    
+
         # Do not apply for sprites no longer in play
         if isinstance(sprite, Card):
             if sprite.location in ["deck", "discard", "void"]:
@@ -1569,20 +1590,20 @@ class GameView(arcade.View):
         elif isinstance(sprite, Unit):
             if sprite.state in ["routed", "kia"]:
                 return
-        
+
         # Define border margin
         offset = 10 * self.layout.scale
-        
+
         # Keep sprite in window
         sprite.left = max(sprite.left, offset)
         sprite.right = min(sprite.right, self.window.width - offset)
         sprite.bottom = max(sprite.bottom, offset)
         sprite.top = min(sprite.top, self.window.height - offset)
-            
-        
-            
+
+
+
     def annotate(self):
-        
+
         # Player's active group
         if self.active_groups["player"]:
             label = "Group " + str(self.active_groups["player"].label)
@@ -1590,7 +1611,7 @@ class GameView(arcade.View):
             y = 625*self.layout.scale
             text = self.annotate_text(label, x, y, 0, 18)
             text.draw()
-        
+
         # Opponent's active group
         if self.active_groups["opponent"]:
             label = "Group " + str(self.active_groups["opponent"].label)
@@ -1598,7 +1619,7 @@ class GameView(arcade.View):
             y = self.window.height - 625*self.layout.scale
             text = self.annotate_text(label, x, y, 0, 18)
             text.draw()
-        
+
         # Name of the shown histogram, top left inside it
         if self.piles_view != "counters":
             label = PILES_VIEW_NAMES[self.piles_view]
@@ -1656,7 +1677,7 @@ class GameView(arcade.View):
                     color = arcade.color.WHITE if side == "opponent" else arcade.color.ARSENIC
                     text = self.annotate_text(label, x, y, 0, 18, color)
                     text.draw()
-        
+
         # Unit count on group tiles
         for group in self.group_list:
             sign = 1 if group.owner == "player" else -1
@@ -1668,7 +1689,7 @@ class GameView(arcade.View):
             color = color.replace(a=group.alpha)
             text = self.annotate_text(label, x, y, 0, 24, color, True)
             text.draw()
-            
+
         # Pinned count on group tiles
         for group in self.group_list:
             sign = 1 if group.owner == "player" else -1
@@ -1680,7 +1701,7 @@ class GameView(arcade.View):
             color = color.replace(a=group.alpha)
             text = self.annotate_text(label, x, y, 0, 24, color, True)
             text.draw()
-        
+
         # Terrain on group tiles
         for group in self.group_list:
             sign = 1 if group.owner == "player" else -1
@@ -1690,7 +1711,7 @@ class GameView(arcade.View):
             color = arcade.color.ARSENIC if group.owner == "player" else arcade.color.WHITE
             text = self.annotate_text(label, x, y, 0, 18, color, False)
             text.draw()
-            
+
         # Play history under group tiles
         for group in self.group_list:
             sign = 1 if group.owner == "player" else -1
@@ -1700,8 +1721,7 @@ class GameView(arcade.View):
             color = arcade.color.WHITE
             text = self.annotate_text(label, x, y, 0, 16, color, False)
             text.draw()
-            
-            
+
         # Card mode (only where it applies)
         if self.hover_card is not None and self.hover_card.mode:
             label = "[" + self.hover_card.mode + "]"
@@ -1710,7 +1730,7 @@ class GameView(arcade.View):
             color = color=arcade.color.WHITE
             text = self.annotate_text(label, x, y, 0, 16, color, False)
             text.draw()
-            
+
         # Turn
         if self.current_turn is not None:
             own_label, enemy_label = TURN_LABELS.get(self.pending_action)
@@ -1720,7 +1740,7 @@ class GameView(arcade.View):
             color = color=arcade.color.WHITE
             text = self.annotate_text(label, x, y, 0, 18, color, True, "right")
             text.draw()
-            
+
         # Phase
         if self.game_subphase is not None:
             label = "[" + self.game_subphase.title() + " Phase]"
@@ -1736,23 +1756,23 @@ class GameView(arcade.View):
             y = self.window.height / 2 - 220 * self.layout.scale
             text = self.annotate_text(self.help_text, x, y, 0, 18, arcade.color.WHITE, True, "right", True)
             text.draw()
-        
-            
-    
+
+
+
     def annotate_text(self, label, x, y, angle, size, color=arcade.color.WHITE, bold=True, anchor_x="center", italic=False):
-        
+
         # Set to "" if None
         label = "" if label is None else label
-        
+
         # Transfrom to int (if a number)
         try:
             label = int(label)
         except (ValueError, TypeError):
             pass
-        
+
         # Transform to string
         label = str(label)
-        
+
         # Text object
         text = arcade.Text(
             label,
@@ -1762,7 +1782,7 @@ class GameView(arcade.View):
             anchor_x=anchor_x, anchor_y="center",
             align="center", rotation=angle, bold=bold, italic=italic
         )
-        
+
         # Return
         return(text)
 
@@ -1840,47 +1860,47 @@ class GameView(arcade.View):
                 y = piles.bottom + label_height + (row + 0.5) * dot_spacing
                 heights[column] += 1
                 arcade.draw_circle_filled(x, y, radius, dot_colors[state], num_segments=16)
-    
 
-    
+
+
     def draw_overlays(self):
-        
+
         # Draw hovered card
         if self.hover_card:
             arcade.draw_sprite(self.hover_card)
-    
+
         # Draw unit overlays and crew chits
         for unit in self.unit_list:
             unit.draw_overlay(self.unit_overlay)
             unit.draw_crew_chit(self.crew_chit)
-    
+
         # Draw hovered unit
         if self.hover_unit:
             arcade.draw_sprite(self.hover_unit)
             self.hover_unit.draw_overlay(self.unit_overlay)
             self.hover_unit.draw_crew_chit(self.crew_chit)
-            
-            
-            
+
+
+
 # ──[ Help View ]─────────────────────────────────────────────────────────────
-  
+
 class HelpView(arcade.View):
 
     def __init__(self, previous_view):
-        
+
         super().__init__()
         self.previous_view = previous_view
-        
+
         # Set background color
         self.background_color = arcade.color.ARSENIC
-        
+
         # Read in markdown file
         text = open("assets/menu/helptext.md", encoding="utf-8").read().replace("\t", "    ")
         html = markdown.markdown(text, extensions=["fenced_code"])
         html = f'<font face="Arial">{html}</font>'
         doc = pyglet.text.decode_html(html)
         doc.set_style(0, len(doc.text), {"color": (255, 255, 255, 255)})
-        
+
         # Set text placement
         self.layout = ScrollableTextLayout(doc, width=self.width*0.5, height=self.height*0.8, multiline=True)
         self.layout.x = self.height*0.1
@@ -1889,14 +1909,14 @@ class HelpView(arcade.View):
 
 
     def on_draw(self):
-        
+
         self.clear()
         self.layout.draw()
-        
-        
-        
+
+
+
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        
+
         layout = self.layout
         min_y = min(0, -(layout.content_height - layout.height))
         layout.view_y = max(min_y, min(0, layout.view_y + scroll_y * 30))
@@ -1904,7 +1924,7 @@ class HelpView(arcade.View):
 
 
     def on_key_press(self, key, modifiers):
-        
+
         if key in (arcade.key.F1, arcade.key.ESCAPE):
             self.window.show_view(self.previous_view)
 
@@ -1917,28 +1937,28 @@ class HelpView(arcade.View):
         self.layout.height = height*0.8
         self.layout.x = height*0.1
         self.layout.y = height*0.1
-        
+
         # Resize previous view in the background
         self.previous_view.on_resize(width, height)
-        
-        
-        
+
+
+
 # ──[ Result View ]─────────────────────────────────────────────────────────────
-  
+
 class ResultView(arcade.View):
 
     def __init__(self, winner):
-        
+
         super().__init__()
         self.winner = winner
-        
+
         # Set background color
         self.background_color = arcade.color.ARSENIC
-        
+
         # Display text
         labels = {"player": "[VICTORY]", "opponent": "[DEFEAT]", "draw": "[DRAW]"}
         label = labels[self.winner]
-        
+
         # Displayed text
         self.text = arcade.Text(
             label,
@@ -1946,21 +1966,21 @@ class ResultView(arcade.View):
             color=arcade.color.WHITE, font_size=48,
             anchor_x="center", anchor_y="center", bold=True
         )
-            
-        
-        
+
+
+
     def on_draw(self):
 
         self.clear()
         self.text.draw()
-        
-        
-        
+
+
+
     def on_resize(self, width, height):
 
         self.text.x = width / 2
         self.text.y = height / 2
-                
+
 
 
 # ──[ Menu View ]─────────────────────────────────────────────────────────────
@@ -1993,7 +2013,6 @@ class MenuView(arcade.View):
 
 
     def load_assets(self):
-
 
         # Background image
         self.background = arcade.load_texture("assets/menu/lobby.background.png")
@@ -2280,7 +2299,7 @@ class MenuView(arcade.View):
 
 
     def save_lobby_settings(self, name, server, nation, filename="userdata/lobby_settings.json"):
-        
+
         data = {
             "name": name,
             "server": server,
@@ -2292,7 +2311,7 @@ class MenuView(arcade.View):
 
 
     def load_lobby_settings(self, filename="userdata/lobby_settings.json"):
-        
+
         try:
             with open(filename, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -2308,10 +2327,9 @@ class MenuView(arcade.View):
 def main():
 
     window = arcade.Window(LOBBY_WIDTH, LOBBY_HEIGHT, LOBBY_TITLE, resizable=True, antialiasing=True, vsync=True)
-    menu_view = MenuView()  # Start with menu view   
+    menu_view = MenuView()  # Start with menu view
     window.show_view(menu_view)
     arcade.run()
 
 if __name__ == "__main__":
     main()
-    

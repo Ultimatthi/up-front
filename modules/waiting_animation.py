@@ -37,6 +37,8 @@ class WaitingAnimation:
         self.player = None
         self.active = False
 
+
+
     def update(self):
 
         # Game got ready: stop the loop and signal the connection
@@ -52,11 +54,15 @@ class WaitingAnimation:
         if self.player is not None:
             self.time = self.player.time
 
+
+
     def stop(self):
 
         if self.player is not None:
             arcade.stop_sound(self.player)
             self.player = None
+
+
 
     def draw(self, width, height, scale):
 

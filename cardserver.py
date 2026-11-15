@@ -16,6 +16,7 @@ import pandas as pd
 import yaml
 
 
+
 # ──[ Parameter ]──────────────────────────────────────────────────────────────
 
 FPS = 30
@@ -61,6 +62,7 @@ TERRAIN_MOD = {
 AXIS = ["german", "japanese", "italian"]
 
 
+
 # ──[ Functions ]──────────────────────────────────────────────────────────────
 
 def encode_message(message):
@@ -68,10 +70,11 @@ def encode_message(message):
     return (json.dumps(message) + "\n").encode("utf-8")
 
 
+
 # ──[ Classes ]────────────────────────────────────────────────────────────────
 
 class Card:
-    
+
     def __init__(self, card_id, card_type, card_subtype, rnc, breeze, color, rpn, cower, split):
 
         self.id = card_id
@@ -97,14 +100,14 @@ class Card:
         self.mode = None
         self.stack_index = 0
         self.draw_index = 0
-        
-        
-        
+
+
+
 class Unit:
 
-    def __init__(self, unit_id, nation, function, name, weapon, malfunction, 
+    def __init__(self, unit_id, nation, function, name, weapon, malfunction,
                  ccv, firepower, morale, panic, rout, kia, points):
-        
+
         # Attributes
         self.id = unit_id
         self.nation = nation
@@ -122,13 +125,15 @@ class Unit:
         self.group = None
         self.slot = 0
         self.heroic = False
-        
+
         # Attributes (crew related)
         self.crew_partner = None # unit id of crew partner
         self.crew_served = isinstance(firepower, dict) # True, False
         self.mode = "uncrewed" # crewed, uncrewed, assistant
         self.firepower = firepower
         self.malfunction = malfunction
+
+
 
     def get_firepower(self, group, relative_range):
 
@@ -166,10 +171,10 @@ class Unit:
 
         return firepower
 
-        
+
 
 class Group:
-    
+
     def __init__(self, group_id, label, owner):
         # Attribute
         self.id = group_id
@@ -186,13 +191,13 @@ class Group:
         self.empty = True
         self.last_action = None
         self.sniper_rnc = None
-        
-        
-        
+
+
+
 class Client:
-    
+
     def __init__(self, socket, name, nation, side, unit_allocation, ready):
-        
+
         # Identity
         self.socket = socket
         self.name = name
@@ -204,18 +209,18 @@ class Client:
         self.discard_count = 0
         self.passed = False
         self.sniper_lost = False
-        
+
 
 
 class GameServer:
-    
+
     def __init__(self):
-        
+
         # Scenario
         self.scenario = None
         self.dyo_points = None # point limit in DYO scenarios
         self.scenarios = yaml.safe_load(open("assets/scenarios.yaml", encoding="utf-8"))
-        
+
         # Game variables
         self.game_phase = "assignment"
         self.game_subphase = None
@@ -230,27 +235,27 @@ class GameServer:
         self.breeze = False # breeze drawn in current player turn
         self.draw_counter = 0
         self.winner = None
-        
+
         # Pending action
         self.pending_action = {"type": None, "card": None, "strength": None,
                                "offensive_group": None, "defensive_group": None}
-        
+
         # List with all the cards
         self.card_list = []
-        
+
         # List with all the unit cards
         self.unit_list = []
-        
+
         # List with all the groups
         self.group_list = []
-        
+
         # Clients that left the game, kept for rejoining
         self.left_clients = {}
 
         # Card table
         self.card_table = pd.read_csv("assets/cards/card_table.csv", sep=",", keep_default_na=False)
         self.card_table.set_index("id", inplace=True)
-        
+
         # Unit table
         df = pd.read_csv("assets/units/unit_table.csv", sep=",", keep_default_na=False)
         self.unit_table = df.map(self.parse_cell)
@@ -262,10 +267,10 @@ class GameServer:
         self.afv_table = df.map(self.parse_cell)
         self.afv_table["name"] = df["name"]
         self.afv_table.set_index("id", inplace=True)
-        
+
         # Thread lock (to avoid race conditions)
         self.lock = threading.Lock()
-        
+
 
 
     def start_server(self):
@@ -276,7 +281,7 @@ class GameServer:
 
         # Set ip adress
         host = "::"
-        
+
         # Set port (user input)
         port_input = input("Enter port (press Enter for default 52000): ").strip()
         port = 52000 if not port_input else int(port_input)
@@ -288,13 +293,13 @@ class GameServer:
         # Set point limit for DYO (user input)
         if self.scenario == "DYO":
             self.dyo_points = int(input("Enter DYO point limit: ").strip())
-        
+
         s.bind((host, port))
         s.listen(5)
         s.settimeout(5.0)
-        
+
         print(f'Server runs on {host}:{port}')
-        
+
         # Start update loop in seperate thread
         threading.Thread(target=self.update_loop, daemon=True).start()
 
@@ -308,7 +313,7 @@ class GameServer:
                     player_nation = player_data.get("player_nation")
                     unit_allocation = player_data.get("unit_allocation")
                     print(f"Connection accepted from {addr} with username {player_name}")
-                    
+
                     with self.lock:
 
                         # Same player connects again: drop the old connection first
@@ -346,14 +351,13 @@ class GameServer:
                         # Add to client list
                         self.client_list.append(client)
 
-                    
                     # Reset state
                     self.current_sound = None
                     self.rnc_cards = []
-                    
+
                     # Send board state
                     self.broadcast()
-                    
+
                     # Starte a new thread for each client
                     client_thread = threading.Thread(target=self.handle_client, args=(reader, player_name), daemon=True)
                     client_thread.start()
@@ -368,38 +372,38 @@ class GameServer:
 
 
     def update_loop(self):
-        
+
         # Init reference time
         last_time = time.time()
-        
+
         while True:
-            
+
             # Calcualte delta time
             now = time.time()
             delta_time = now - last_time
             last_time = now
-    
+
             # Call update function
             self.on_update(delta_time)
-    
+
             # 60 FPS-Update-Loop
-            time.sleep(1/FPS)  
-            
-            
-            
+            time.sleep(1/FPS)
+
+
+
     def on_update(self, delta_time):
-        
+
         # Send heartbeat
         self.broadcast_timer += delta_time
         if self.broadcast_timer > 2.0:
             self.broadcast_timer = 0.0
             with self.lock:
                 self.send_heartbeat()
-        
+
         # Check if required number of players are on server
         if len(self.client_list) < FULL_TABLE:
             return
-        
+
         # Call respective game phase logic
         with self.lock:
             if self.game_phase == "assignment":
@@ -408,9 +412,9 @@ class GameServer:
                 self.setup_logic()
             elif self.game_phase == "gameplay":
                 self.gameplay_logic()
-            
-            
-            
+
+
+
     def send_heartbeat(self):
 
         for client in list(self.client_list):
@@ -419,9 +423,9 @@ class GameServer:
             except Exception:
                 print(f"Heartbeat failed for {client.name}")
                 self.remove_client(client.name)
-            
-            
-            
+
+
+
     def assignment_logic(self):
 
         # Game starts only with valid unit allocations (the reason is shown while waiting)
@@ -466,22 +470,22 @@ class GameServer:
 
 
     def setup_logic(self):
-        
+
         # Create every card
         for i in range(162):
             card_id = f"ac{i+1:02d}"
             row = self.card_table.loc[card_id]
             card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["breeze"], row["color"], row["rpn"], row["cower"], row["split"])
             self.card_list.append(card)
-            
+
         # Create every unit
         nations = [client.nation for client in self.client_list]
         for unit_id in self.unit_table.index:
             row = self.unit_table.loc[unit_id]
             if row["nation"] not in nations:
                 continue
-            unit = Unit(unit_id, row["nation"], row["function"], row["name"], row["weapon"], 
-                        row["malfunction"], row["ccv"], row["firepower"], row["morale"], 
+            unit = Unit(unit_id, row["nation"], row["function"], row["name"], row["weapon"],
+                        row["malfunction"], row["ccv"], row["firepower"], row["morale"],
                         row["panic"], row["rout"], row["kia"], row["points"])
             self.unit_list.append(unit)
 
@@ -518,56 +522,57 @@ class GameServer:
         first_client = random.choice(candidates)
         self.current_turn = first_client.name
         self.first_turn = first_client.name
-                    
+
         # Set empty groups
         for group in self.group_list:
             group.empty = not any(unit.group == group.id for unit in self.unit_list)
-            
+
         # Shuffle cards
-        self.shuffle_cards()   
-        
+        self.shuffle_cards()
+
         # Distribute cards
         for client in self.client_list:
             self.draw_cards(client)
-            
+
         # Start playing phase with initial terrain
         self.game_phase = "gameplay"
         self.game_subphase = "terrain" # terrain, action, discard
         self.broadcast()
-    
-    
+
+
+
     def gameplay_logic(self):
-        
+
         # missing
         pass
 
-                
-                
+
+
     def handle_client(self, reader, player_name):
 
         while True:
-            
+
             try:
                 # Receive data
                 data = reader.readline()
-                
+
                 if data:
-                    
+
                     # Reset state
                     self.current_sound = None
                     self.rnc_cards = []
                     self.help_text = None
-                    
+
                     # Get client
                     client = next((client for client in self.client_list if client.name == player_name), None)
-                    
+
                     # Process client action
                     action = json.loads(data)
                     with self.lock:
                         self.process_action(action, client)
                         self.process_aftermath()
                         self.broadcast()
-                        
+
                 else:
                     break
 
@@ -581,14 +586,14 @@ class GameServer:
 
 
     def process_action(self, action, client):
-        
+
         # Get action type
         action_type = action.get("type")
 
         # Play card action
         if action_type == "play_card":
             self.play_card(action, client)
-            
+
         # Pass during initial terrain
         if action_type == "advance_turn" and self.game_subphase == "terrain":
             self.pass_terrain(client)
@@ -673,15 +678,15 @@ class GameServer:
             self.winner = next(c.name for c in self.client_list if c is not client)
             self.game_phase = "finished"
 
-            
-            
+
+
     def play_card(self, action, client):
-        
+
         # Check game phase
         if self.game_phase != "gameplay":
             self.help_text = "Game is not running"
             return
-        
+
         # Find card
         card_id = action.get("card_id")
         played_card = None
@@ -689,7 +694,7 @@ class GameServer:
             if card.id == card_id:
                 played_card = card
                 break
-                    
+
         # Find groups
         group_ids = action.get("group_ids")
         target_groups = [None, None]
@@ -698,23 +703,23 @@ class GameServer:
                 target_groups[0] = group
             elif group.id == group_ids[1]:
                 target_groups[1] = group
-                
+
         # Find units
         unit_ids = action.get("unit_ids")
         target_units = []
         for unit in self.unit_list:
             if unit.id in unit_ids:
                 target_units.append(unit)
-                    
+
         # Card not found
         if played_card is None:
             return
-            
+
         # Check if card is in player's hand
         if played_card.owner != client.name or played_card.location != "hand":
             self.help_text = "Card is not in your hand"
             return
-        
+
         # Get card mode
         card_mode = action.get("card_mode")
 
@@ -730,7 +735,7 @@ class GameServer:
         card_type, card_subtype = played_card.type, played_card.subtype
         if card_mode == "open ground":
             played_card.type, played_card.subtype = "terrain", "open"
-        
+
         # Resolve card
         if self.pending_action["type"] is not None:
             self.counter_card(played_card, target_groups, client)
@@ -744,26 +749,26 @@ class GameServer:
         # Restore card still in hand
         if played_card.location == "hand":
             played_card.type, played_card.subtype = card_type, card_subtype
-        
- 
-    
+
+
+
     def execute_card(self, played_card, card_mode, target_groups, target_units, client, extra_cards):
-        
+
         # Check if it's this player's turn
         if client.name != self.current_turn:
             self.help_text = "Not your turn"
             return
-        
+
         # Check if group is empty
         if target_groups[0].empty:
             self.help_text = "Group is empty"
             return
-        
+
         # Check if group has already acted
         if target_groups[0].acted and played_card.type != "hero":
             self.help_text = "Group has already acted"
             return
-        
+
         # Resolve actions
         if played_card.type == "movement":
             success = self.resolve_movement(played_card, card_mode, target_groups[0])
@@ -780,37 +785,37 @@ class GameServer:
         else:
             self.help_text = "Card cannot be played as an action"
             success = False
-            
+
         # Check if card was resolved successfully
         if not success:
             return
-            
+
         # Add cards to the group (if not already discarded)
         for card in [played_card] + extra_cards:
             if card.location == "hand":
                 card.location = "table"
                 card.group = target_groups[0].id
-        
+
         # Fill history
         target_groups[0].last_action = ACTIONS[played_card.type]
-        
+
         # Set flag
         if played_card.type != "hero":
             client.acted = True
             target_groups[0].acted = True
-        
+
         # Set sound
         self.current_sound = "play_card"
-    
-    
-            
+
+
+
     def resolve_movement(self, played_card, card_mode, target_group):
-        
+
         # No movement with pinned units
         if any(unit.state == "pinned" and unit.group == target_group.id for unit in self.unit_list):
             self.help_text = "No movement with pinned units"
             return False
-        
+
         # Get wire card (if present):
         wire = next((card for card in self.card_list if card.type == "wire" and card.group == target_group.id), None)
 
@@ -862,7 +867,7 @@ class GameServer:
         # Second movement card: group leaves its terrain
         if target_group.moving:
             target_group.terrain = None
-        
+
         # Modify group attributes
         if card_mode == "forward":
             target_group.range += 1
@@ -885,8 +890,9 @@ class GameServer:
             target_group.smoke = False
 
         return True
-        
-        
+
+
+
     def check_terrain_entry(self, played_card, target_group):
 
         # Terrain types without implemented rules cannot be played
@@ -963,7 +969,7 @@ class GameServer:
 
         # Terrain card lies at the bottom of the stack
         played_card.stack_index = 0
-    
+
         return True
 
 
@@ -1137,11 +1143,11 @@ class GameServer:
 
 
     def resolve_smoke(self, played_card, target_group):
-        
+
         if target_group.leader is False:
             self.help_text = "Smoke needs a leader"
             return
-        
+
         if target_group.smoke:
             self.help_text = "Group already has smoke"
             return
@@ -1158,62 +1164,62 @@ class GameServer:
 
         # Modify group attributes
         target_group.smoke = True
-        
-        # Set stack count
-        played_card.stack_index = sum(1 for card in self.card_list 
-                                      if card.group == target_group.id 
-                                      and card.type in ["movement", "terrain"])
-        
-        return True
-    
 
-    
+        # Set stack count
+        played_card.stack_index = sum(1 for card in self.card_list
+                                      if card.group == target_group.id
+                                      and card.type in ["movement", "terrain"])
+
+        return True
+
+
+
     def resolve_rally(self, played_card, target_group, target_units):
-        
+
         # Restrict selected units to target group
         target_units = [unit for unit in target_units if unit.group == target_group.id]
-        
+
         # Maximum rally capacity
         if played_card.subtype == "rally all":
             max_capacity = 10
         else:
-            max_capacity = int(played_card.subtype.split()[1])  
-            
+            max_capacity = int(played_card.subtype.split()[1])
+
         # Pinned unit in that group
         pinned = [unit for unit in self.unit_list
               if unit.group == target_group.id and unit.state == "pinned"]
-        
+
         # Validity check: At least 1 pinned unit required
         if not pinned:
             self.help_text = "No pinned units to rally"
             return
-        
+
         # Validity check: Capacity must be used fully
         required_count = min(max_capacity, len(pinned))
         if len(target_units) != required_count:
             self.help_text = f"Number of selected pinned units must be {required_count}"
             return
-        
+
         # Validity check: Selected units must rallyable
         for unit in target_units:
             if unit.group != target_group.id or unit.state != "pinned":
                 self.help_text = "Select only pinned units"
                 return
-        
+
         for unit in target_units:
             unit.state = "rallied"
-        
+
         return True
-    
-    
-    
+
+
+
     def resolve_hero(self, played_card, target_units):
-        
+
         # Validity check (1): At least one unit
         if len(target_units) != 1:
             self.help_text = "Select exactly one unit"
             return
-        
+
         # Validity check (2): Only units owned by player
         if target_units[0].owner != self.current_turn:
             self.help_text = "Select one of your own units"
@@ -1227,7 +1233,7 @@ class GameServer:
         # Modify attributes
         target_units[0].state = "rallied"
         target_units[0].heroic = True
-        
+
         return True
 
 
@@ -1258,43 +1264,43 @@ class GameServer:
         values = [[int(n) for n in re.findall(r"\d+", card.subtype)] for card in fire_cards]
         card_firestrength = sum(strength for strength, _ in values)
         card_firepower = sum(firepower for _, firepower in values)
-        
+
         # Player units
         player_units = [unit for unit in self.unit_list if unit.group == target_groups[0].id]
-        
+
         # Relative range
         relative_range = self.get_relative_range(target_groups)
 
         # Relative range cannot < 0 for firepower / to hit purposes
         relative_range = max(relative_range, 0)
-        
+
         # Check firepower
         firepower = sum(unit.get_firepower(target_groups[0], relative_range) for unit in player_units)
         if firepower < card_firepower:
             self.help_text = f"Firepower {firepower} at range {relative_range}, card needs {card_firepower}"
             return
-        
+
         # Calculate firestrength
         firestrength = self.get_firestrength(card_firestrength, target_groups[0], target_groups[1], relative_range)
         if firestrength is None:
             return
-        
+
         # Set pending action
         self.pending_action["type"] = "fire"
         self.pending_action["card"] = fire_cards[0]
         self.pending_action["strength"] = firestrength
         self.pending_action["offensive_group"] = target_groups[0]
         self.pending_action["defensive_group"] = target_groups[1]
-        
+
         # Annotate target information
         target_groups[1].last_action = "targeted"
-        
+
         return True
-    
-    
-    
+
+
+
     def counter_card(self, played_card, target_groups, client):
-        
+
         # Validity check (1)
         if client.name == self.current_turn:
             self.help_text = "Wait for the opponent's response"
@@ -1304,37 +1310,37 @@ class GameServer:
         if self.pending_action["type"] != "fire":
             self.help_text = "Accept or reject the terrain first"
             return
-        
+
         # Validity check (3)
         if played_card.type != "concealed":
             self.help_text = "Respond with a concealed card or pass"
             return
-        
+
         # Validity check (4)
         if target_groups[0] != self.pending_action["defensive_group"]:
             self.help_text = "Make the attacked group your active group"
             return
-    
+
         # Resolve counter
         self.resolve_fire(played_card)
-        
+
         # Add card to the group
         played_card.location = "table"
         played_card.group = target_groups[0].id
 
         # Set sound
         self.current_sound = "play_card"
-            
 
-    
+
+
     def resolve_fire(self, concealed_card):
-        
+
         # Get firestrength
-        firestrength = self.pending_action["strength"] 
-        
+        firestrength = self.pending_action["strength"]
+
         # Get concealed firestrength
         concealed_firestrength = int(re.findall(r"-\d+", concealed_card.subtype)[0]) if concealed_card else 0
-        
+
         # Defensive units
         defensive_units = [unit for unit in self.unit_list if unit.group == self.pending_action["defensive_group"].id]
 
@@ -1345,13 +1351,13 @@ class GameServer:
         for unit in defensive_units:
             rnc_card = self.draw_rnc_card()
             attack = firestrength + concealed_firestrength + rnc_card.rnc
-            
+
             if unit.state == "rallied":
                 if attack >= unit.kia[0]:
                     unit.state = "kia"
                 elif attack >= unit.morale:
                     unit.state = "pinned"
-            
+
             elif unit.state == "pinned":
                 if attack >= unit.kia[1]:
                     unit.state = "kia"
@@ -1365,15 +1371,15 @@ class GameServer:
         # Reset pending action
         for key in self.pending_action:
             self.pending_action[key] = None
-                
-            
-            
+
+
+
     def advance_turn(self, action, client):
-        
+
         # Check game phase
         if self.game_phase != "gameplay":
             return
-                
+
         # Check turn
         if client.name != self.current_turn:
             if self.pending_action["type"] == "fire":
@@ -1381,11 +1387,11 @@ class GameServer:
             elif self.pending_action["type"] == "terrain":
                 self.accept_terrain()
             return
-        
+
         # Check pending actions
         if self.pending_action["type"] is not None:
             return
-        
+
         # Check if player is passing
         client.passed = not client.acted and client.discard_count == 0
 
@@ -1404,19 +1410,19 @@ class GameServer:
             self.game_subphase = "discard"
         else:
             self.game_subphase = "action"
-            
+
         # Check if player has discarded
         if self.game_subphase == "discard":
             return
-            
+
         # Refill player's hand
         self.draw_cards(client)
-        
+
         # Remove action cards on table
         for card in self.card_list:
             if card.location == "table" and card.type not in ["movement", "terrain", "wire", "smoke"]:
                 self.move_card_to_discard(card)
-        
+
         # Reset groups
         for group in self.group_list:
             group.acted = False
@@ -1427,22 +1433,22 @@ class GameServer:
         # Reset units
         for unit in self.unit_list:
             unit.heroic = False
-        
+
         # Reset client
         client.acted = False
         client.discard_count = 0
 
         # Reset breeze
         self.breeze = False
-        
+
         # End turn
         i = (self.client_list.index(client) + 1) % len(self.client_list)
         self.current_turn = self.client_list[i].name
-        
-        
+
+
 
     def remove_client(self, player_name):
-        
+
         # Remove from client list
         client = next((client for client in self.client_list if client.name == player_name), None)
         self.client_list.remove(client)
@@ -1457,15 +1463,15 @@ class GameServer:
             pass
         finally:
             client.socket.close()
-            
+
         print(f"Client {player_name} was removed from the game")
-        
-        
+
+
 
     def broadcast(self):
-        
+
         for client in self.client_list:
-            
+
             # Create a personalized game state for this player
             game_state = {
                 "cards": [],
@@ -1484,7 +1490,7 @@ class GameServer:
                 "help_text": self.help_text,
                 "winner": "draw" if self.winner == "draw" else "player" if client.name == self.winner else "opponent"
             }
-            
+
             # Add card information
             for card in self.card_list:
                 card_info = {
@@ -1497,7 +1503,7 @@ class GameServer:
                     "draw_index": card.draw_index
                 }
                 game_state["cards"].append(card_info)
-                
+
             # Add unit information
             for unit in self.unit_list:
                 unit_info = {
@@ -1509,7 +1515,7 @@ class GameServer:
                     "crew_partner": unit.crew_partner
                 }
                 game_state["units"].append(unit_info)
-                
+
             # Add group information
             for group in self.group_list:
                 group_info = {
@@ -1522,7 +1528,7 @@ class GameServer:
                     "last_action": group.last_action
                 }
                 game_state["groups"].append(group_info)
-            
+
             # Send game state to client
             try:
                 message = encode_message(game_state)
@@ -1531,38 +1537,38 @@ class GameServer:
             except Exception:
                 print(f"Error sending to {client.name}")
                 self.remove_client(client.name)
-                
-                
-                
+
+
+
     def shuffle_cards(self):
-        
+
         # Indicies of all cards in action deck and discard pile
-        indices = [i for i, card in enumerate(self.card_list) 
+        indices = [i for i, card in enumerate(self.card_list)
                    if card.location in ("deck", "discard")]
-        
+
         # Extract and shuffle these cards
         cards_to_shuffle = [self.card_list[i] for i in indices]
         random.shuffle(cards_to_shuffle)
-        
+
         # Re-insert shuffled cards
         for i, card in zip(indices, cards_to_shuffle):
             self.card_list[i] = card
             card.location = "deck"
-        
+
         # Increase action deck counter
         self.action_deck_counter += 1
-        
-        
-        
+
+
+
     def draw_cards(self, client):
-        
+
         # Get hand size maximum for this nation
         max_hand = MAX_HAND[client.nation]
-        
+
         # Get squad leader and assistant squad leader
         sl = next(unit for unit in self.unit_list if unit.owner == client.name and unit.function == "SL")
         asl = next(unit for unit in self.unit_list if unit.owner == client.name and unit.function == "ASL")
-        
+
         # Check for max hand size reduction
         if sl.state == "rallied":
             pass
@@ -1570,30 +1576,30 @@ class GameServer:
             max_hand -= 1
         elif asl.state != "rallied":
             max_hand -= 1
-            
+
         # Get enemy groups
         enemy_groups = [group for group in self.group_list if group.owner != client.name and not group.empty]
-            
+
         # Check for max hand size increase (unbalanced position)
         if len(enemy_groups) < 2:
             max_hand += 1
-        
+
         # Get cards in action deck
         deck = [card for card in self.card_list if card.location == "deck"]
-        
+
         # Get cards in player's hand
         hand = [card for card in self.card_list if card.location == "hand" and card.owner == client.name]
-        
+
         # Get number of cards to draw
         n_cards = max(max_hand - len(hand), 0)
-        
+
         for _ in range(n_cards):
-    
+
             # Reshuffle if necessary
             if len(deck) == 0:
                 self.shuffle_cards()
                 deck = [card for card in self.card_list if card.location == "deck"]
-                            
+
             # Draw top card
             card = deck.pop()
             card.location = "hand"
@@ -1603,33 +1609,33 @@ class GameServer:
             split_types = [split_type for split_type, nations in card.split.items() if client.nation in nations]
             if split_types:
                 card.type = split_types[0]
-            
+
             # Index card
             self.draw_counter += 1
             card.draw_index = self.draw_counter
-            
-            
-            
+
+
+
     def discard_card(self, played_card, card_mode, target_groups, client):
-        
+
         # Check if it's this player's turn
         if client.name != self.current_turn:
             self.help_text = "Not your turn"
             return
-        
+
         # Get discard maximum for this nation
         max_discard = MAX_DISCARD[client.nation] - client.discard_count
-        
+
         # Check if discard is legal (1)
         if max_discard < 1:
             self.help_text = "Discard limit reached"
             return
-        
+
         # Check if discard is legal (2)
         if client.acted and client.nation != "german":
             self.help_text = "No discard after an action"
             return
-                
+
         # Discard card (on enemy group or discard pile)
         if card_mode == "enemy" and played_card.type == "sniper" and not client.sniper_lost:
             success = self.resolve_sniper(played_card, target_groups[1])
@@ -1640,35 +1646,35 @@ class GameServer:
         else:
             self.move_card_to_discard(played_card)
             success = True
-            
+
         # Check if card was resolved successfully
         if not success:
             return
-            
+
         # Update discard count
         client.discard_count += 1
-        
+
         # Add card to the group (if discarded on group)
         if played_card.location == "hand":
             played_card.location = "table"
             played_card.group = target_groups[1].id
-            played_card.owner = target_groups[1].owner 
-        
+            played_card.owner = target_groups[1].owner
+
         # Set sound
         self.current_sound = "play_card"
-        
-        
-    
+
+
+
     def resolve_sniper(self, played_card, target_group):
-        
+
         # Check if target group is empty
         if target_group.empty:
             self.help_text = "Target group is empty"
             return
-        
+
         # KIA and PIN thresholds from card, e.g. "sniper (kia 5 pin 3)"
         kia, pin = [int(n) for n in re.findall(r"\d+", played_card.subtype)]
-        
+
         # Get units in target group
         units = [unit for unit in self.unit_list if unit.group == target_group.id]
         if not units:
@@ -1684,7 +1690,7 @@ class GameServer:
             unit = units[rpc - 1]
         else:
             unit = units[0]
-        
+
         # Random number check
         rnc_card = self.draw_rnc_card()
         rnc = abs(rnc_card.rnc)
@@ -1791,49 +1797,49 @@ class GameServer:
         # Set sound
         if units:
             self.current_sound = "play_card"
-        
-    
-    
+
+
+
     def resolve_wire(self, played_card, target_group):
-        
+
         # Check if target group is empty
         if target_group.empty:
             self.help_text = "Target group is empty"
             return
-        
+
         if target_group.wire:
             self.help_text = "Group already has wire"
             return
-        
+
         if target_group.terrain in ["marsh", "pillbox"]:
             self.help_text = f"No wire on {target_group.terrain}"
             return
-        
+
         if target_group.terrain == "stream" and not target_group.moving:
             self.help_text = "No wire on a group in a stream"
             return
-        
+
         target_group.wire = True
-            
+
         return True
-        
-    
-            
+
+
+
     def draw_rnc_card(self):
-        
+
         # Get cards in action deck
         deck = [card for card in self.card_list if card.location == "deck"]
-        
+
         # Reshuffle if necessary
         if len(deck) == 0:
             self.shuffle_cards()
             deck = [card for card in self.card_list if card.location == "deck"]
-        
+
         # Draw top card
         rnc_card = deck.pop()
         self.move_card_to_discard(rnc_card)
         self.rnc_cards.append(rnc_card.id)
-        
+
         # Check for breeze
         if rnc_card.breeze:
             self.breeze = True
@@ -1842,26 +1848,26 @@ class GameServer:
                     self.move_card_to_discard(card)
             for group in self.group_list:
                 group.smoke = False
-        
+
         return(rnc_card)
-    
-    
-    
+
+
+
     def get_firestrength(self, firestrength, source_group, target_group, relative_range):
-        
+
         # TODO: Mortar/Ordnance fire implementation
         # TODO: encirclement check
-        
+
         # No fire from gully
         if source_group.terrain == "gully" and relative_range != 5:
             self.help_text = "No fire from gully (except at range 5)"
             return None
-        
+
         # No fire against gully
         if target_group.terrain == "gully" and source_group.terrain != "hill" and relative_range != 5:
             self.help_text = "No fire into gully (except from hill or at range 5)"
             return None
-        
+
         # Count movement cards
         movements = [card for card in self.card_list if card.group == target_group.id and card.type == "movement"]
 
@@ -1877,19 +1883,19 @@ class GameServer:
             firestrength += 1
         if len(movements) >= 2:
             firestrength += 1
-            
+
         # Terrain modifier (outgoing)
         firestrength += TERRAIN_MOD[source_group.terrain][0]
-            
+
         # Terrain modifier (incoming)
         firestrength += TERRAIN_MOD[target_group.terrain][1]
-        
+
         # Artificial terrain modifier (outgoing)
         firestrength += -source_group.wire - source_group.smoke
-        
+
         # Artificial terrain modifier (incoming)
         firestrength += target_group.wire - target_group.smoke
-        
+
         # Reduced protection behind wall against groups not directly opposite
         if target_group.terrain == "wall" and target_group.label != source_group.label:
             firestrength += 1
@@ -1899,14 +1905,14 @@ class GameServer:
             firestrength -= 1
 
         return(firestrength)
-    
-    
-            
+
+
+
     def parse_cell(self, cell):
-        
+
         # Transform to string
         cell = str(cell).strip()
-        
+
         # Parse to values and lists
         if "/" in cell:
             crewed, uncrewed = (self.parse_cell(p) for p in cell.split("/"))
@@ -1915,11 +1921,11 @@ class GameServer:
             return [self.parse_cell(x) for x in cell.split("|")]
         else:
             return int(cell) if cell.lstrip("-").isdigit() else cell
-        
-        
-        
+
+
+
     def move_card_to_discard(self, card):
-        
+
         card.owner = None
         card.group = None
         card.stack_index = 0
@@ -1934,13 +1940,13 @@ class GameServer:
         # Cards to be removed by the scenario go out of the game
         if self.check_card_removal(card):
             card.location = "void"
-        
-        
-        
+
+
+
     def process_aftermath(self):
-        
+
         for group in self.group_list:
-    
+
             # Units in group
             units = [unit for unit in self.unit_list if unit.group == group.id]
 
@@ -1964,10 +1970,10 @@ class GameServer:
 
             # Group empty?
             group.empty = len(units) == 0
-        
+
             # Group has active leader?
             group.leader = any(unit.function in ("SL", "ASL") and unit.state == "rallied" for unit in units)
-  
+
             # Discard placed cards of empty group
             if group.empty:
                 for card in self.card_list:
@@ -1975,11 +1981,11 @@ class GameServer:
                         self.move_card_to_discard(card)
 
         self.check_victory()
-        
-        
-        
+
+
+
     def check_victory(self):
-        
+
         # Instant victory
         for client in self.client_list:
             opponent = next(c for c in self.client_list if c is not client)
@@ -1987,7 +1993,7 @@ class GameServer:
                 self.winner = client.name
                 self.game_phase = "finished"
                 return
-        
+
         # Time limit victory
         if self.action_deck_counter > self.scenarios[self.scenario]["decks"]:
             a, b = self.client_list
@@ -1995,14 +2001,14 @@ class GameServer:
             self.winner = a.name if pa > pb else b.name if pb > pa else "draw"
             self.game_phase = "finished"
 
-                
-                
+
+
     def check_scenario_condition(self, scenario, client):
-        
+
         # TODO: more scenarios
-        
+
         count = 0
-        
+
         if scenario == "A":
 
             for group in self.group_list:
@@ -2016,33 +2022,32 @@ class GameServer:
                 if TERRAIN_MOD[group.terrain][1] + group.wire >= 0:
                     continue
                 count += sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
-    
+
             return count >= 4
-        
+
         return False
-            
-    
-    
-    
+
+
+
     def check_broken_group(self, client):
-        
+
         # Total units
         total_units = [unit for unit in self.unit_list if unit.owner == client.name]
-        
+
         # Broken units
         broken_units = [unit for unit in total_units if unit.state not in ["rallied", "pinned"]]
-        
+
         # Broken group
         return len(broken_units) / len(total_units) > 0.5
-            
-    
-        
+
+
+
     def calculate_victory_points(self, client):
-        
+
         # TODO: AFV, prisoners, wounded units
-        
+
         points = 0
-        
+
         # Victory points: range number x rallied units in stationary groups
         for group in self.group_list:
             if group.owner != client.name:
@@ -2054,7 +2059,7 @@ class GameServer:
             if territory and group.terrain not in territory:
                 continue
             points += group.range * sum(1 for unit in self.unit_list if unit.group == group.id and unit.state == "rallied")
-                
+
          # Victory points for enemy casualties and routed units
         for unit in self.unit_list:
             if unit.owner == client.name:
@@ -2063,15 +2068,13 @@ class GameServer:
                 points += 2
             elif unit.state == "routed":
                 points += 1
-                
+
         return points
-                
-        
+
+
 
 # ──[ Main ]───────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     server = GameServer()
     server.start_server()
-
-
