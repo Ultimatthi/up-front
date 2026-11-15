@@ -224,6 +224,7 @@ class GameServer:
         self.current_turn = None
         self.first_turn = None
         self.current_sound = None
+        self.rnc_cards = [] # ids of cards drawn as RNC in the current action
         self.help_text = None # reason for a rejected card
         self.action_deck_counter = 0
         self.breeze = False # breeze drawn in current player turn
@@ -346,8 +347,9 @@ class GameServer:
                         self.client_list.append(client)
 
                     
-                    # Set sound to none
+                    # Reset state
                     self.current_sound = None
+                    self.rnc_cards = []
                     
                     # Send board state
                     self.broadcast()
@@ -551,8 +553,9 @@ class GameServer:
                 
                 if data:
                     
-                    # Reset sound
+                    # Reset state
                     self.current_sound = None
+                    self.rnc_cards = []
                     self.help_text = None
                     
                     # Get client
@@ -1472,6 +1475,7 @@ class GameServer:
                 "game_subphase": self.game_subphase,
                 "current_turn": "player" if client.name == self.current_turn else "opponent",
                 "sound": self.current_sound,
+                "rnc_cards": self.rnc_cards,
                 "breeze": self.breeze,
                 "side": client.side,
                 "scenario": self.scenario,
@@ -1828,6 +1832,7 @@ class GameServer:
         # Draw top card
         rnc_card = deck.pop()
         self.move_card_to_discard(rnc_card)
+        self.rnc_cards.append(rnc_card.id)
         
         # Check for breeze
         if rnc_card.breeze:
