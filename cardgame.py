@@ -70,8 +70,7 @@ PILES_VIEW_KEYS = {arcade.key.KEY_1: "counters", arcade.key.KEY_2: "rnc",
                    arcade.key.KEY_3: "types", arcade.key.KEY_4: "terrain"}
 PILES_VIEW_NAMES = {"rnc": "[RNC]", "types": "[Card Types]", "terrain": "[Terrain Types]"}
 
-# Histogram columns: printed card types and terrain types with their labels, most frequent first
-# (terrain types with the same initial side by side)
+# Histogram columns
 HISTOGRAM_TYPES = {"fire": "F", "terrain": "T", "movement": "M", "rally": "R", "concealed": "C",
                    "split": "Sp", "sniper": "Sn", "smoke": "Sm", "wire": "W", "hero": "H"}
 HISTOGRAM_TERRAINS = {"buildings": "Bu", "brush": "Br", "woods": "Wo", "wall": "Wa", "hill": "H",
@@ -1787,8 +1786,7 @@ class GameView(arcade.View):
 
         piles = self.board_piles
 
-        # Columns of the shown view: labels, label colors and the column of each card
-        # (cards without a column are left out)
+        # Columns
         card_columns = {}
         if self.piles_view == "rnc":
             # Red 6 ... red 0, black 0 ... black 6
