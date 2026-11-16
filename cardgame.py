@@ -65,10 +65,10 @@ CARD_MODES = {
                 "sniper":   ["enemy", "discard"]}
 }
 
-# Views of the pile display (keys 1-4) and their names
-PILES_VIEW_KEYS = {arcade.key.KEY_1: "counters", arcade.key.KEY_2: "rnc",
-                   arcade.key.KEY_3: "types", arcade.key.KEY_4: "terrain"}
-PILES_VIEW_NAMES = {"rnc": "[RNC]", "types": "[Card Types]", "terrain": "[Terrain Types]"}
+# Display modes top left (keys 1-4)
+DISPLAY_MODE_KEYS = {arcade.key.KEY_1: "piles", arcade.key.KEY_2: "rnc",
+                     arcade.key.KEY_3: "types", arcade.key.KEY_4: "terrain"}
+DISPLAY_MODE_NAMES = {"rnc": "[RNC]", "types": "[Card Types]", "terrain": "[Terrain Types]"}
 
 # Histogram columns
 HISTOGRAM_TYPES = {"fire": "F", "terrain": "T", "movement": "M", "rally": "R", "concealed": "C",
@@ -124,7 +124,7 @@ class Card(arcade.Sprite):
         # Attributes
         self.id = card_id
         self.type = card_type
-        self.printed_type = card_type # type and subtype as printed (split cards stay split)
+        self.display_type = card_type # as printed (split cards change type)
         self.subtype = card_subtype
         self.rnc = rnc # red RNC are negative
         self.rnc_color = rnc_color # red, black
@@ -518,10 +518,10 @@ class GameView(arcade.View):
         # Reason for the last rejected card (kept until the next card is played)
         self.help_text = None
 
-        # View of the pile display (keys 1-4): counters, rnc, types, terrain (histograms)
-        self.piles_view = "counters"
+        # Display mode top left
+        self.display_mode = "piles"
 
-        # Ids of the cards drawn as RNC in the last action (red in the histogram)
+        # RNC cards of the last action
         self.rnc_card_ids = []
 
         # Hovered card
@@ -815,8 +815,8 @@ class GameView(arcade.View):
         # Annotations
         self.annotate()
 
-        # Histogram in place of the pile counters
-        if self.piles_view != "counters":
+        # Histogram instead of the piles
+        if self.display_mode != "piles":
             self.draw_card_histogram()
 
         # Dust particles
@@ -991,10 +991,10 @@ class GameView(arcade.View):
         if key == arcade.key.LALT:
             self.alt_held = True
 
-        # Views of the pile display
-        if key in PILES_VIEW_KEYS:
-            self.piles_view = PILES_VIEW_KEYS[key]
-            self.board_piles.visible = self.piles_view == "counters"
+        # Display mode
+        if key in DISPLAY_MODE_KEYS:
+            self.display_mode = DISPLAY_MODE_KEYS[key]
+            self.board_piles.visible = self.display_mode == "piles"
 
         # Advance turn
         if key == arcade.key.SPACE:
@@ -1620,20 +1620,20 @@ class GameView(arcade.View):
             text = self.annotate_text(label, x, y, 0, 18)
             text.draw()
 
-        # Scenario (replaced by the name of the shown histogram)
+        # Scenario or histogram name
         if self.scenario is not None:
             label = "[Scenario " + self.scenario + "]"
             if self.dyo_points is not None:
                 label = "[DYO " + str(self.dyo_points) + " Points]"
-            if self.piles_view != "counters":
-                label = PILES_VIEW_NAMES[self.piles_view]
+            if self.display_mode != "piles":
+                label = DISPLAY_MODE_NAMES[self.display_mode]
             x = self.board_piles.left
             y = self.board_piles.bottom - 35 * self.layout.scale
             text = self.annotate_text(label, x, y, 0, 18, arcade.color.WHITE, True, "left")
             text.draw()
 
-        # Pile counters (hidden while a histogram is shown)
-        if self.piles_view == "counters":
+        # Pile counters
+        if self.display_mode == "piles":
 
             # Counter: Action deck pile
             deck = [card for card in self.card_list if card.location == "deck"]
@@ -1788,7 +1788,7 @@ class GameView(arcade.View):
 
         # Columns
         card_columns = {}
-        if self.piles_view == "rnc":
+        if self.display_mode == "rnc":
             # Red 6 ... red 0, black 0 ... black 6
             labels = [6, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 5, 6]
             label_colors = [arcade.color.RED] * 7 + [arcade.color.WHITE] * 7
@@ -1797,18 +1797,18 @@ class GameView(arcade.View):
                     card_columns[card] = 6 + card.rnc
                 else:
                     card_columns[card] = 7 + card.rnc
-        elif self.piles_view == "types":
+        elif self.display_mode == "types":
             labels = list(HISTOGRAM_TYPES.values())
             label_colors = [arcade.color.WHITE] * len(labels)
             type_names = list(HISTOGRAM_TYPES)
             for card in self.card_list:
-                card_columns[card] = type_names.index(card.printed_type)
+                card_columns[card] = type_names.index(card.display_type)
         else:
             labels = list(HISTOGRAM_TERRAINS.values())
             label_colors = [arcade.color.WHITE] * len(labels)
             terrain_names = list(HISTOGRAM_TERRAINS)
             for card in self.card_list:
-                if card.printed_type != "terrain":
+                if card.display_type != "terrain":
                     continue
                 # Buildings -2 and -3 share one column
                 terrain = card.subtype.split()[0]
@@ -1822,7 +1822,7 @@ class GameView(arcade.View):
             text = self.annotate_text(label, x, piles.bottom + label_height / 2, 0, 11, label_colors[column])
             text.draw()
 
-        # Dot size for 22 rows; columns with more cards put several dots side by side
+        # Dots: 22 rows, several per row if needed
         dot_spacing = (piles.height - label_height - 10 * self.layout.scale) / 22
         radius = (dot_spacing - 2 * self.layout.scale) / 2
         column_sizes = [0] * len(labels)
@@ -1830,8 +1830,7 @@ class GameView(arcade.View):
             column_sizes[column] += 1
         dots_per_row = math.ceil(max(column_sizes) / 22)
 
-        # One dot per card, stacked: not seen yet (white), seen (grey), RNC of this action (red);
-        # cards in the opponent's hand are not seen
+        # Dot color: unseen (deck, opponent's hand), seen, RNC of this action
         dot_colors = {"unseen": arcade.color.WHITE, "seen": (255, 255, 255, 70), "rnc": arcade.color.RED}
         dot_columns = {"unseen": [], "seen": [], "rnc": []}
         for card, column in card_columns.items():
