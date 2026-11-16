@@ -297,9 +297,13 @@ class Chit(arcade.Sprite):
         self.type = chit_type
         self.group = group
 
-        # Textures
+        # Textures (loaded once, range -8 to 8)
+        self.textures_map = {}
         if self.type == "range":
-            texture = arcade.load_texture(r'assets/chits/chit.range.0.png')
+            for chit_range in range(-8, 9):
+                path = f'assets/chits/chit.range.{chit_range}.png'
+                self.textures_map[chit_range] = arcade.load_texture(path)
+            texture = self.textures_map[0]
 
         # Call the parent
         super().__init__(texture, scale, hit_box_algorithm="None")
@@ -326,7 +330,7 @@ class Chit(arcade.Sprite):
 
     def adjust_texture(self):
 
-        target_texture = arcade.load_texture(f'assets/chits/chit.range.{self.group.range}.png')
+        target_texture = self.textures_map[self.group.range]
 
         if self.texture != target_texture:
             self.texture = target_texture
@@ -518,8 +522,8 @@ class GameView(arcade.View):
         # RNC cards of the last action
         self.rnc_card_ids = []
 
-        # Histogram labels per display mode
-        self.histogram_labels = {}
+        # Built texts by content and position
+        self.text_cache = {}
 
         # Hovered card
         self.hover_card = None
@@ -721,8 +725,8 @@ class GameView(arcade.View):
         # Update layout variables
         self.layout.update(width, height)
 
-        # Histogram labels follow the layout
-        self.histogram_labels = {}
+        # Texts follow the layout
+        self.text_cache = {}
 
         # Layout elements
         self.layout_elements()
@@ -1381,7 +1385,7 @@ class GameView(arcade.View):
 
         # Shrink previous enlarged card
         for card in self.card_list:
-            if card != self.hover_card and card.scale != self.layout.card_scale:
+            if card != self.hover_card and card.scale_x != self.layout.card_scale:
                 card.scale = self.layout.card_scale
                 self.adjust_card_position()
 
@@ -1393,7 +1397,7 @@ class GameView(arcade.View):
 
         # Shrink previous enlarged group tile
         for group in self.group_list:
-            if group != self.hover_group and group.scale != self.layout.scale:
+            if group != self.hover_group and group.scale_x != self.layout.scale:
                 group.scale = self.layout.scale
 
         # Enlarge group tile we are hovering above
@@ -1402,7 +1406,7 @@ class GameView(arcade.View):
 
         # Shrink previous enlarged button
         for button in self.button_list:
-            if button != self.hover_button and button.scale != self.layout.scale:
+            if button != self.hover_button and button.scale_x != self.layout.scale:
                 button.scale = self.layout.scale
 
         # Enlarge group tile we are hovering above
@@ -1411,7 +1415,7 @@ class GameView(arcade.View):
 
         # Shrink previous enlarged unit
         for unit in self.unit_list:
-            if unit != self.hover_unit and unit.scale != self.layout.unit_scale:
+            if unit != self.hover_unit and unit.scale_x != self.layout.unit_scale:
                 unit.scale = self.layout.unit_scale
                 self.adjust_unit_position()
 
@@ -1772,6 +1776,11 @@ class GameView(arcade.View):
         # Transform to string
         label = str(label)
 
+        # Reuse unchanged texts (building one is slow)
+        key = (label, x, y, angle, size, color, bold, anchor_x, italic)
+        if key in self.text_cache:
+            return self.text_cache[key]
+
         # Text object
         text = arcade.Text(
             label,
@@ -1781,6 +1790,7 @@ class GameView(arcade.View):
             anchor_x=anchor_x, anchor_y="center",
             align="center", rotation=angle, bold=bold, italic=italic
         )
+        self.text_cache[key] = text
 
         # Return
         return(text)
@@ -1828,18 +1838,14 @@ class GameView(arcade.View):
         highest_column = max(len(cards) for cards in column_cards)
         dots_per_row = math.ceil(highest_column / 22)
 
-        # 3. Labels (built once per display mode)
-        if self.display_mode not in self.histogram_labels:
-            texts = []
-            for column, (key, label) in enumerate(columns):
-                color = arcade.color.WHITE
-                if self.display_mode == "rnc" and key[0] == "red":
-                    color = arcade.color.RED
-                x = piles.left + (column + 0.5) * column_width
-                y = piles.bottom + label_height / 2
-                texts.append(self.annotate_text(label, x, y, 0, 11, color))
-            self.histogram_labels[self.display_mode] = texts
-        for text in self.histogram_labels[self.display_mode]:
+        # 3. Labels
+        for column, (key, label) in enumerate(columns):
+            color = arcade.color.WHITE
+            if self.display_mode == "rnc" and key[0] == "red":
+                color = arcade.color.RED
+            x = piles.left + (column + 0.5) * column_width
+            y = piles.bottom + label_height / 2
+            text = self.annotate_text(label, x, y, 0, 11, color)
             text.draw()
 
         # 4. Stack dots: unseen (deck, opponent's hand), seen, RNC of this action on top
