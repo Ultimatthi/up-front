@@ -68,13 +68,14 @@ CARD_MODES = {
 # Views of the pile display (keys 1-4) and their names
 PILES_VIEW_KEYS = {arcade.key.KEY_1: "counters", arcade.key.KEY_2: "rnc",
                    arcade.key.KEY_3: "types", arcade.key.KEY_4: "terrain"}
-PILES_VIEW_NAMES = {"rnc": "RNC", "types": "Card Types", "terrain": "Terrain Types"}
+PILES_VIEW_NAMES = {"rnc": "[RNC]", "types": "[Card Types]", "terrain": "[Terrain Types]"}
 
 # Histogram columns: printed card types and terrain types with their labels, most frequent first
+# (terrain types with the same initial side by side)
 HISTOGRAM_TYPES = {"fire": "F", "terrain": "T", "movement": "M", "rally": "R", "concealed": "C",
                    "split": "Sp", "sniper": "Sn", "smoke": "Sm", "wire": "W", "hero": "H"}
-HISTOGRAM_TERRAINS = {"buildings": "Bu", "brush": "Br", "woods": "Wo", "hill": "H", "wall": "Wa",
-                      "gully": "G", "marsh": "Ma", "stream": "S", "minefield": "Mi", "pillbox": "P"}
+HISTOGRAM_TERRAINS = {"buildings": "Bu", "brush": "Br", "woods": "Wo", "wall": "Wa", "hill": "H",
+                      "gully": "G", "marsh": "Ma", "minefield": "Mi", "stream": "S", "pillbox": "P"}
 
 # Turn labels per pending action (own turn, enemy turn)
 TURN_LABELS = {
@@ -1620,19 +1621,13 @@ class GameView(arcade.View):
             text = self.annotate_text(label, x, y, 0, 18)
             text.draw()
 
-        # Name of the shown histogram, top left inside it
-        if self.piles_view != "counters":
-            label = PILES_VIEW_NAMES[self.piles_view]
-            x = self.board_piles.left
-            y = self.board_piles.top - 14 * self.layout.scale
-            text = self.annotate_text(label, x, y, 0, 16, arcade.color.WHITE, False, "left")
-            text.draw()
-
-        # Scenario
+        # Scenario (replaced by the name of the shown histogram)
         if self.scenario is not None:
             label = "[Scenario " + self.scenario + "]"
             if self.dyo_points is not None:
                 label = "[DYO " + str(self.dyo_points) + " Points]"
+            if self.piles_view != "counters":
+                label = PILES_VIEW_NAMES[self.piles_view]
             x = self.board_piles.left
             y = self.board_piles.bottom - 35 * self.layout.scale
             text = self.annotate_text(label, x, y, 0, 18, arcade.color.WHITE, True, "left")
