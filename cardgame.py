@@ -289,24 +289,21 @@ class Group(arcade.Sprite):
 
 
 
-class Chit(arcade.Sprite):
+class RangeChit(arcade.Sprite):
 
-    def __init__(self, chit_type, group, scale=1):
+    def __init__(self, group, scale=1):
 
         # Attribute
-        self.type = chit_type
         self.group = group
 
         # Textures (loaded once, range -8 to 8)
         self.textures_map = {}
-        if self.type == "range":
-            for chit_range in range(-8, 9):
-                path = f'assets/chits/chit.range.{chit_range}.png'
-                self.textures_map[chit_range] = arcade.load_texture(path)
-            texture = self.textures_map[0]
+        for chit_range in range(-8, 9):
+            path = f'assets/chits/chit.range.{chit_range}.png'
+            self.textures_map[chit_range] = arcade.load_texture(path)
 
         # Call the parent
-        super().__init__(texture, scale, hit_box_algorithm="None")
+        super().__init__(self.textures_map[0], scale, hit_box_algorithm="None")
 
 
 
@@ -571,7 +568,7 @@ class GameView(arcade.View):
 
         # Create every range chit
         for group in self.group_list:
-            range_chit = Chit("range", group, self.layout.scale)
+            range_chit = RangeChit(group, self.layout.scale)
             self.chit_list.append(range_chit)
 
         # Init active groups
