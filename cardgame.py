@@ -551,11 +551,6 @@ class GameView(arcade.View):
             card.position = (-10000, -10000)
             self.card_list.append(card)
 
-        # Histogram dots, one per card (reused every frame)
-        self.histogram_dots = arcade.SpriteList()
-        for card in self.card_list:
-            self.histogram_dots.append(arcade.SpriteCircle(16, arcade.color.WHITE))
-
         # Create every group tile
         for label in ["A", "B", "C", "D"]:
             for section in [0, 1]:
@@ -570,6 +565,11 @@ class GameView(arcade.View):
         for group in self.group_list:
             range_chit = RangeChit(group, self.layout.scale)
             self.chit_list.append(range_chit)
+
+        # Create every histogram dot
+        self.histogram_dots = arcade.SpriteList()
+        for card in self.card_list:
+            self.histogram_dots.append(arcade.SpriteCircle(16, arcade.color.WHITE))
 
         # Init active groups
         self.active_groups = {"player": None, "opponent": None}
