@@ -70,12 +70,6 @@ DISPLAY_MODE_KEYS = {arcade.key.KEY_1: "piles", arcade.key.KEY_2: "rnc",
                      arcade.key.KEY_3: "types", arcade.key.KEY_4: "terrain"}
 DISPLAY_MODE_NAMES = {"rnc": "[RNC]", "types": "[Card Types]", "terrain": "[Terrain Types]"}
 
-# Histogram columns
-HISTOGRAM_TYPES = {"fire": "F", "terrain": "T", "movement": "M", "rally": "R", "concealed": "C",
-                   "split": "Sp", "sniper": "Sn", "smoke": "Sm", "wire": "W", "hero": "H"}
-HISTOGRAM_TERRAINS = {"buildings": "Bu", "brush": "Br", "woods": "Wo", "wall": "Wa", "hill": "H",
-                      "gully": "G", "marsh": "Ma", "minefield": "Mi", "stream": "S", "pillbox": "P"}
-
 # Turn labels per pending action (own turn, enemy turn)
 TURN_LABELS = {
     None:      ("[Your Turn]",                 "[Enemy Turn]"),
@@ -524,6 +518,9 @@ class GameView(arcade.View):
         # RNC cards of the last action
         self.rnc_card_ids = []
 
+        # Histogram labels per display mode
+        self.histogram_labels = {}
+
         # Hovered card
         self.hover_card = None
 
@@ -552,6 +549,11 @@ class GameView(arcade.View):
             card = Card(card_id, row["type"], row["subtype"], row["rnc"], row["color"], self.layout.scale)
             card.position = (-10000, -10000)
             self.card_list.append(card)
+
+        # Histogram dots, one per card (reused every frame)
+        self.histogram_dots = arcade.SpriteList()
+        for card in self.card_list:
+            self.histogram_dots.append(arcade.SpriteCircle(16, arcade.color.WHITE))
 
         # Create every group tile
         for label in ["A", "B", "C", "D"]:
@@ -718,6 +720,9 @@ class GameView(arcade.View):
 
         # Update layout variables
         self.layout.update(width, height)
+
+        # Histogram labels follow the layout
+        self.histogram_labels = {}
 
         # Layout elements
         self.layout_elements()
@@ -1786,72 +1791,89 @@ class GameView(arcade.View):
 
         piles = self.board_piles
 
-        # Columns
-        card_columns = {}
+        # Columns per display mode: card key and label
         if self.display_mode == "rnc":
-            # Red 6 ... red 0, black 0 ... black 6
-            labels = [6, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3, 4, 5, 6]
-            label_colors = [arcade.color.RED] * 7 + [arcade.color.WHITE] * 7
-            for card in self.card_list:
-                if card.rnc_color == "red":
-                    card_columns[card] = 6 + card.rnc
-                else:
-                    card_columns[card] = 7 + card.rnc
+            columns = [(("red", 6), 6), (("red", 5), 5), (("red", 4), 4), (("red", 3), 3),
+                       (("red", 2), 2), (("red", 1), 1), (("red", 0), 0),
+                       (("black", 0), 0), (("black", 1), 1), (("black", 2), 2), (("black", 3), 3),
+                       (("black", 4), 4), (("black", 5), 5), (("black", 6), 6)]
         elif self.display_mode == "types":
-            labels = list(HISTOGRAM_TYPES.values())
-            label_colors = [arcade.color.WHITE] * len(labels)
-            type_names = list(HISTOGRAM_TYPES)
-            for card in self.card_list:
-                card_columns[card] = type_names.index(card.display_type)
+            columns = [("fire", "F"), ("terrain", "T"), ("movement", "M"), ("rally", "R"),
+                       ("concealed", "C"), ("split", "Sp"), ("sniper", "Sn"), ("smoke", "Sm"),
+                       ("wire", "W"), ("hero", "H")]
         else:
-            labels = list(HISTOGRAM_TERRAINS.values())
-            label_colors = [arcade.color.WHITE] * len(labels)
-            terrain_names = list(HISTOGRAM_TERRAINS)
-            for card in self.card_list:
-                if card.display_type != "terrain":
-                    continue
-                # Buildings -2 and -3 share one column
-                terrain = card.subtype.split()[0]
-                card_columns[card] = terrain_names.index(terrain)
+            columns = [("buildings", "Bu"), ("brush", "Br"), ("woods", "Wo"), ("wall", "Wa"),
+                       ("hill", "H"), ("gully", "G"), ("marsh", "Ma"), ("minefield", "Mi"),
+                       ("stream", "S"), ("pillbox", "P")]
 
-        # Label row
-        column_width = piles.width / len(labels)
+        # 1. Assign cards to columns
+        keys = [key for key, label in columns]
+        column_cards = [[] for column in columns]
+        for card in self.card_list:
+            if self.display_mode == "rnc":
+                key = (card.rnc_color, abs(card.rnc))
+            elif self.display_mode == "types":
+                key = card.display_type
+            elif card.display_type == "terrain":
+                key = card.subtype.split()[0] # buildings -2 and -3 share a column
+            else:
+                continue
+            column_cards[keys.index(key)].append(card)
+
+        # 2. Geometry: 22 rows, several dots per row if needed
+        column_width = piles.width / len(columns)
         label_height = 24 * self.layout.scale
-        for column, label in enumerate(labels):
-            x = piles.left + (column + 0.5) * column_width
-            text = self.annotate_text(label, x, piles.bottom + label_height / 2, 0, 11, label_colors[column])
+        dot_spacing = (piles.height - label_height - 10 * self.layout.scale) / 22
+        dot_size = dot_spacing - 2 * self.layout.scale
+        highest_column = max(len(cards) for cards in column_cards)
+        dots_per_row = math.ceil(highest_column / 22)
+
+        # 3. Labels (built once per display mode)
+        if self.display_mode not in self.histogram_labels:
+            texts = []
+            for column, (key, label) in enumerate(columns):
+                color = arcade.color.WHITE
+                if self.display_mode == "rnc" and key[0] == "red":
+                    color = arcade.color.RED
+                x = piles.left + (column + 0.5) * column_width
+                y = piles.bottom + label_height / 2
+                texts.append(self.annotate_text(label, x, y, 0, 11, color))
+            self.histogram_labels[self.display_mode] = texts
+        for text in self.histogram_labels[self.display_mode]:
             text.draw()
 
-        # Dots: 22 rows, several per row if needed
-        dot_spacing = (piles.height - label_height - 10 * self.layout.scale) / 22
-        radius = (dot_spacing - 2 * self.layout.scale) / 2
-        column_sizes = [0] * len(labels)
-        for column in card_columns.values():
-            column_sizes[column] += 1
-        dots_per_row = math.ceil(max(column_sizes) / 22)
-
-        # Dot color: unseen (deck, opponent's hand), seen, RNC of this action
+        # 4. Stack dots: unseen (deck, opponent's hand), seen, RNC of this action on top
         dot_colors = {"unseen": arcade.color.WHITE, "seen": (255, 255, 255, 70), "rnc": arcade.color.RED}
-        dot_columns = {"unseen": [], "seen": [], "rnc": []}
-        for card, column in card_columns.items():
-            in_opponent_hand = card.location == "hand" and card.owner == "opponent"
-            if card.id in self.rnc_card_ids:
-                dot_columns["rnc"].append(column)
-            elif card.location == "deck" or in_opponent_hand:
-                dot_columns["unseen"].append(column)
-            else:
-                dot_columns["seen"].append(column)
+        dot_index = 0
+        for column, cards in enumerate(column_cards):
+            states = []
+            for card in cards:
+                in_opponent_hand = card.location == "hand" and card.owner == "opponent"
+                if card.id in self.rnc_card_ids:
+                    states.append("rnc")
+                elif card.location == "deck" or in_opponent_hand:
+                    states.append("unseen")
+                else:
+                    states.append("seen")
+            states.sort(key=list(dot_colors).index)
 
-        heights = [0] * len(labels)
-        for state, columns in dot_columns.items():
-            for column in columns:
-                row = heights[column] // dots_per_row
-                position_in_row = heights[column] % dots_per_row
+            for height, state in enumerate(states):
+                row = height // dots_per_row
+                position_in_row = height % dots_per_row
                 row_offset = (position_in_row - (dots_per_row - 1) / 2) * dot_spacing
-                x = piles.left + (column + 0.5) * column_width + row_offset
-                y = piles.bottom + label_height + (row + 0.5) * dot_spacing
-                heights[column] += 1
-                arcade.draw_circle_filled(x, y, radius, dot_colors[state], num_segments=16)
+                dot = self.histogram_dots[dot_index]
+                dot.center_x = piles.left + (column + 0.5) * column_width + row_offset
+                dot.center_y = piles.bottom + label_height + (row + 0.5) * dot_spacing
+                dot.width = dot_size
+                dot.height = dot_size
+                dot.color = dot_colors[state]
+                dot.visible = True
+                dot_index += 1
+
+        # Unused dots (terrain shows fewer cards)
+        for index in range(dot_index, len(self.histogram_dots)):
+            self.histogram_dots[index].visible = False
+        self.histogram_dots.draw()
 
 
 
