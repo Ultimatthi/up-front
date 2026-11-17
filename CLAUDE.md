@@ -101,6 +101,7 @@ Schneller und deterministisch: `GameServer` direkt instanziieren, zwei `Client`-
 ## Unit-Allocations (`userdata/unit_allocation.yaml`)
 
 - Aufstellung je Szenario und Nation steht auf der Szenariokarte: `workbench/Vassal/Up_Front_v4_1/images/Scenario <X>.gif` (Kartennummern, z. B. Szenario A: Deutsche 1–10, Amerikaner 1–12). Einträge sind Unit-IDs aus `unit_table.csv` (z. B. `ge01` = Kartennummer 1), eine Zeile pro Gruppe als Liste (`A: [ge06, ge10, …]`); Gruppen `A`, `B`, `C` …; Listenreihenfolge = Position, vorne zuerst.
+- Aufbau: `scenario <X>` → Nation → Name der Aufstellung → Gruppen (z. B. `scenario A: german: Default: A: […]`); mehrere benannte Aufstellungen je Szenario und Nation möglich. Bearbeiten mit `cardallocation.py` (optional `python cardallocation.py <Szenario> <Nation>`).
 - Gruppe A (Bewegungsgruppe), 4 Units: SL und die drei Schützen (Gewehr/MP) mit der höchsten Morale.
 - Gruppe B (Feuerbasis): alle übrigen, inkl. ASL und Unterstützungswaffen (LMG, BAR, MMG).
 - Dritte Gruppe nur, wenn B sonst sehr groß würde und genug für eine zweite Feuerbasis da ist (z. B. ein zweites LMG). Nationen mit 4 Handkarten können selten drei Gruppen aktivieren; eine Gruppe ohne Leader ist schwächer (z. B. kein Rauch).

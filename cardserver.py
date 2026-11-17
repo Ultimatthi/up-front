@@ -340,7 +340,10 @@ class GameServer:
                         player_side = next(side for side in SIDES if side not in sides)
 
                         # Create new client
-                        groups = unit_allocation.get("scenario " + self.scenario, {}).get(player_nation, {})
+                        allocations = unit_allocation.get("scenario " + self.scenario, {}).get(player_nation, {})
+                        groups = {}
+                        if allocations:
+                            groups = list(allocations.values())[0] # first one until it can be chosen
                         client = Client(c, player_name, player_nation, player_side, groups, False)
 
                         # Rejoining player gets his old client back (nation, side and state)
