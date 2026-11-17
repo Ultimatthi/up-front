@@ -81,6 +81,17 @@ TURN_LABELS = {
 
 # ──[ Functions ]──────────────────────────────────────────────────────────────
 
+def create_light_layer(width, height, background_color):
+
+    # Soft light in the center, darker towards the edges (lobby and game)
+    light_layer = LightLayer(width, height)
+    light_layer.set_background_color(background_color)
+    center_light = Light(width / 2, height / 2, radius=width * 0.8, color=[255, 255, 255, 255], mode="soft")
+    light_layer.add(center_light)
+    return light_layer
+
+
+
 def encode_message(message):
     # One JSON message per line, the receiver reads it with readline()
     return (json.dumps(message) + "\n").encode("utf-8")
@@ -105,7 +116,6 @@ class Layout:
         self.scale = resize
         self.card_scale = resize * CARD_SCALE
         self.unit_scale = resize * UNIT_SCALE
-        self.light_radius = width * 0.8
         self.card_width = 144 * resize
         self.card_height = 224 * resize
 
@@ -501,7 +511,7 @@ class GameView(arcade.View):
         self.overlay_elements = arcade.SpriteList()
 
         # Create light
-        self.create_light()
+        self.light_layer = create_light_layer(self.layout.width, self.layout.height, self.background_color)
 
         # Init game state
         self.current_turn = None
@@ -694,25 +704,6 @@ class GameView(arcade.View):
 
 
 
-    def create_light(self):
-
-        # Layer to handle light sources
-        self.light_layer = LightLayer(self.layout.width, self.layout.height)
-
-        # Set background of light layer
-        self.light_layer.set_background_color(self.background_color)
-
-        # Create main light source
-        self.center_light = Light(self.layout.width / 2, self.layout.height / 2,
-                             radius=self.layout.light_radius,
-                             color=[255, 255, 255, 255],
-                             mode='soft')
-
-        # Add light sources to light layer
-        self.light_layer.add(self.center_light)
-
-
-
     def on_resize(self, width, height):
 
         # Calculate resize factors
@@ -729,7 +720,7 @@ class GameView(arcade.View):
         self.layout_elements()
 
         # Rescale light source
-        self.create_light()
+        self.light_layer = create_light_layer(self.layout.width, self.layout.height, self.background_color)
 
         # Reposition cards
         self.adjust_card_position()
@@ -792,10 +783,14 @@ class GameView(arcade.View):
 
     def on_draw(self):
 
-        # Clear the screen
-        self.clear()
+        # Scene lit by the light layer
+        with self.light_layer:
+            self.draw_scene()
+        self.light_layer.draw()
 
-        # with self.light_layer:
+
+
+    def draw_scene(self):
 
         # Draw board elements
         self.board_elements.draw()
@@ -834,8 +829,6 @@ class GameView(arcade.View):
             if self.help_text is not None:
                 text = self.annotate_text(self.help_text, self.window.width / 2, 120 * self.layout.scale, 0, 18, arcade.color.WHITE, True, "center", True)
                 text.draw()
-
-        # self.light_layer.draw()
 
 
 
@@ -2027,6 +2020,9 @@ class MenuView(arcade.View):
         if ctypes.windll.user32.IsZoomed(hwnd):
             ctypes.windll.user32.ShowWindow(hwnd, 9)
 
+        # Light follows the window size
+        self.light_layer = create_light_layer(width, height, self.background_color)
+
 
 
     def load_assets(self):
@@ -2039,6 +2035,9 @@ class MenuView(arcade.View):
 
         # Texture
         self.board_texture = arcade.load_texture("assets/boardelements/board.texture.png")
+
+        # Light as in the game
+        self.light_layer = create_light_layer(self.window.width, self.window.height, self.background_color)
 
         # Load sound effects
         self.sound_select = arcade.load_sound("assets/sounds/select.mp3")
@@ -2263,19 +2262,21 @@ class MenuView(arcade.View):
 
     def on_draw(self):
 
-        # Clear the screen
-        self.clear()
+        # Lobby lit by the light layer
+        with self.light_layer:
 
-        # Draw background
-        rect = arcade.LBWH(left=0, bottom=0, width=self.window.width, height=self.window.height)
-        arcade.draw_texture_rect(texture=self.background,rect=rect)
+            # Draw background
+            rect = arcade.LBWH(left=0, bottom=0, width=self.window.width, height=self.window.height)
+            arcade.draw_texture_rect(texture=self.background,rect=rect)
 
-        # Draw texture
-        rect = arcade.LBWH(left=0, bottom=0, width=self.window.width, height=self.window.height)
-        arcade.draw_texture_rect(texture=self.board_texture,rect=rect)
+            # Draw texture
+            rect = arcade.LBWH(left=0, bottom=0, width=self.window.width, height=self.window.height)
+            arcade.draw_texture_rect(texture=self.board_texture,rect=rect)
 
-        # Draw UI elements
-        self.manager.draw()
+            # Draw UI elements
+            self.manager.draw()
+
+        self.light_layer.draw()
 
 
 
