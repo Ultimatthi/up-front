@@ -74,7 +74,7 @@ The goal is code that is easy to read, understand and modify, not code that uses
 
 - `start.bat` startet 1 Server + 2 Clients. Aus der Claude-Umgebung startete die Datei keine Prozesse – dann direkt starten:
   - Server: `python -u cardserver.py` (wartet auf Port- und Szenario-Eingabe → Datei mit zwei Leerzeilen umleiten = Port 52000, Szenario A; bei DYO folgt das Punktelimit)
-  - Client (2×): `python cardgame.py "Player A"` bzw. `"Player B"` (Name optional, sonst aus `lobby_settings.json`), im Lobby-Fenster **Enter** drücken (oder „Join“) → verbindet zum Server im zweiten Feld (Default `localhost:52000`). Name/Server/Nation werden in `userdata/lobby_settings.json` gespeichert – beide Test-Clients teilen sich die Datei.
+  - Client (2×): `python cardgame.py "Player A"` bzw. `"Player B"` (Name optional, sonst aus `lobby_settings.json`), im Lobby-Fenster **Enter** drücken (oder „Join“) → verbindet zum Server im zweiten Feld (Default `localhost:52000`). Name/Server/Nation werden in `userdata/lobby_settings.json` gespeichert – beide Test-Clients teilen sich die Datei. Im Wartebildschirm **Tab** = nächste Aufstellung, **Leertaste** = bereit (ungültige werden mit Grund abgelehnt); das Spiel startet, wenn beide bereit sind.
 - Server-Fehler landen nur auf stderr (`traceback.print_exc` in `handle_client`) → stderr in Datei umleiten und nach jeder Aktion prüfen.
 
 ## GUI-Tests (Fenster fernsteuern)
@@ -87,7 +87,7 @@ The goal is code that is easy to read, understand and modify, not code that uses
 
 ## Headless-Tests (bevorzugt für Regel-Logik)
 
-Schneller und deterministisch: `GameServer` direkt instanziieren, zwei `Client`-Objekte mit Fake-Socket (`sendall` = no-op) und `userdata/unit_allocation.yaml` anlegen, `broadcast` stubben, `setup_logic()` aufrufen, dann Aktionen über `process_action(action, client)` + `process_aftermath()` schicken. `play_card`-Aktionen brauchen immer `extra_card_ids` (leere Liste bei Einzelkarten). Karten gezielt per `location="hand"`, `owner=<name>` zuteilen; `draw_rnc` für feste Würfe überschreiben.
+Schneller und deterministisch: `GameServer` direkt instanziieren, zwei `Client`-Objekte mit Fake-Socket (`sendall` = no-op) und Gruppen anlegen (Parameter `unit_allocation`, z. B. `{"A": ["ge06", …], "B": […]}`), `broadcast` stubben, `setup_logic()` aufrufen, dann Aktionen über `process_action(action, client)` + `process_aftermath()` schicken. `play_card`-Aktionen brauchen immer `extra_card_ids` (leere Liste bei Einzelkarten). Karten gezielt per `location="hand"`, `owner=<name>` zuteilen; `draw_rnc` für feste Würfe überschreiben.
 
 ## Spielmechanik, die beim Testen wichtig ist
 

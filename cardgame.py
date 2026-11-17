@@ -523,6 +523,11 @@ class GameView(arcade.View):
         # Reason for the last rejected card (kept until the next card is played)
         self.help_text = None
 
+        # Allocation chosen with Tab while waiting, sent with Space (not yet answered), ready once the server accepted it
+        self.allocation_index = 0
+        self.allocation_sent = False
+        self.ready = False
+
         # Display mode top left
         self.display_mode = "piles"
 
@@ -632,8 +637,7 @@ class GameView(arcade.View):
         # Send player data to server
         data = {
             "player_name": self.player_name,
-            "player_nation": self.player_nation,
-            "unit_allocation": self.unit_allocation
+            "player_nation": self.player_nation
         }
         self.socket.sendall(encode_message(data))
 
@@ -830,6 +834,23 @@ class GameView(arcade.View):
                 text = self.annotate_text(self.help_text, self.window.width / 2, 120 * self.layout.scale, 0, 18, arcade.color.WHITE, True, "center", True)
                 text.draw()
 
+            # Allocation to choose until ready
+            if self.game_phase == "assignment" and self.scenario is not None and not self.ready:
+                name, groups = self.chosen_allocation()
+                if name is None:
+                    first_line = f"No deployment for scenario {self.scenario}"
+                    second_line = ""
+                else:
+                    first_line = f"Deployment: {name}"
+                    second_line = "TAB Next  ·  SPACE Ready"
+                center_x = self.window.width / 2
+                line_y = 245 * self.layout.scale
+                arcade.draw_line(center_x - 150 * self.layout.scale, line_y, center_x + 150 * self.layout.scale, line_y, (255, 255, 255, 90), 1)
+                text = self.annotate_text(first_line, self.window.width / 2, 200 * self.layout.scale, 0, 18)
+                text.draw()
+                text = self.annotate_text(second_line, self.window.width / 2, 170 * self.layout.scale, 0, 14, arcade.color.LIGHT_GRAY, False)
+                text.draw()
+
 
 
     def on_mouse_press(self, x, y, button, key_modifiers):
@@ -996,8 +1017,18 @@ class GameView(arcade.View):
             self.board_piles.visible = self.display_mode == "piles"
 
         # Advance turn
-        if key == arcade.key.SPACE:
+        if key == arcade.key.SPACE and self.game_phase == "assignment":
+            name, groups = self.chosen_allocation()
+            if name is not None:
+                self.client_action("choose_allocation", groups)
+                self.allocation_sent = True
+        elif key == arcade.key.SPACE:
             self.advance_turn()
+
+        # Next allocation while waiting (the reason for the last one no longer applies)
+        if key == arcade.key.TAB and self.game_phase == "assignment":
+            self.allocation_index += 1
+            self.help_text = None
 
         # Sniper check
         if key == arcade.key.S:
@@ -1145,12 +1176,13 @@ class GameView(arcade.View):
 
 
 
-    def client_action(self, name):
+    def client_action(self, name, groups=None):
 
-        # Create action for server
+        # Create action for server (groups only for the chosen allocation)
         action = {
             "type": "client_action",
-            "action": name
+            "action": name,
+            "groups": groups
         }
 
         # Send action to server
@@ -1211,6 +1243,8 @@ class GameView(arcade.View):
         self.winner = game_state.get("winner")
         self.scenario = game_state.get("scenario")
         self.dyo_points = game_state.get("dyo_points")
+        self.player_nation = game_state.get("nation")
+        self.ready = game_state.get("ready")
 
         # Play sound (a played card the server answers without a sound was rejected)
         sound = game_state.get("sound")
@@ -1221,9 +1255,10 @@ class GameView(arcade.View):
         self.card_sent = None
         self.play_sound(sound)
 
-        # Reason why the game does not start yet
-        if self.game_phase in ("assignment", "setup"):
+        # Reason why the own allocation was rejected (only in the answer to it)
+        if self.allocation_sent:
             self.help_text = game_state.get("help_text")
+            self.allocation_sent = False
 
         # Breeze sounds once when it comes up, on top of the sound of the action that drew it
         breeze = game_state.get("breeze")
@@ -1749,6 +1784,18 @@ class GameView(arcade.View):
             y = self.window.height / 2 - 220 * self.layout.scale
             text = self.annotate_text(self.help_text, x, y, 0, 18, arcade.color.WHITE, True, "right", True)
             text.draw()
+
+
+
+    def chosen_allocation(self):
+
+        # Saved allocation of scenario and nation chosen with Tab (name None without one)
+        allocations = self.unit_allocation.get("scenario " + self.scenario, {}).get(self.player_nation, {})
+        names = list(allocations)
+        if not names:
+            return None, None
+        name = names[self.allocation_index % len(names)]
+        return name, allocations[name]
 
 
 

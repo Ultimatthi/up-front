@@ -18,3 +18,4 @@
 99;;Szenario B;20.8;Terrain Capture: letzter Verteidiger einer infiltrierten Gruppe fällt, Infiltrator-Gruppe übernimmt dessen Terrain oder wirft es ab, Movement-Karten beider Gruppen entfernen
 100;;Szenario B;20.9;Berserk (Russen): Panic eines pinned Russen bei RR 5 mit 0r < Panic macht ihn berserk statt KIA, zu Zugbeginn automatisch CC mit Pinned-CCV, Sieg = rallied
 101;;Szenario B;21;Demolition Charge: nur im Zug der Infiltration, Fire Strength 8 ohne Feuerkarte, nur Concealed, Smoke und Terrain des Verteidigers zählen, trifft eigene Infiltratoren mit, einziger Angriff der Gruppe, rote 6 als erste RNC = wertlos
+102;;Aufstellung;3.2, 28.11, 34.2;Vollständige Prüfung der Aufstellung (Server und Editor): 2 bis 4 Gruppen ohne Lücken (A, B …), je Gruppe 2 bis 10 Units, AFV immer allein in seiner Gruppe (also max. 1 AFV pro Gruppe), Infanteriegeschütz darf allein eine Gruppe bilden

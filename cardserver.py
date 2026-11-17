@@ -311,7 +311,6 @@ class GameServer:
                     player_data = json.loads(reader.readline())
                     player_name = player_data.get("player_name")
                     player_nation = player_data.get("player_nation")
-                    unit_allocation = player_data.get("unit_allocation")
                     print(f"Connection accepted from {addr} with username {player_name}")
 
                     with self.lock:
@@ -339,12 +338,8 @@ class GameServer:
                         # Allocate side
                         player_side = next(side for side in SIDES if side not in sides)
 
-                        # Create new client
-                        allocations = unit_allocation.get("scenario " + self.scenario, {}).get(player_nation, {})
-                        groups = {}
-                        if allocations:
-                            groups = list(allocations.values())[0] # first one until it can be chosen
-                        client = Client(c, player_name, player_nation, player_side, groups, False)
+                        # Create new client (allocation chosen while waiting)
+                        client = Client(c, player_name, player_nation, player_side, {}, False)
 
                         # Rejoining player gets his old client back (nation, side and state)
                         if player_name in self.left_clients and self.game_phase != "assignment":
@@ -431,19 +426,10 @@ class GameServer:
 
     def assignment_logic(self):
 
-        # Game starts only with valid unit allocations (the reason is shown while waiting)
+        # Game starts once every player has chosen a valid allocation
         for client in self.client_list:
-            reason = self.check_unit_allocation(client)
-            if reason is None:
-                continue
-            help_text = client.name + ": " + reason
-            if self.help_text != help_text:
-                self.help_text = help_text
-                self.broadcast()
-            return
-
-        # Clear the reason on the waiting clients
-        self.help_text = None
+            if not client.ready:
+                return
         self.game_phase = "setup"
         self.broadcast()
 
@@ -671,6 +657,17 @@ class GameServer:
 
 
     def client_action(self, action, client):
+
+        # Allocation chosen while waiting: a valid one makes the player ready (the reason is shown while waiting)
+        if self.game_phase == "assignment" and action.get("action") == "choose_allocation":
+            client.unit_allocation = action.get("groups")
+            reason = self.check_unit_allocation(client)
+            if reason is None:
+                client.ready = True
+            else:
+                client.ready = False
+                self.help_text = reason
+            return
 
         # Check game phase
         if self.game_phase != "gameplay":
@@ -1487,6 +1484,8 @@ class GameServer:
                 "rnc_cards": self.rnc_cards,
                 "breeze": self.breeze,
                 "side": client.side,
+                "nation": client.nation,
+                "ready": client.ready,
                 "scenario": self.scenario,
                 "dyo_points": self.dyo_points,
                 "pending_action": self.pending_action["type"],
@@ -1988,6 +1987,10 @@ class GameServer:
 
 
     def check_victory(self):
+
+        # Check game phase (before the game there are no units yet)
+        if self.game_phase != "gameplay":
+            return
 
         # Instant victory
         for client in self.client_list:
