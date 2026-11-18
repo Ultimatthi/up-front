@@ -583,14 +583,6 @@ class GameServer:
         if action_type == "play_card":
             self.play_card(action, client)
 
-        # Pass during initial terrain
-        if action_type == "advance_turn" and self.game_subphase == "terrain":
-            self.pass_terrain(client)
-
-        # End player's turn
-        elif action_type == "advance_turn":
-            self.advance_turn(action, client)
-
         # Group action without card
         if action_type == "group_action":
             self.group_action(action, client)
@@ -659,7 +651,7 @@ class GameServer:
     def client_action(self, action, client):
 
         # Allocation chosen while waiting: a valid one makes the player ready (the reason is shown while waiting)
-        if self.game_phase == "assignment" and action.get("action") == "choose_allocation":
+        if self.game_phase == "assignment" and action.get("action") == "unit_allocation":
             client.unit_allocation = action.get("groups")
             reason = self.check_unit_allocation(client)
             if reason is None:
@@ -673,8 +665,16 @@ class GameServer:
         if self.game_phase != "gameplay":
             return
 
+        # Pass during initial terrain
+        if action.get("action") == "advance_turn" and self.game_subphase == "terrain":
+            self.pass_terrain(client)
+
+        # End player's turn
+        elif action.get("action") == "advance_turn":
+            self.advance_turn(client)
+
         # Surrender is possible at any time: the opponent wins
-        if action.get("action") == "surrender":
+        elif action.get("action") == "surrender":
             self.winner = next(c.name for c in self.client_list if c is not client)
             self.game_phase = "finished"
 
@@ -1374,11 +1374,7 @@ class GameServer:
 
 
 
-    def advance_turn(self, action, client):
-
-        # Check game phase
-        if self.game_phase != "gameplay":
-            return
+    def advance_turn(self, client):
 
         # Check turn
         if client.name != self.current_turn:

@@ -523,7 +523,7 @@ class GameView(arcade.View):
         # Reason for the last rejected card (kept until the next card is played)
         self.help_text = None
 
-        # Allocation chosen with Tab while waiting, sent with Space (not yet answered), ready once the server accepted it
+        # Allocation chosen
         self.allocation_index = 0
         self.allocation_sent = False
         self.ready = False
@@ -831,21 +831,28 @@ class GameView(arcade.View):
 
     def draw_waiting_screen(self):
 
+        # Waiting animation
         self.waiting_animation.draw(self.window.width, self.window.height, self.layout.scale)
         if self.help_text is not None:
             text = self.annotate_text(self.help_text, self.window.width / 2, 120 * self.layout.scale, 0, 18, arcade.color.WHITE, True, "center", True)
             text.draw()
 
-        # Allocation to choose until ready
+        # Allocation selection
         if self.game_phase != "assignment" or self.scenario is None or self.ready:
             return
-        name, groups = self.chosen_allocation()
+        
+        # Get current allocation
+        name, groups = self.get_allocation(self.allocation_index)
+        
+        # Define allocation text
         if name is None:
             first_line = f"No deployment for scenario {self.scenario}"
             second_line = ""
         else:
             first_line = f"Deployment: {name}"
             second_line = "TAB Next  ·  SPACE Ready"
+            
+        # Draw allocation text
         center_x = self.window.width / 2
         line_y = 245 * self.layout.scale
         arcade.draw_line(center_x - 150 * self.layout.scale, line_y, center_x + 150 * self.layout.scale, line_y, (255, 255, 255, 90), 1)
@@ -893,7 +900,7 @@ class GameView(arcade.View):
         # Press button
         if button_ is not None:
             if button_.name == "advance":
-                self.advance_turn()
+                self.client_action("advance_turn")
             if button_.name == "surrender":
                 self.client_action("surrender")
 
@@ -1020,15 +1027,17 @@ class GameView(arcade.View):
             self.board_piles.visible = self.display_mode == "piles"
 
         # Advance turn
+        if key == arcade.key.SPACE and self.game_phase != "assignment":
+            self.client_action("advance_turn")
+            
+        # Lock unit allocation pappa
         if key == arcade.key.SPACE and self.game_phase == "assignment":
-            name, groups = self.chosen_allocation()
+            name, groups = self.get_allocation(self.allocation_index)
             if name is not None:
-                self.client_action("choose_allocation", groups)
+                self.client_action("unit_allocation", groups)
                 self.allocation_sent = True
-        elif key == arcade.key.SPACE:
-            self.advance_turn()
 
-        # Next allocation while waiting (the reason for the last one no longer applies)
+        # Choose unit allocation
         if key == arcade.key.TAB and self.game_phase == "assignment":
             self.allocation_index += 1
             self.help_text = None
@@ -1186,21 +1195,6 @@ class GameView(arcade.View):
             "type": "client_action",
             "action": name,
             "groups": groups
-        }
-
-        # Send action to server
-        try:
-            self.socket.sendall(encode_message(action))
-        except Exception as e:
-            print(f"Error sending to server: {e}")
-
-
-
-    def advance_turn(self):
-
-        # Create action for server
-        action = {
-            "type": "advance_turn"
         }
 
         # Send action to server
@@ -1790,14 +1784,18 @@ class GameView(arcade.View):
 
 
 
-    def chosen_allocation(self):
+    def get_allocation(self, index):
 
-        # Saved allocation of scenario and nation chosen with Tab (name None without one)
+        # Get all allocations for current scenario for current nation
         allocations = self.unit_allocation.get("scenario " + self.scenario, {}).get(self.player_nation, {})
+        
+        # Check if allocation is not empty
         names = list(allocations)
         if not names:
             return None, None
-        name = names[self.allocation_index % len(names)]
+        
+        # Select name and allocation for current index
+        name = names[index % len(names)]
         return name, allocations[name]
 
 
