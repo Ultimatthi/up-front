@@ -652,7 +652,7 @@ class GameServer:
 
         # Allocation chosen while waiting: a valid one makes the player ready (the reason is shown while waiting)
         if self.game_phase == "assignment" and action.get("action") == "unit_allocation":
-            client.unit_allocation = action.get("groups")
+            client.unit_allocation = action.get("unit_allocation")
             reason = self.check_unit_allocation(client)
             if reason is None:
                 client.ready = True

@@ -1032,9 +1032,9 @@ class GameView(arcade.View):
             
         # Lock unit allocation pappa
         if key == arcade.key.SPACE and self.game_phase == "assignment":
-            name, groups = self.get_allocation(self.allocation_index)
+            name, unit_allocation = self.get_allocation(self.allocation_index)
             if name is not None:
-                self.client_action("unit_allocation", groups)
+                self.client_action("unit_allocation", unit_allocation)
                 self.allocation_sent = True
 
         # Choose unit allocation
@@ -1188,13 +1188,13 @@ class GameView(arcade.View):
 
 
 
-    def client_action(self, name, groups=None):
+    def client_action(self, name, unit_allocation=None):
 
         # Create action for server (groups only for the chosen allocation)
         action = {
             "type": "client_action",
             "action": name,
-            "groups": groups
+            "unit_allocation": unit_allocation
         }
 
         # Send action to server
