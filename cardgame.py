@@ -789,67 +789,70 @@ class GameView(arcade.View):
 
         # Scene lit by the light layer
         with self.light_layer:
-            self.draw_scene()
+            
+            # Draw board elements
+            self.board_elements.draw()
+
+            # Draw buttons
+            self.button_list.draw()
+
+            # Draw group tiles
+            self.group_list.draw()
+
+            # Draw chit tiles
+            self.chit_list.draw()
+
+            # Draw the cards
+            self.card_list.draw()
+
+            # Draw the units
+            self.unit_list.draw()
+
+            # Draw overlays
+            self.draw_overlays()
+
+            # Annotations
+            self.annotate()
+
+            # Histogram instead of the piles
+            if self.display_mode != "piles":
+                self.draw_card_histogram()
+
+            # Dust particles
+            self.dust_list.draw()
+
+            # Waiting animation until the game is ready
+            if self.waiting_animation.active:
+                self.draw_waiting_screen()
+
         self.light_layer.draw()
 
 
 
-    def draw_scene(self):
+    def draw_waiting_screen(self):
 
-        # Draw board elements
-        self.board_elements.draw()
+        self.waiting_animation.draw(self.window.width, self.window.height, self.layout.scale)
+        if self.help_text is not None:
+            text = self.annotate_text(self.help_text, self.window.width / 2, 120 * self.layout.scale, 0, 18, arcade.color.WHITE, True, "center", True)
+            text.draw()
 
-        # Draw buttons
-        self.button_list.draw()
-
-        # Draw group tiles
-        self.group_list.draw()
-
-        # Draw chit tiles
-        self.chit_list.draw()
-
-        # Draw the cards
-        self.card_list.draw()
-
-        # Draw the units
-        self.unit_list.draw()
-
-        # Draw overlays
-        self.draw_overlays()
-
-        # Annotations
-        self.annotate()
-
-        # Histogram instead of the piles
-        if self.display_mode != "piles":
-            self.draw_card_histogram()
-
-        # Dust particles
-        self.dust_list.draw()
-
-        # Waiting animation until the game is ready
-        if self.waiting_animation.active:
-            self.waiting_animation.draw(self.window.width, self.window.height, self.layout.scale)
-            if self.help_text is not None:
-                text = self.annotate_text(self.help_text, self.window.width / 2, 120 * self.layout.scale, 0, 18, arcade.color.WHITE, True, "center", True)
-                text.draw()
-
-            # Allocation to choose until ready
-            if self.game_phase == "assignment" and self.scenario is not None and not self.ready:
-                name, groups = self.chosen_allocation()
-                if name is None:
-                    first_line = f"No deployment for scenario {self.scenario}"
-                    second_line = ""
-                else:
-                    first_line = f"Deployment: {name}"
-                    second_line = "TAB Next  ·  SPACE Ready"
-                center_x = self.window.width / 2
-                line_y = 245 * self.layout.scale
-                arcade.draw_line(center_x - 150 * self.layout.scale, line_y, center_x + 150 * self.layout.scale, line_y, (255, 255, 255, 90), 1)
-                text = self.annotate_text(first_line, self.window.width / 2, 200 * self.layout.scale, 0, 18)
-                text.draw()
-                text = self.annotate_text(second_line, self.window.width / 2, 170 * self.layout.scale, 0, 14, arcade.color.LIGHT_GRAY, False)
-                text.draw()
+        # Allocation to choose until ready
+        if self.game_phase != "assignment" or self.scenario is None or self.ready:
+            return
+        name, groups = self.chosen_allocation()
+        if name is None:
+            first_line = f"No deployment for scenario {self.scenario}"
+            second_line = ""
+        else:
+            first_line = f"Deployment: {name}"
+            second_line = "TAB Next  ·  SPACE Ready"
+        center_x = self.window.width / 2
+        line_y = 245 * self.layout.scale
+        arcade.draw_line(center_x - 150 * self.layout.scale, line_y, center_x + 150 * self.layout.scale, line_y, (255, 255, 255, 90), 1)
+        text = self.annotate_text(first_line, self.window.width / 2, 200 * self.layout.scale, 0, 18)
+        text.draw()
+        text = self.annotate_text(second_line, self.window.width / 2, 170 * self.layout.scale, 0, 14, arcade.color.LIGHT_GRAY, False)
+        text.draw()
 
 
 
