@@ -104,6 +104,7 @@ Schneller und deterministisch: `GameServer` direkt instanziieren, zwei `Client`-
 - Aufbau: `scenario <X>` → Nation → Name der Aufstellung → Gruppen (z. B. `scenario A: german: Default: A: […]`); mehrere benannte Aufstellungen je Szenario und Nation möglich. Bearbeiten mit `cardallocation.py` (optional `python cardallocation.py <Szenario> <Nation>`).
 - Gruppe A (Bewegungsgruppe), 4 Units: SL und die drei Schützen (Gewehr/MP) mit der höchsten Morale.
 - Gruppe B (Feuerbasis): alle übrigen, inkl. ASL und Unterstützungswaffen (LMG, BAR, MMG).
+- Je Gruppe 2–10 Units (ein AFV steht allein, ein Infanteriegeschütz darf allein stehen), 2–4 Gruppen A, B, C, D ohne Lücken – das prüft der Server. Hätte B mehr als 10 Units, bekommt A die nächsten Schützen (gleiche Reihenfolge wie bei der Auswahl für A).
 - Dritte Gruppe nur, wenn B sonst sehr groß würde und genug für eine zweite Feuerbasis da ist (z. B. ein zweites LMG). Nationen mit 4 Handkarten können selten drei Gruppen aktivieren; eine Gruppe ohne Leader ist schwächer (z. B. kein Rauch).
 - Mit Ordnance-Waffen (Mörser, Geschütze usw.) kann eine dritte „Drill“-Gruppe sinnvoll sein: Ordnance kann immer feuern, die Gruppe braucht keine Feuerkarten und lässt sie den anderen Gruppen.
 - Reihenfolge in jeder Gruppe: vorne die Schützen nach Morale absteigend (vorne ist gefährlich), dahinter Unterstützungswaffen, ganz hinten der Leader (SL in A, ASL in B).

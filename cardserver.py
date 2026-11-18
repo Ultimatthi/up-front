@@ -437,23 +437,49 @@ class GameServer:
 
     def check_unit_allocation(self, client):
 
-        # Get units of the allocation
+        # 2 to 4 groups, named A, B, C, D in this order without gaps
+        labels = list(client.unit_allocation)
+        if len(labels) < 2 or len(labels) > 4:
+            return "2 to 4 groups needed"
+        if labels != ["A", "B", "C", "D"][:len(labels)]:
+            return "Groups must be A, B, C, D without gaps"
+
+        # Units of the allocation, each only once
         unit_ids = []
         for group in client.unit_allocation.values():
-            unit_ids.extend(group or [])
-        units = self.unit_table.reindex(unit_ids)
+            unit_ids.extend(group)
+        if len(set(unit_ids)) < len(unit_ids):
+            return "A unit is allocated twice"
+        units = pd.concat([self.unit_table, self.afv_table]).reindex(unit_ids) # AFVs included
 
-        # DYO: own units within the point limit
+        # Only units of the own nation (unknown IDs have no nation)
+        if (units["nation"] != client.nation).any():
+            return f"Only {client.nation} units allowed"
+
+        # 2 to 10 units per group: an AFV always stands alone, an infantry gun may
+        for label, group in client.unit_allocation.items():
+            has_afv = False
+            for unit_id in group:
+                if unit_id in self.afv_table.index:
+                    has_afv = True
+            if has_afv and len(group) > 1:
+                return f"AFV must stand alone (group {label})"
+            if has_afv:
+                continue
+            if len(group) == 1 and units.loc[group[0], "weapon"] == "Infantry Gun":
+                continue
+            if len(group) < 2 or len(group) > 10:
+                return f"2 to 10 units needed (group {label})"
+
+        # DYO: within the point limit
         if self.scenario == "DYO":
-            if (units["nation"] != client.nation).any():
-                return f"only {client.nation} units allowed"
             if units["points"].sum() > self.dyo_points:
-                return f"more than {self.dyo_points} points"
+                return f"More than {self.dyo_points} points"
             return None
 
         # Scenario: exactly the units of the scenario card
         if sorted(units.index) != sorted(self.scenarios[self.scenario]["units"][client.nation]):
-            return f"units do not match scenario {self.scenario}"
+            return f"Units do not match scenario {self.scenario}"
         return None
 
 

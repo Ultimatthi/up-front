@@ -26,8 +26,8 @@ scenario A:
       B: [jp05, jp08, jp10, jp11, jp13, jp09, jp12, jp03, jp02]
   russian:
     Default:
-      A: [ru03, ru08, ru12, ru01]
-      B: [ru04, ru13, ru05, ru07, ru06, ru15, ru09, ru14, ru11, ru10, ru02]
+      A: [ru03, ru08, ru12, ru04, ru01]
+      B: [ru13, ru05, ru07, ru06, ru15, ru09, ru14, ru11, ru10, ru02]
 scenario B:
   german:
     Default:
@@ -56,5 +56,5 @@ scenario B:
       B: [jp06, jp07, jp05, jp08, jp10, jp19, jp09, jp03, jp02]
   russian:
     Default:
-      A: [ru03, ru08, ru12, ru26]
-      B: [ru04, ru23, ru05, ru07, ru06, ru15, ru24, ru22, ru09, ru11, ru02]
+      A: [ru03, ru08, ru12, ru04, ru26]
+      B: [ru23, ru05, ru07, ru06, ru15, ru24, ru22, ru09, ru11, ru02]
