@@ -437,50 +437,70 @@ class GameServer:
 
     def check_unit_allocation(self, client):
 
-        # 2 to 4 groups, named A, B, C, D in this order without gaps
-        labels = list(client.unit_allocation)
-        if len(labels) < 2 or len(labels) > 4:
-            return "2 to 4 groups needed"
-        if labels != ["A", "B", "C", "D"][:len(labels)]:
-            return "Groups must be A, B, C, D without gaps"
+        # Get group ids
+        group_ids = list(client.unit_allocation.keys())
 
-        # Units of the allocation, each only once
-        unit_ids = []
-        for group in client.unit_allocation.values():
-            unit_ids.extend(group)
+        # Get unit ids
+        unit_ids = [unit_id for group in client.unit_allocation.values() for unit_id in group]
+
+        # Get units
+        units = pd.concat([self.unit_table, self.afv_table]).reindex(unit_ids)
+
+        # Check: 2 to 4 groups
+        if len(group_ids) < 2 or len(group_ids) > 4:
+            self.help_text = "2 to 4 groups needed"
+            return False
+
+        # Check: Groups without gap
+        if group_ids != ["A", "B", "C", "D"][:len(group_ids)]:
+            self.help_text = "Groups must be A, B, C, D without gaps"
+            return False
+
+        # Check: Unique units
         if len(set(unit_ids)) < len(unit_ids):
-            return "A unit is allocated twice"
-        units = pd.concat([self.unit_table, self.afv_table]).reindex(unit_ids) # AFVs included
+            self.help_text = "A unit is allocated twice"
+            return False
 
-        # Only units of the own nation (unknown IDs have no nation)
+        # Check: Single nation (unknown unit IDs have none)
         if (units["nation"] != client.nation).any():
-            return f"Only {client.nation} units allowed"
+            self.help_text = f"Only {client.nation} units allowed"
+            return False
 
-        # 2 to 10 units per group: an AFV always stands alone, an infantry gun may
-        for label, group in client.unit_allocation.items():
-            has_afv = False
-            for unit_id in group:
-                if unit_id in self.afv_table.index:
-                    has_afv = True
+        # Check: 2 to 10 units per group / single AFV
+        for group_id, group in client.unit_allocation.items():
+
+            # Check single AFV
+            has_afv = any(unit_id in self.afv_table.index for unit_id in group)
             if has_afv and len(group) > 1:
-                return f"AFV must stand alone (group {label})"
-            if has_afv:
+                self.help_text = f"AFV must stand alone (group {group_id})"
+                return False
+
+            # Allow single unit if AFV
+            if len(group) == 1 and has_afv:
                 continue
+
+            # Allow single unit infantry gun
             if len(group) == 1 and units.loc[group[0], "weapon"] == "Infantry Gun":
                 continue
-            if len(group) < 2 or len(group) > 10:
-                return f"2 to 10 units needed (group {label})"
 
-        # DYO: within the point limit
+            # Check 2 to 10 units
+            if len(group) < 2 or len(group) > 10:
+                self.help_text = f"2 to 10 units needed (group {group_id})"
+                return False
+
+        # Check: DYO within the point limit
         if self.scenario == "DYO":
             if units["points"].sum() > self.dyo_points:
-                return f"More than {self.dyo_points} points"
-            return None
+                self.help_text = f"More than {self.dyo_points} points"
+                return False
+            return True
 
-        # Scenario: exactly the units of the scenario card
-        if sorted(units.index) != sorted(self.scenarios[self.scenario]["units"][client.nation]):
-            return f"Units do not match scenario {self.scenario}"
-        return None
+        # Check: Only scenario units
+        if self.scenario != "DYO":
+            if sorted(units.index) != sorted(self.scenarios[self.scenario]["units"][client.nation]):
+                self.help_text = f"Units do not match scenario {self.scenario}"
+                return False
+            return True
 
 
 
@@ -679,12 +699,7 @@ class GameServer:
         # Allocation chosen while waiting: a valid one makes the player ready (the reason is shown while waiting)
         if self.game_phase == "assignment" and action.get("action") == "unit_allocation":
             client.unit_allocation = action.get("unit_allocation")
-            reason = self.check_unit_allocation(client)
-            if reason is None:
-                client.ready = True
-            else:
-                client.ready = False
-                self.help_text = reason
+            client.ready = self.check_unit_allocation(client)
             return
 
         # Check game phase
