@@ -132,6 +132,7 @@ class Unit:
         self.mode = "uncrewed" # crewed, uncrewed, assistant
         self.firepower = firepower
         self.malfunction = malfunction
+        self.malfunctioned = False # weapon without firepower until repaired
 
 
 
@@ -139,6 +140,10 @@ class Unit:
 
         # Only rallied units fire
         if self.state != "rallied":
+            return 0
+
+        # Malfunctioned or lost weapons have no firepower
+        if self.weapon is None or self.malfunctioned:
             return 0
 
         # Assistants forfeit their own firepower
@@ -170,6 +175,39 @@ class Unit:
             firepower //= 2
 
         return firepower
+
+
+
+    def get_malfunction_numbers(self, group):
+
+        # A malfunctioned weapon breaks down again only on a red 6
+        if self.malfunctioned:
+            return [6]
+
+        # Weapons with bracketed values: bracketed numbers unless fully crewed (machineguns moving, in water or on wire always)
+        numbers = self.malfunction
+        if isinstance(numbers, dict):
+            in_water = group.terrain in ["marsh", "stream"]
+            lmg_bracketed = self.weapon == "Light Machinegun" and (group.moving or in_water or group.wire)
+            if self.mode == "crewed" and not lmg_bracketed:
+                numbers = numbers["crewed"]
+            else:
+                numbers = numbers["uncrewed"]
+
+        # Single number as list
+        if isinstance(numbers, int):
+            numbers = [numbers]
+        return numbers
+
+
+
+    def malfunction_weapon(self):
+
+        # A malfunctioned weapon that malfunctions again is lost: the unit is unarmed
+        if self.malfunctioned:
+            self.weapon = None
+        else:
+            self.malfunctioned = True
 
 
 
@@ -1379,6 +1417,11 @@ class GameServer:
         # Get firestrength
         firestrength = self.pending_action["strength"]
 
+        # Attacking group and its units (relative range not below 0 for firepower purposes)
+        offensive_group = self.pending_action["offensive_group"]
+        offensive_units = [unit for unit in self.unit_list if unit.group == offensive_group.id]
+        relative_range = max(self.get_relative_range([offensive_group, self.pending_action["defensive_group"]]), 0)
+
         # Get concealed firestrength
         concealed_firestrength = int(re.findall(r"-\d+", concealed_card.subtype)[0]) if concealed_card else 0
 
@@ -1409,9 +1452,75 @@ class GameServer:
             if unit.state in ["routed", "kia"]:
                 unit.group = None
 
+            # Malfunction weakens the fire against the remaining units, without firepower left it ends
+            firestrength -= self.resolve_malfunction(rnc_card, offensive_group, relative_range)
+            firepower = sum(attacker.get_firepower(offensive_group, relative_range) for attacker in offensive_units)
+            if firepower == 0:
+                break
+
         # Reset pending action
         for key in self.pending_action:
             self.pending_action[key] = None
+
+
+
+    def resolve_malfunction(self, rnc_card, attacking_group, relative_range):
+
+        # Returns the fire strength lost for the remaining units
+
+        # Only a red RNC can cause a malfunction
+        if rnc_card.color != "red":
+            return 0
+        number = -rnc_card.rnc
+
+        # Units of the firing group by position
+        units = [unit for unit in self.unit_list if unit.group == attacking_group.id]
+        units.sort(key=lambda unit: unit.slot)
+
+        # Weapons breaking down on this number (a designated crewman's weapon only when pinned or already malfunctioned)
+        subject_units = []
+        for unit in units:
+            if unit.weapon is None:
+                continue
+            if unit.mode == "assistant" and unit.state == "rallied" and not unit.malfunctioned:
+                continue
+            if number in unit.get_malfunction_numbers(attacking_group):
+                subject_units.append(unit)
+        if not subject_units:
+            return 0
+
+        # A single such weapon malfunctions, otherwise the RPC picks the position
+        if len(subject_units) == 1:
+            unit = subject_units[0]
+        else:
+            rpc_card = self.draw_rnc_card()
+            rpc = rpc_card.rpn[len(units)]
+            unit = units[rpc - 1]
+
+        # Designated crewman: short stoppage of the served weapon (fire strength -1), own weapon is safe
+        if unit.mode == "assistant" and unit.state == "rallied" and not unit.malfunctioned:
+            partner = next(partner for partner in units if partner.id == unit.crew_partner)
+            if partner.get_firepower(attacking_group, relative_range) == 0:
+                return 0
+            return 1
+
+        # RPC hit a unit whose weapon does not break down on this number (or none): no effect
+        if unit not in subject_units:
+            return 0
+
+        # Weapon of a pinned unit or already malfunctioned: it malfunctions, the attack goes on unchanged
+        if unit.state == "pinned" or unit.malfunctioned:
+            unit.malfunction_weapon()
+            return 0
+
+        # Weapon without firepower at this range: no effect
+        firepower = unit.get_firepower(attacking_group, relative_range)
+        if firepower == 0:
+            return 0
+
+        # Firing weapon malfunctions: fire strength -1 per 2 firepower contributed (rounded up)
+        unit.malfunction_weapon()
+        return (firepower + 1) // 2
 
 
 
