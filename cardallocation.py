@@ -12,6 +12,9 @@ import pandas as pd
 import pyperclip
 import yaml
 
+# Local
+import cardserver
+
 
 
 # ──[ Parameters ]─────────────────────────────────────────────────────────────
@@ -44,7 +47,7 @@ HOVER_ENLARGE = 1.05 # card under the mouse, as in the game
 # Row header
 LABEL_COLOR = (160, 170, 175, 255)
 BADGE_COLOR = (90, 110, 120, 255)
-NO_LEADER_COLOR = (170, 50, 50, 255)
+WARNING_COLOR = (170, 50, 50, 255) # no leader, illegal allocation
 BAR_COLOR = (200, 210, 215, 255)
 FIREPOWER_FULL = 60 # firepower of a full bar
 BAR_MAX_HEIGHT = 72
@@ -100,6 +103,12 @@ class EditorView(arcade.View):
         unit_table.loc[unit_table["to_hit"].notna(), "kind"] = "Ordnance"
         afv_table["kind"] = "AFVs"
         self.unit_table = pd.concat([unit_table, afv_table])
+
+        # Allocation check of the game (the DYO point limit is only set in the game); slow, so only after changes
+        self.game_server = cardserver.GameServer()
+        self.game_server.dyo_points = float("inf")
+        self.checked_allocation = None # scenario and groups of the last check
+        self.allocation_legal = False
 
         # Rows (groups A-D), list order = position, front first
         self.rows = {}
@@ -232,34 +241,17 @@ class EditorView(arcade.View):
 
     def add_units(self, unit_ids, group):
 
-        # Each unit only once, nothing added if an AFV would not stand alone
+        # Each unit only once
         placed = [card.id for card in self.units]
         new_ids = []
         for unit_id in unit_ids:
             if unit_id not in placed:
                 new_ids.append(unit_id)
-        if not self.fits_in_row(group, new_ids):
-            return
         for unit_id in new_ids:
             card = UnitCard(unit_id, self.unit_table.loc[unit_id])
             card.position = self.mouse_position # start at the drop point
             self.rows[group].append(card)
             self.units.append(card)
-
-
-
-    def fits_in_row(self, group, unit_ids):
-
-        # An AFV forms its own group: in a row only alone
-        row_ids = []
-        for card in self.rows[group]:
-            if card.id not in unit_ids:
-                row_ids.append(card.id)
-        row_ids.extend(unit_ids)
-        for unit_id in row_ids:
-            if self.unit_table.loc[unit_id, "kind"] == "AFVs" and len(row_ids) > 1:
-                return False
-        return True
 
 
 
@@ -290,6 +282,17 @@ class EditorView(arcade.View):
 
 
 
+    def allocation_groups(self):
+
+        # Rows as groups of an allocation (empty rows left out)
+        groups = {}
+        for group in GROUPS:
+            if self.rows[group]:
+                groups[group] = [card.id for card in self.rows[group]]
+        return groups
+
+
+
     def save_allocation(self):
 
         # Rows as allocation of the units' nation (one with the same name is overwritten)
@@ -297,10 +300,7 @@ class EditorView(arcade.View):
         if not self.units or not name:
             return
         nation = self.unit_table.loc[self.units[0].id, "nation"]
-        groups = {}
-        for group in GROUPS:
-            if self.rows[group]:
-                groups[group] = [card.id for card in self.rows[group]]
+        groups = self.allocation_groups()
         scenario_allocations = self.allocations.setdefault("scenario " + self.save_scenario, {})
         nation_allocations = scenario_allocations.setdefault(nation, {})
         nation_allocations[name] = groups
@@ -501,7 +501,8 @@ class EditorView(arcade.View):
         nation_label = "No units"
         if self.units:
             nation_label = NATIONS[self.unit_table.loc[self.units[0].id, "nation"]]
-        self.draw_text(nation_label, button_rect.right, scenario_rects["A"].y, 13, LABEL_COLOR, anchor_x="right")
+        self.draw_text(nation_label, button_rect.right, scenario_rects["A"].y + 7, 13, LABEL_COLOR, anchor_x="right")
+        self.draw_allocation_check(button_rect.right, scenario_rects["A"].y - 9)
         arcade.draw_rect_filled(name_rect, BACKGROUND_COLOR)
         if self.name_widget.active:
             arcade.draw_rect_outline(name_rect, arcade.color.WHITE, 1)
@@ -534,9 +535,9 @@ class EditorView(arcade.View):
         for card in cards:
             if card.function in ("SL", "ASL"):
                 badges.append((card.function, BADGE_COLOR))
-        is_afv = cards[0].kind == "AFVs" # alone in its row
+        is_afv = any(card.kind == "AFVs" for card in cards)
         if not badges and not is_afv:
-            badges.append(("No leader", NO_LEADER_COLOR))
+            badges.append(("No leader", WARNING_COLOR))
         support = sum(1 for card in cards if card.weapon in SUPPORT_WEAPONS)
         if support:
             badges.append((f"MG ×{support}", BADGE_COLOR))
@@ -571,6 +572,27 @@ class EditorView(arcade.View):
             arcade.draw_lrbt_rectangle_filled(x, x + 26, bottom, bottom + height, BAR_COLOR)
             self.draw_text(str(value), x + 13, bottom + height + 9, 11, anchor_x="center")
             self.draw_text(str(distance), x + 13, bottom - 10, 10, LABEL_COLOR, anchor_x="center")
+
+
+
+    def draw_allocation_check(self, x, y):
+
+        # Total points, or "illegal" if the game would reject the allocation
+        if not self.units:
+            return
+        nation = self.unit_table.loc[self.units[0].id, "nation"]
+        groups = self.allocation_groups()
+        allocation = (self.save_scenario, groups)
+        if allocation != self.checked_allocation:
+            self.game_server.scenario = self.save_scenario
+            client = cardserver.Client(None, None, nation, None, groups, False)
+            self.allocation_legal = self.game_server.check_unit_allocation(client)
+            self.checked_allocation = allocation
+        if not self.allocation_legal:
+            self.draw_text("illegal", x, y, 10, WARNING_COLOR, anchor_x="right")
+            return
+        points = sum(card.points for card in self.units)
+        self.draw_text(f"{points} Pts", x, y, 10, LABEL_COLOR, anchor_x="right")
 
 
 
@@ -679,9 +701,6 @@ class EditorView(arcade.View):
             elif self.pressed_was_selected:
                 self.selected.remove(self.pressed_card)
 
-            dragged_ids = [card.id for card in cards]
-            if moved and group is not None and not self.fits_in_row(group, dragged_ids):
-                group = None # an AFV would not stand alone: the units glide back
             if moved and (in_tree or group is not None):
                 for row in self.rows.values():
                     for card in cards:
