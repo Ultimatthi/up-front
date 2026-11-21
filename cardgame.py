@@ -183,7 +183,7 @@ class Unit(arcade.Sprite):
         self.slot = 0
         self.state = "rallied" # rallied, pinned, routed, kia
         self.selected = False
-        self.crew_partner = None
+        self.mode = "uncrewed" # crewed, uncrewed, assistant
         self.malfunctioned = False
         self.unarmed = False
 
@@ -223,23 +223,23 @@ class Unit(arcade.Sprite):
 
 
 
-    def draw_crew_chit(self, chit):
-
-        if self.crew_partner:
-            chit.scale = self.scale
-            chit.right = self.right
-            chit.top = self.top
-            arcade.draw_sprite(chit)
-
-
-
     def draw_chits(self, chits):
 
-        # Lost weapon or malfunctioned weapon
+        # Chits of this unit: weapon state first (lost or malfunctioned weapon), then crew
+        unit_chits = []
         if self.unarmed:
-            chits["unarmed"].draw_on(self)
+            unit_chits.append(chits["unarmed"])
         elif self.malfunctioned:
-            chits["malfunction"].draw_on(self)
+            unit_chits.append(chits["malfunction"])
+        if self.mode == "crewed":
+            unit_chits.append(chits["crewed"])
+        elif self.mode == "assistant":
+            unit_chits.append(chits["assistant"])
+
+        # Side by side, centred on the weapon picture
+        for index, chit in enumerate(unit_chits):
+            offset_x = (index - (len(unit_chits) - 1) / 2) * 220
+            chit.draw_on(self, offset_x)
 
 
 
@@ -365,11 +365,11 @@ class Chit(arcade.Sprite):
 
 
 
-    def draw_on(self, unit):
+    def draw_on(self, unit, offset_x):
 
-        # Chit lies on the weapon picture of the unit card
+        # Chit lies on the weapon picture of the unit card (offset in unit card pixels)
         self.scale = unit.scale
-        self.center_x = unit.center_x
+        self.center_x = unit.center_x + offset_x * unit.scale_x
         self.center_y = unit.center_y + 100 * unit.scale_y
         arcade.draw_sprite(self)
 
@@ -658,8 +658,12 @@ class GameView(arcade.View):
 
         # Overlay elements
         self.unit_overlay = arcade.Sprite("assets/overlays/unit.overlay.png", self.layout.unit_scale)
-        self.crew_chit = arcade.Sprite("assets/chits/chit.crew.png", self.layout.unit_scale)
-        self.unit_chits = {"malfunction": Chit("malfunction"), "unarmed": Chit("unarmed")}
+        self.unit_chits = {
+            "malfunction": Chit("malfunction"),
+            "unarmed": Chit("unarmed"),
+            "crewed": Chit("crewed"),
+            "assistant": Chit("assistant"),
+        }
 
         # Layout elements
         self.layout_elements()
@@ -1343,7 +1347,7 @@ class GameView(arcade.View):
             unit.group = logical_unit["group"]
             unit.slot = logical_unit["slot"]
             unit.state = logical_unit["state"]
-            unit.crew_partner = logical_unit["crew_partner"]
+            unit.mode = logical_unit["mode"]
             unit.malfunctioned = logical_unit["malfunctioned"]
             unit.unarmed = logical_unit["unarmed"]
 
@@ -1961,17 +1965,15 @@ class GameView(arcade.View):
         if self.hover_card:
             arcade.draw_sprite(self.hover_card)
 
-        # Draw unit overlays and crew chits
+        # Draw unit overlays and chits
         for unit in self.unit_list:
             unit.draw_overlay(self.unit_overlay)
-            unit.draw_crew_chit(self.crew_chit)
             unit.draw_chits(self.unit_chits)
 
         # Draw hovered unit
         if self.hover_unit:
             arcade.draw_sprite(self.hover_unit)
             self.hover_unit.draw_overlay(self.unit_overlay)
-            self.hover_unit.draw_crew_chit(self.crew_chit)
             self.hover_unit.draw_chits(self.unit_chits)
 
 

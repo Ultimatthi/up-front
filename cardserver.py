@@ -1634,7 +1634,7 @@ class GameServer:
                     "group": unit.group,
                     "slot": unit.slot,
                     "state": unit.state,
-                    "crew_partner": unit.crew_partner,
+                    "mode": unit.mode,
                     "malfunctioned": unit.malfunctioned,
                     "unarmed": unit.weapon is None
                 }
