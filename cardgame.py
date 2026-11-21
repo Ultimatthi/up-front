@@ -184,6 +184,8 @@ class Unit(arcade.Sprite):
         self.state = "rallied" # rallied, pinned, routed, kia
         self.selected = False
         self.crew_partner = None
+        self.malfunctioned = False
+        self.unarmed = False
 
         base = f'assets/units/{nation}/{unit_id}'
 
@@ -228,6 +230,16 @@ class Unit(arcade.Sprite):
             chit.right = self.right
             chit.top = self.top
             arcade.draw_sprite(chit)
+
+
+
+    def draw_chits(self, chits):
+
+        # Lost weapon or malfunctioned weapon
+        if self.unarmed:
+            chits["unarmed"].draw_on(self)
+        elif self.malfunctioned:
+            chits["malfunction"].draw_on(self)
 
 
 
@@ -341,6 +353,25 @@ class RangeChit(arcade.Sprite):
 
         if self.texture != target_texture:
             self.texture = target_texture
+
+
+
+class Chit(arcade.Sprite):
+
+    def __init__(self, name):
+
+        # Image in unit card pixels, scaled with the unit
+        super().__init__(f'assets/chits/chit.{name}.png', hit_box_algorithm="None")
+
+
+
+    def draw_on(self, unit):
+
+        # Chit lies on the weapon picture of the unit card
+        self.scale = unit.scale
+        self.center_x = unit.center_x
+        self.center_y = unit.center_y + 100 * unit.scale_y
+        arcade.draw_sprite(self)
 
 
 
@@ -628,6 +659,7 @@ class GameView(arcade.View):
         # Overlay elements
         self.unit_overlay = arcade.Sprite("assets/overlays/unit.overlay.png", self.layout.unit_scale)
         self.crew_chit = arcade.Sprite("assets/chits/chit.crew.png", self.layout.unit_scale)
+        self.unit_chits = {"malfunction": Chit("malfunction"), "unarmed": Chit("unarmed")}
 
         # Layout elements
         self.layout_elements()
@@ -1312,6 +1344,8 @@ class GameView(arcade.View):
             unit.slot = logical_unit["slot"]
             unit.state = logical_unit["state"]
             unit.crew_partner = logical_unit["crew_partner"]
+            unit.malfunctioned = logical_unit["malfunctioned"]
+            unit.unarmed = logical_unit["unarmed"]
 
         # Get logical group variables
         logical_group_list = game_state.get("groups")
@@ -1931,12 +1965,14 @@ class GameView(arcade.View):
         for unit in self.unit_list:
             unit.draw_overlay(self.unit_overlay)
             unit.draw_crew_chit(self.crew_chit)
+            unit.draw_chits(self.unit_chits)
 
         # Draw hovered unit
         if self.hover_unit:
             arcade.draw_sprite(self.hover_unit)
             self.hover_unit.draw_overlay(self.unit_overlay)
             self.hover_unit.draw_crew_chit(self.crew_chit)
+            self.hover_unit.draw_chits(self.unit_chits)
 
 
 

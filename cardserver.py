@@ -1634,7 +1634,9 @@ class GameServer:
                     "group": unit.group,
                     "slot": unit.slot,
                     "state": unit.state,
-                    "crew_partner": unit.crew_partner
+                    "crew_partner": unit.crew_partner,
+                    "malfunctioned": unit.malfunctioned,
+                    "unarmed": unit.weapon is None
                 }
                 game_state["units"].append(unit_info)
 
