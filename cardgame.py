@@ -1137,6 +1137,8 @@ class GameView(arcade.View):
         # Set modifier
         if key == arcade.key.LALT:
             self.alt_held = False
+            self.adjust_card_position()
+            self.adjust_unit_position()
 
 
 
