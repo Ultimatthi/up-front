@@ -16,7 +16,6 @@ Digitale Umsetzung des Kartenspiels Up Front (Python + Arcade). Server: `cardser
 ## Änderungen an Dateien
 
 - Vor jeder Dateiänderung zuerst eine Vorschau zeigen: betroffene Dateien und die geplanten Änderungen als Diff (wie `git diff`), kurz begründet.
-- Bei Code-Änderungen den geplanten Diff vorher vom Subagent `simplicity-reviewer` prüfen lassen (Diff als Datei im Scratchpad übergeben). Berechtigte Einwände einarbeiten und in der Vorschau kurz nennen, was übernommen oder bewusst verworfen wurde. Nicht nötig für reine Daten- oder Doku-Änderungen.
 - Danach warten und erst nach ausdrücklicher Zustimmung umsetzen.
 - Ausnahme: Hilfsdateien im Scratchpad (Testskripte, Notizen).
 
@@ -34,7 +33,8 @@ Prioritize readability, clarity and maintainability over compactness or executio
 
 * Write straightforward, explicit code. Avoid clever, overly concise or unnecessarily compressed expressions.
 * Each statement should have one clear responsibility. Do not combine multiple logically distinct operations into a single line or expression.
-* Prefer simple `if`/`else` blocks over complex conditional expressions or comprehensions when they improve readability.
+* Prefer simple `if`/`else` blocks over complex or nested conditional expressions and comprehensions.
+* Einfache Einzeiler sind zu bevorzugen: Generatoren/Comprehensions wie `group = next(g for g in self.group_list if g.id == self.group)` und bedingte Ausdrücke wie `rpc = 1 if len(units) == 1 else self.draw_rnc_card().rpn[len(units)]`.
 * Use descriptive variable names that make the purpose of each operation clear.
 * Avoid unnecessary abstractions, helper functions and nested logic.
 * Do not optimize for performance unless explicitly requested or there is a demonstrated performance issue.
@@ -60,13 +60,14 @@ The goal is code that is easy to read, understand and modify, not code that uses
 - Siegbedingung Szenario A: Range Chit ≥ 4 zählt (bewusste Auslegung von 16.42, kein Bug – nicht erneut melden).
 - Kartenwerte bewusst so übernommen (nicht erneut melden): ge34 PzKw VG Flanke von der Vorderseite (i3/s4/k5, Rückseite i;s4/k5 gilt als Druckfehler); fr24 Lebesque Panic 1 und PT 4 wie gedruckt (Errata PT 3 nicht übernommen, PT wird im Spiel nicht verwendet).
 - Ebenfalls wie gedruckt und kein Fehler: Bog ge43/jp31 (CE 0/w0, BU 9/w9) und us36 (BU 8/w0); leeres `available` = kein Jahr auf der Karte; fr34 `assault_gun=0`, weil nur das 75mm Assault Gun ist (siehe `notes`); AFV-Namen = Bezeichnung + Beiname der Rückseite (z. B. PzKw VG Panther); wo die Rückseite einen anderen Namen trägt (Franzosen, it31/32) oder nur ein „aka“ ergänzt (ru32, ru39), gilt die Vorderseite. `fr31.jpg`/`fr31b.jpg` sind aus dem fr32-Scan und Fotos der Originalkarte zusammengesetzt.
+- Anti-Tank Rifles (it28, jp28) haben in `unit_table.csv` dieselbe Feuerkraft auch eingeklammert, weil die Karte nur To Hit und Malfunction einklammert: so gelten sie wie gedruckt als crewbar.
 - Erledigtes wird aus `TODO.csv` gelöscht; IDs bleiben stabil (nicht neu nummerieren).
 
 ## Dateiformate
 
 - `TODO.csv` und `assets/cards/card_table.csv`: UTF-8 mit BOM, CRLF – beim Schreiben beibehalten (Excel).
 - `TODO.csv`: Trennzeichen `;`, Spalten `ID;Status;Kategorie;Regel;Aufgabe`, nur offene Aufgaben. Bewusst nicht umgesetzte Regeln stehen im `README.md` unter „Rule Deviations“. Texte mit `;` in Anführungszeichen setzen.
-- `assets/units/unit_table.csv` (Personality-Karten inkl. Geschütze) und `assets/units/afv_table.csv` (AFVs): UTF-8 mit BOM, CRLF. Werte je Reichweite 0–5 mit `|`, crewed/uncrewed mit `/`; `firepower` = Feuerkraft, `to_hit` = To Hit Number der Ordnance; Effect Numbers unboxed/boxed in eigenen Spalten, britische rote Effect 0 als `0r`. Panzerung `i|s|k`, gleiche Werte für i und s bedeuten die Form `i;s`. Kartenwerte nur aus den Bildern in `assets/units/<nation>/` ablesen (Rückseite `…b.jpg`), nicht aus dem Vassal-Modul.
+- `assets/units/unit_table.csv` (Personality-Karten inkl. Geschütze) und `assets/units/afv_table.csv` (AFVs): UTF-8 mit BOM, CRLF. Werte je Reichweite 0–5 mit `|`, crewed/uncrewed mit `/`; `firepower` = Feuerkraft, `to_hit` = To Hit Number der Ordnance, `malfunction` = tiefste Malfunction-Nummer (die Waffe fällt ab dieser roten Zahl aus); Effect Numbers unboxed/boxed in eigenen Spalten, britische rote Effect 0 als `0r`. Panzerung `i|s|k`, gleiche Werte für i und s bedeuten die Form `i;s`. Kartenwerte nur aus den Bildern in `assets/units/<nation>/` ablesen (Rückseite `…b.jpg`), nicht aus dem Vassal-Modul.
 - Wire-Karten haben in `card_table.csv` den Typ `wire` (nicht `terrain`); Terrain-Subtypen ohne Eintrag in `TERRAIN_MOD` werden abgelehnt.
 - `assets/scenarios.yaml`: Szenariodaten je Szenario (Decks, Cower-Karten, entfernte Karten, Terrain für Siegpunkte, erlaubte Units je Nation laut Szenariokarte); Szenario-Logik wie Sofortsieg bleibt im Code.
 

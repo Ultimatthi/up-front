@@ -17,3 +17,4 @@
 99;;Szenario B;20.8;Terrain Capture: letzter Verteidiger einer infiltrierten Gruppe fällt, Infiltrator-Gruppe übernimmt dessen Terrain oder wirft es ab, Movement-Karten beider Gruppen entfernen
 100;;Szenario B;20.9;Berserk (Russen): Panic eines pinned Russen bei RR 5 mit 0r < Panic macht ihn berserk statt KIA, zu Zugbeginn automatisch CC mit Pinned-CCV, Sieg = rallied
 101;;Szenario B;21;Demolition Charge: nur im Zug der Infiltration, Fire Strength 8 ohne Feuerkarte, nur Concealed, Smoke und Terrain des Verteidigers zählen, trifft eigene Infiltratoren mit, einziger Angriff der Gruppe, rote 6 als erste RNC = wertlos
+103;;Szenario A;8.41, 8.52, 12.12, 13.32;MMG: feuert nie in Bewegung, im Marsh oder im Stream, auf Wire nur voll bemannt mit eingeklammerter Feuerkraft und Malfunction-Nummer (LMG-Blöcke in get_firepower und get_malfunction_value auf alle crew-served Waffen verallgemeinern)
