@@ -670,6 +670,7 @@ class GameServer:
 
         # Check game phase
         if self.game_phase != "gameplay":
+            self.help_text = "Game is not running"
             return
 
         # Rejecting terrain is the opponent's decision
@@ -678,7 +679,11 @@ class GameServer:
             return
 
         # Check if it's this player's turn
-        if client.name != self.current_turn or self.pending_action["type"] is not None:
+        if client.name != self.current_turn:
+            self.help_text = "Not your turn"
+            return
+        if self.pending_action["type"] is not None:
+            self.help_text = "Wait for the opponent's response"
             return
 
         # Find own active group
@@ -686,6 +691,7 @@ class GameServer:
 
         # Check if group exists
         if target_group is None or target_group.empty:
+            self.help_text = "Group is empty"
             return
 
         # Get targeted units
@@ -697,7 +703,11 @@ class GameServer:
             return
 
         # Check if group can act
-        if self.game_subphase != "action" or target_group.acted:
+        if self.game_subphase != "action":
+            self.help_text = "Actions only in the action phase"
+            return
+        if target_group.acted:
+            self.help_text = "Group has already acted"
             return
 
         # Resolve action
@@ -731,6 +741,7 @@ class GameServer:
 
         # Check game phase
         if self.game_phase != "gameplay":
+            self.help_text = "Game is not running"
             return
 
         # Pass during initial terrain
@@ -1094,7 +1105,11 @@ class GameServer:
     def reject_terrain(self, client):
 
         # Only the opponent can reject
-        if self.pending_action["type"] != "terrain" or client.name == self.current_turn:
+        if self.pending_action["type"] != "terrain":
+            self.help_text = "No terrain to reject"
+            return
+        if client.name == self.current_turn:
+            self.help_text = "Only the opponent can reject terrain"
             return
 
         # Get target group
@@ -1185,6 +1200,7 @@ class GameServer:
 
         # Check if it's this player's turn
         if client.name != self.current_turn:
+            self.help_text = "Not your turn"
             return
 
         # Set sound
@@ -1510,6 +1526,7 @@ class GameServer:
 
         # Check pending actions
         if self.pending_action["type"] is not None:
+            self.help_text = "Wait for the opponent's response"
             return
 
         # Check if player is passing
@@ -1520,6 +1537,7 @@ class GameServer:
 
         # Check if passing is allowed
         if self.game_subphase == "discard" and client.passed and opponent.passed:
+            self.help_text = "Opponent passed last turn: discard at least one card"
             return
 
         # Set sound
@@ -1842,10 +1860,12 @@ class GameServer:
 
         # Group must have been sniped in the opponent's last turn
         if target_group.sniper_rnc is None:
+            self.help_text = "No sniper attack to check"
             return False
 
         # Needs an unpinned unit
         if not any(unit.group == target_group.id and unit.state == "rallied" for unit in self.unit_list):
+            self.help_text = "Sniper check needs a rallied unit"
             return False
 
         # Black RNC higher than sniper RNC eliminates the opponent's sniper
@@ -1871,10 +1891,15 @@ class GameServer:
 
         # Check validity (1)
         if not all(unit.group == target_group.id for unit in units):
+            self.help_text = "Select units of the active group"
             return False
 
         # Check validity (2)
-        if len(units) != 2 or any(unit.state != "rallied" for unit in units):
+        if len(units) != 2:
+            self.help_text = "Select exactly two units to crew or uncrew"
+            return False
+        if any(unit.state != "rallied" for unit in units):
+            self.help_text = "Only rallied units can crew"
             return False
 
         # Uncrew: relieve the assistant of a crewed pair
@@ -1887,7 +1912,11 @@ class GameServer:
 
         # Crew: exactly one crew-served weapon, neither unit already crew
         gunners = [unit for unit in units if unit.crew_served]
-        if len(gunners) != 1 or any(unit.crew_partner for unit in units):
+        if len(gunners) != 1:
+            self.help_text = "Exactly one unit needs a crew-served weapon"
+            return False
+        if any(unit.crew_partner for unit in units):
+            self.help_text = "A unit is already crew"
             return False
         gunner = gunners[0]
         assistant = next(unit for unit in units if unit is not gunner)

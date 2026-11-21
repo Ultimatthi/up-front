@@ -556,7 +556,7 @@ class GameView(arcade.View):
 
         # Allocation chosen
         self.allocation_index = 0
-        self.allocation_sent = False
+        self.action_sent = False
         self.ready = False
 
         # Display mode top left
@@ -1071,7 +1071,6 @@ class GameView(arcade.View):
             name, unit_allocation = self.get_allocation(self.allocation_index)
             if name is not None:
                 self.client_action("unit_allocation", unit_allocation)
-                self.allocation_sent = True
 
         # Choose unit allocation
         if key == arcade.key.TAB and self.game_phase == "assignment":
@@ -1221,6 +1220,7 @@ class GameView(arcade.View):
             self.socket.sendall(encode_message(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
+        self.action_sent = True
 
 
 
@@ -1238,6 +1238,7 @@ class GameView(arcade.View):
             self.socket.sendall(encode_message(action))
         except Exception as e:
             print(f"Error sending to server: {e}")
+        self.action_sent = True
 
         # Reset selections
         for unit in self.unit_list:
@@ -1288,10 +1289,10 @@ class GameView(arcade.View):
         self.card_sent = None
         self.play_sound(sound)
 
-        # Reason why the own allocation was rejected (only in the answer to it)
-        if self.allocation_sent:
+        # Reason why an own action was rejected (only in the answer to it)
+        if self.action_sent:
             self.help_text = game_state.get("help_text")
-            self.allocation_sent = False
+            self.action_sent = False
 
         # Breeze sounds once when it comes up, on top of the sound of the action that drew it
         breeze = game_state.get("breeze")
