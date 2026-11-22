@@ -19,6 +19,7 @@ S                   Sniper check (active group)
 C                   Crew/uncrew (two selected rallied units)
 P                   Voluntary panic (selected pinned units)
 R                   Reject terrain discarded on own group
+E                   Entrench (active group)
 1 – 4               Switch display mode top left
 Esc                 Leave game, back to menu
 F1                  Show help

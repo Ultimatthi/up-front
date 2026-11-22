@@ -217,6 +217,7 @@ class Group:
         self.empty = True
         self.last_action = None
         self.sniper_rnc = None
+        self.entrenched = False
 
 
 
@@ -715,6 +716,8 @@ class GameServer:
             success = self.resolve_sniper_check(target_group)
         elif action.get("action") == "crew":
             success = self.resolve_crew(target_group, target_units)
+        elif action.get("action") == "entrench":
+            success = self.resolve_entrench(target_group)
         else:
             success = False
 
@@ -723,8 +726,13 @@ class GameServer:
             return
 
         # Set flags
+        russian_entrenchment = action.get("action") == "entrench" and client.nation == "russian"
         target_group.acted = True
         client.acted = True
+        
+        # Reduce discard capacity
+        if client.nation != "german" and not russian_entrenchment:
+            client.discard_count = MAX_DISCARD[client.nation]
 
         # Set sound
         self.current_sound = "play_card"
@@ -878,10 +886,15 @@ class GameServer:
         # Fill history
         target_groups[0].last_action = ACTIONS[played_card.type]
 
-        # Set flag
+        # Set flags
+        japanese_movement = played_card.type == "movement" and client.nation == "japanese"
         if played_card.type != "hero":
             client.acted = True
             target_groups[0].acted = True
+            
+        # Reduce discard capacity
+        if played_card.type != "hero" and client.nation != "german" and not japanese_movement:
+            client.discard_count = MAX_DISCARD[client.nation]
 
         # Set sound
         self.current_sound = "play_card"
@@ -935,6 +948,9 @@ class GameServer:
         if fording and card_mode != "sideways":
             self.help_text = "Stream can only be left sideways (fording)"
             return False
+
+        # Movement removes an entrenchment (not when removing wire)
+        target_group.entrenched = False
 
         # Fording without ford card needs a black RNC (otherwise card is lost, action counts)
         if fording and played_card.subtype != "ford":
@@ -1667,6 +1683,7 @@ class GameServer:
                     "range": group.range,
                     "moving": group.moving,
                     "terrain": group.terrain,
+                    "entrenched": group.entrenched,
                     "last_action": group.last_action
                 }
                 game_state["groups"].append(group_info)
@@ -1768,14 +1785,9 @@ class GameServer:
         # Get discard maximum for this nation
         max_discard = MAX_DISCARD[client.nation] - client.discard_count
 
-        # Check if discard is legal (1)
+        # Check if discard is legal
         if max_discard < 1:
             self.help_text = "Discard limit reached"
-            return
-
-        # Check if discard is legal (2)
-        if client.acted and client.nation != "german":
-            self.help_text = "No discard after an action"
             return
 
         # Discard card (on enemy group or discard pile)
@@ -1935,6 +1947,38 @@ class GameServer:
 
 
 
+    def resolve_entrench(self, target_group):
+
+        # Check: Not moving, no wire, no pinned units, not yet entrenched
+        if target_group.moving:
+            self.help_text = "No entrenching while moving"
+            return False
+        if target_group.wire:
+            self.help_text = "No entrenching on wire"
+            return False
+        if any(unit.group == target_group.id and unit.state == "pinned" for unit in self.unit_list):
+            self.help_text = "No entrenching with pinned units"
+            return False
+        if target_group.entrenched:
+            self.help_text = "Group is already entrenched"
+            return False
+
+        # Check: Only in open ground, hill, woods or brush
+        if target_group.terrain not in [None, "open", "hill", "woods", "brush"]:
+            self.help_text = "Entrenching only in open ground, hill, woods or brush"
+            return False
+
+        # A 0 RNC of any colour entrenches, the attempt counts as action anyway
+        rnc_card = self.draw_rnc_card()
+        if rnc_card.rnc == 0:
+            target_group.entrenched = True
+            target_group.last_action = "entrenched"
+        else:
+            target_group.last_action = "dig failed"
+        return True
+
+
+
     def resolve_voluntary_panic(self, target_group, unit_ids):
 
         # Selected pinned units of the group
@@ -2048,6 +2092,9 @@ class GameServer:
 
         # Artificial terrain modifier (incoming)
         firestrength += target_group.wire - target_group.smoke
+
+        # Entrenchment modifier (incoming)
+        firestrength -= target_group.entrenched
 
         # Reduced protection behind wall against groups not directly opposite
         if target_group.terrain == "wall" and target_group.label != source_group.label:

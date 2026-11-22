@@ -257,6 +257,7 @@ class Group(arcade.Sprite):
         self.terrain = None
         self.active = True
         self.last_action = None
+        self.entrenched = False
 
         # Textures
         self.textures_map = {}
@@ -308,6 +309,28 @@ class Group(arcade.Sprite):
 
         if self.texture != target_texture:
             self.texture = target_texture
+
+
+
+    def draw_chits(self, chits, frame):
+
+        # Check if group is active
+        if not self.active:
+            return
+
+        # Chits of this group
+        group_chits = []
+        if self.entrenched:
+            group_chits.append(chits["entrenched"])
+
+        # Side by side on the top line of the group frame (opponent's frame is rotated)
+        sign = 1 if self.owner == "player" else -1
+        for index, chit in enumerate(group_chits):
+            offset_x = (index - (len(group_chits) - 1) / 2) * 110 - 80
+            chit.scale = frame.scale_x * 0.5
+            chit.center_x = frame.center_x + sign * offset_x * frame.scale_x
+            chit.center_y = frame.center_y + sign * 263 * frame.scale_y
+            arcade.draw_sprite(chit)
 
 
 
@@ -663,6 +686,9 @@ class GameView(arcade.View):
             "unarmed": Chit("unarmed"),
             "crewed": Chit("crewed"),
             "assistant": Chit("assistant"),
+        }
+        self.group_chits = {
+            "entrenched": Chit("entrenched"),
         }
 
         # Layout elements
@@ -1085,6 +1111,10 @@ class GameView(arcade.View):
         if key == arcade.key.C:
             self.group_action("crew")
 
+        # Entrench the active group
+        if key == arcade.key.E:
+            self.group_action("entrench")
+
         # Voluntary panic of selected pinned units
         if key == arcade.key.P:
             self.group_action("voluntary_panic")
@@ -1369,6 +1399,7 @@ class GameView(arcade.View):
             group.range = logical_group["range"]
             group.moving = logical_group["moving"]
             group.terrain = logical_group["terrain"]
+            group.entrenched = logical_group["entrenched"]
             group.last_action = logical_group["last_action"]
 
         # Init active groups (only once)
@@ -1963,6 +1994,11 @@ class GameView(arcade.View):
 
 
     def draw_overlays(self):
+
+        # Draw group chits
+        for group in self.group_list:
+            frame = self.board_group_player if group.owner == "player" else self.board_group_opponent
+            group.draw_chits(self.group_chits, frame)
 
         # Draw hovered card
         if self.hover_card:
