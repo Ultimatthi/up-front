@@ -1,0 +1,62 @@
+﻿nation,weapon,repair,eliminate
+american,60mm Mortar,1,4
+american,BAR,0,5
+american,Bazooka,5,0
+american,Bolt-Action Rifle,0,6
+american,Carbine,0,6
+american,Flamethrower,6,0
+american,Infantry Gun,0,6
+american,Machine Pistol,1,4
+american,Medium Machinegun,0,6
+american,Semi-Automatic Rifle,0,6
+british,5 CM Mortar,1,4
+british,Anti-Tank Rifle,1,5
+british,Bolt-Action Rifle,0,6
+british,Flamethrower,6,0
+british,Infantry Gun,0,6
+british,Light Machinegun,0,5
+british,Machine Pistol,0,4
+british,Medium Machinegun,0,5
+british,PIAT,3,1
+french,5 CM Mortar,1,4
+french,6 CM Mortar,1,4
+french,Bolt-Action Rifle,0,6
+french,Flamethrower,6,0
+french,Infantry Gun,0,6
+french,Light Machinegun,1,4
+french,Medium Machinegun,0,5
+german,5 CM Mortar,2,3
+german,Anti-Tank Rifle,1,4
+german,Assault Rifle,0,5
+german,Bolt-Action Rifle,0,6
+german,Flamethrower,6,0
+german,Infantry Gun,0,6
+german,Light Machinegun,1,4
+german,Machine Pistol,1,4
+german,Medium Machinegun,0,5
+german,Panzerschreck,5,1
+italian,45mm Mortar,1,4
+italian,Anti-Tank Rifle,1,4
+italian,Bolt-Action Rifle,0,6
+italian,Flamethrower,6,0
+italian,Infantry Gun,0,6
+italian,Light Machinegun,1,4
+italian,Machine Pistol,0,4
+italian,Medium Machinegun,2,4
+japanese,Anti-Tank Rifle,1,4
+japanese,Bolt-Action Rifle,0,6
+japanese,Flamethrower,6,0
+japanese,Grenade Launcher,1,4
+japanese,Infantry Gun,0,6
+japanese,Light Machinegun,1,4
+japanese,Machine Pistol,2,4
+japanese,Medium Machinegun,1,5
+russian,5 CM Mortar,2,3
+russian,Anti-Tank Rifle,1,4
+russian,Bolt-Action Rifle,0,6
+russian,Flamethrower,6,0
+russian,Infantry Gun,0,6
+russian,Light Machinegun,1,4
+russian,Machine Pistol,0,5
+russian,Medium Machinegun,1,5
+russian,Semi-Automatic Rifle,1,5

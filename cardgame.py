@@ -1115,6 +1115,10 @@ class GameView(arcade.View):
         if key == arcade.key.E:
             self.group_action("entrench")
 
+        # Repair the weapon of the selected unit
+        if key == arcade.key.W:
+            self.group_action("repair")
+
         # Voluntary panic of selected pinned units
         if key == arcade.key.P:
             self.group_action("voluntary_panic")

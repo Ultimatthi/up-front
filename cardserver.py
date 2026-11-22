@@ -105,7 +105,7 @@ class Card:
 
 class Unit:
 
-    def __init__(self, unit_id, nation, function, name, weapon, malfunction,
+    def __init__(self, unit_id, nation, function, name, weapon, malfunction, repair, eliminate,
                  ccv, firepower, morale, panic, rout, kia, points):
 
         # Attributes
@@ -113,7 +113,6 @@ class Unit:
         self.nation = nation
         self.function = function # SL, ASL
         self.name = name
-        self.weapon = weapon
         self.ccv = ccv # rallied|pinned|rallied(disarmed)|pinned(disarmed)
         self.morale = morale
         self.panic = panic
@@ -130,9 +129,14 @@ class Unit:
         self.crew_partner = None # unit id of crew partner
         self.crew_served = isinstance(firepower, dict) # True, False
         self.mode = "uncrewed" # crewed, uncrewed, assistant
+        
+        # Attributes (weapon related)
+        self.weapon = weapon
         self.firepower = firepower
         self.malfunction = malfunction
-        self.malfunctioned = False # weapon without firepower until repaired
+        self.malfunctioned = False
+        self.repair = repair # lowest black RNC repairing the weapon
+        self.eliminate = eliminate # lowest red RNC removing the weapon
 
 
 
@@ -295,6 +299,10 @@ class GameServer:
         self.afv_table = df.map(self.parse_cell)
         self.afv_table["name"] = df["name"]
         self.afv_table.set_index("id", inplace=True)
+
+        # Weapon table
+        self.weapon_table = pd.read_csv("assets/units/weapon_table.csv", sep=",", keep_default_na=False)
+        self.weapon_table.set_index(["nation", "weapon"], inplace=True)
 
         # Thread lock (to avoid race conditions)
         self.lock = threading.Lock()
@@ -547,8 +555,9 @@ class GameServer:
             row = self.unit_table.loc[unit_id]
             if row["nation"] not in nations:
                 continue
+            weapon = self.weapon_table.loc[(row["nation"], row["weapon"])]
             unit = Unit(unit_id, row["nation"], row["function"], row["name"], row["weapon"],
-                        row["malfunction"], row["ccv"], row["firepower"], row["morale"],
+                        row["malfunction"], weapon["repair"], weapon["eliminate"], row["ccv"], row["firepower"], row["morale"],
                         row["panic"], row["rout"], row["kia"], row["points"])
             self.unit_list.append(unit)
 
@@ -718,6 +727,8 @@ class GameServer:
             success = self.resolve_crew(target_group, target_units)
         elif action.get("action") == "entrench":
             success = self.resolve_entrench(target_group)
+        elif action.get("action") == "repair":
+            success = self.resolve_repair(target_group, target_units)
         else:
             success = False
 
@@ -729,7 +740,7 @@ class GameServer:
         russian_entrenchment = action.get("action") == "entrench" and client.nation == "russian"
         target_group.acted = True
         client.acted = True
-        
+
         # Reduce discard capacity
         if client.nation != "german" and not russian_entrenchment:
             client.discard_count = MAX_DISCARD[client.nation]
@@ -1975,6 +1986,46 @@ class GameServer:
             target_group.last_action = "entrenched"
         else:
             target_group.last_action = "dig failed"
+        return True
+
+
+
+    def resolve_repair(self, target_group, unit_ids):
+
+        # Get targeted unit
+        units = [unit for unit in self.unit_list if unit.id in unit_ids and unit.group == target_group.id]
+
+        # Check: one unpinned unit of the active group with a malfunctioned weapon
+        if len(units) != 1:
+            self.help_text = "Select one unit of the active group"
+            return False
+        unit = units[0]
+        if unit.weapon is None or not unit.malfunctioned:
+            self.help_text = "Weapon is not malfunctioned"
+            return False
+        if unit.state == "pinned":
+            self.help_text = "Pinned units cannot repair"
+            return False
+
+        # Check: not moving, not in marsh or stream
+        if target_group.moving:
+            self.help_text = "No repairing while moving"
+            return False
+        if target_group.terrain in ["marsh", "stream"]:
+            self.help_text = "No repairing in marsh or stream"
+            return False
+
+        # Black RNC from the repair number repairs, red RNC from the eliminate number removes the weapon
+        rnc_card = self.draw_rnc_card()
+        rnc = abs(rnc_card.rnc)
+        if rnc_card.color == "black" and rnc >= unit.repair:
+            unit.malfunctioned = False
+            target_group.last_action = "repaired"
+        elif rnc_card.color == "red" and rnc >= unit.eliminate:
+            unit.weapon = None
+            target_group.last_action = "weapon lost"
+        else:
+            target_group.last_action = "repair failed"
         return True
 
 
