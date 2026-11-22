@@ -36,6 +36,7 @@ The following rules are deliberately not implemented, either because they cover 
 * **Malfunction effect (19.13):** The RPC picks only among weapons that can break on the drawn number; there is no momentary stoppage. Instead of reducing the Fire Strength, the attack ends once the firepower falls below the fire card's requirement.
 * **Russian entrenchment (36.5):** An entrenchment attempt does not reduce the Russian's discard capability.
 * **Repair of rifles (19.3):** A red 0 does not repair a bolt-action or semi-automatic rifle; only black RNCs repair.
+* **Bazooka of us14:** It uses the values of us13 (To Hit [2] at range 3, boxed Effect 2), as the Vassal weapon chit does; every weapon type has one set of values.
 
 ## Project Structure
 

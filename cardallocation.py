@@ -97,6 +97,8 @@ class EditorView(arcade.View):
         self.scenarios = yaml.safe_load(open("assets/scenarios.yaml", encoding="utf-8"))
         self.allocations = yaml.safe_load(open(ALLOCATION_FILE, encoding="utf-8"))
         unit_table = pd.read_csv("assets/units/unit_table.csv", sep=",").set_index("id")
+        weapon_table = pd.read_csv("assets/units/weapon_table.csv", sep=",").set_index(["nation", "weapon"])
+        unit_table = unit_table.join(weapon_table[["firepower", "to_hit"]], on=["nation", "weapon"])
         afv_table = pd.read_csv("assets/units/afv_table.csv", sep=",").set_index("id")
         afv_table["firepower"] = afv_table["mg"].fillna("0|0|0|0|0|0") # AFVs fire with their MG
         unit_table["kind"] = "Soldiers"

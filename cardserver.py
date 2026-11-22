@@ -292,6 +292,7 @@ class GameServer:
         df = pd.read_csv("assets/units/unit_table.csv", sep=",", keep_default_na=False)
         self.unit_table = df.map(self.parse_cell)
         self.unit_table["name"] = df["name"]
+        self.unit_table["weapon"] = df["weapon"]
         self.unit_table.set_index("id", inplace=True)
 
         # AFV table
@@ -301,7 +302,9 @@ class GameServer:
         self.afv_table.set_index("id", inplace=True)
 
         # Weapon table
-        self.weapon_table = pd.read_csv("assets/units/weapon_table.csv", sep=",", keep_default_na=False)
+        df = pd.read_csv("assets/units/weapon_table.csv", sep=",", keep_default_na=False)
+        self.weapon_table = df.map(self.parse_cell)
+        self.weapon_table["weapon"] = df["weapon"]
         self.weapon_table.set_index(["nation", "weapon"], inplace=True)
 
         # Thread lock (to avoid race conditions)
@@ -479,8 +482,9 @@ class GameServer:
         # Get unit ids
         unit_ids = [unit_id for group in client.unit_allocation.values() for unit_id in group]
 
-        # Get units
+        # Get units (with their weapon type)
         units = pd.concat([self.unit_table, self.afv_table]).reindex(unit_ids)
+        units = units.join(self.weapon_table["type"], on=["nation", "weapon"])
 
         # Check: 2 to 4 groups
         if len(group_ids) < 2 or len(group_ids) > 4:
@@ -516,7 +520,7 @@ class GameServer:
                 continue
 
             # Allow single unit infantry gun
-            if len(group) == 1 and units.loc[group[0], "weapon"] == "Infantry Gun":
+            if len(group) == 1 and units.loc[group[0], "type"] == "Infantry Gun":
                 continue
 
             # Check 2 to 10 units
@@ -557,7 +561,7 @@ class GameServer:
                 continue
             weapon = self.weapon_table.loc[(row["nation"], row["weapon"])]
             unit = Unit(unit_id, row["nation"], row["function"], row["name"], row["weapon"],
-                        row["malfunction"], weapon["repair"], weapon["eliminate"], row["ccv"], row["firepower"], row["morale"],
+                        weapon["malfunction"], weapon["repair"], weapon["eliminate"], row["ccv"], weapon["firepower"], row["morale"],
                         row["panic"], row["rout"], row["kia"], row["points"])
             self.unit_list.append(unit)
 

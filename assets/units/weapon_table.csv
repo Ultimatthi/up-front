@@ -1,62 +1,70 @@
-﻿nation,weapon,repair,eliminate
-american,60mm Mortar,1,4
-american,BAR,0,5
-american,Bazooka,5,0
-american,Bolt-Action Rifle,0,6
-american,Carbine,0,6
-american,Flamethrower,6,0
-american,Infantry Gun,0,6
-american,Machine Pistol,1,4
-american,Medium Machinegun,0,6
-american,Semi-Automatic Rifle,0,6
-british,5 CM Mortar,1,4
-british,Anti-Tank Rifle,1,5
-british,Bolt-Action Rifle,0,6
-british,Flamethrower,6,0
-british,Infantry Gun,0,6
-british,Light Machinegun,0,5
-british,Machine Pistol,0,4
-british,Medium Machinegun,0,5
-british,PIAT,3,1
-french,5 CM Mortar,1,4
-french,6 CM Mortar,1,4
-french,Bolt-Action Rifle,0,6
-french,Flamethrower,6,0
-french,Infantry Gun,0,6
-french,Light Machinegun,1,4
-french,Medium Machinegun,0,5
-german,5 CM Mortar,2,3
-german,Anti-Tank Rifle,1,4
-german,Assault Rifle,0,5
-german,Bolt-Action Rifle,0,6
-german,Flamethrower,6,0
-german,Infantry Gun,0,6
-german,Light Machinegun,1,4
-german,Machine Pistol,1,4
-german,Medium Machinegun,0,5
-german,Panzerschreck,5,1
-italian,45mm Mortar,1,4
-italian,Anti-Tank Rifle,1,4
-italian,Bolt-Action Rifle,0,6
-italian,Flamethrower,6,0
-italian,Infantry Gun,0,6
-italian,Light Machinegun,1,4
-italian,Machine Pistol,0,4
-italian,Medium Machinegun,2,4
-japanese,Anti-Tank Rifle,1,4
-japanese,Bolt-Action Rifle,0,6
-japanese,Flamethrower,6,0
-japanese,Grenade Launcher,1,4
-japanese,Infantry Gun,0,6
-japanese,Light Machinegun,1,4
-japanese,Machine Pistol,2,4
-japanese,Medium Machinegun,1,5
-russian,5 CM Mortar,2,3
-russian,Anti-Tank Rifle,1,4
-russian,Bolt-Action Rifle,0,6
-russian,Flamethrower,6,0
-russian,Infantry Gun,0,6
-russian,Light Machinegun,1,4
-russian,Machine Pistol,0,5
-russian,Medium Machinegun,1,5
-russian,Semi-Automatic Rifle,1,5
+﻿nation,weapon,type,firepower,malfunction,repair,eliminate,to_hit,effect,effect_boxed
+german,Machine Pistol,Machine Pistol,0|0|0|1|3|5,6,1,4,,,
+german,Light Machinegun,Light Machinegun,4|5|6|7|8|9/2|3|3|4|4|5,6/5,1,4,,,
+german,Bolt-Action Rifle,Bolt-Action Rifle,0|1|1|2|2|3,6,0,6,,,
+german,Panzerschreck,Panzerschreck,0|0|0|0|0|0/0|0|0|0|0|0,4/3,5,1,NA|NA|NA|0-1|0-2|0-3/NA|NA|NA|2|0|0-1,3,4
+german,Medium Machinegun,Medium Machinegun,8|9|10|11|12|13/4|5|5|6|6|7,6/5,0,5,,,
+german,Flamethrower,Flamethrower,NA|NA|NA|NA|NA|12,5,6,0,,,
+german,Assault Rifle,Assault Rifle,0|1|1|2|3|5,6,0,5,,,
+german,Anti-Tank Rifle,Anti-Tank Rifle,1|1|1|1|1|1,6,1,4,5|4|4|3|3|2,,0
+german,5 CM Mortar,Mortar,0|0|0|0|0|1/0|0|0|0|0|1,5/4,2,3,0|0-1|0-2|0-3|0-3|NA/2|1|0|0-1|0-1|NA,2,
+german,37mm PAK 36,Infantry Gun,0|0|0|0|0|0,5,0,6,1|0-1|0-2|0-3|0-4|0-5,1,1
+german,50mm PAK 38,Infantry Gun,0|0|0|0|0|0,5,0,6,0|0-1|0-2|0-3|0-4|0-5,2,3
+american,Machine Pistol,Machine Pistol,0|0|0|1|3|5,6,1,4,,,
+american,BAR,BAR,2|3|3|4|4|5,6,0,5,,,
+american,Semi-Automatic Rifle,Semi-Automatic Rifle,0|1|1|2|2|3,6,0,6,,,
+american,Bazooka,Bazooka,0|0|0|0|0|0/0|0|0|0|0|0,4/3,5,0,NA|NA|NA|0-1|0-2|0-3/NA|NA|NA|2|0|0-1,2,2
+american,Medium Machinegun,Medium Machinegun,7|8|9|10|11|12/3|4|4|5|5|6,6/5,0,6,,,
+american,Flamethrower,Flamethrower,NA|NA|NA|NA|NA|12,5,6,0,,,
+american,Carbine,Carbine,0|0|1|2|3|4,6,0,6,,,
+american,60mm Mortar,Mortar,0|0|0|0|1|2/0|0|0|0|1|2,5/4,1,4,0|0-1|0-2|0-3|NA|NA/2|1|0|0-1|NA|NA,3,
+american,37mm M3A1,Infantry Gun,0|0|0|0|0|0,5,0,6,0|0-1|0-2|0-3|0-4|0-5,1,2
+american,57mm M1,Infantry Gun,0|0|0|0|0|0,5,0,6,0|0-1|0-2|0-3|0-4|0-5,0,4
+american,Bolt-Action Rifle,Bolt-Action Rifle,0|1|1|2|2|3,6,0,6,,,
+british,Machine Pistol,Machine Pistol,0|0|0|1|3|5,6,0,4,,,
+british,Bolt-Action Rifle,Bolt-Action Rifle,0|1|1|2|2|3,6,0,6,,,
+british,Light Machinegun,Light Machinegun,2|3|4|5|6|6,6,0,5,,,
+british,PIAT,PIAT,0|0|0|0|0|0,3,3,1,NA|NA|NA|0-1|0-2|0-3,2,2
+british,Medium Machinegun,Medium Machinegun,7|8|9|10|11|12/3|4|4|5|5|6,6/5,0,5,,,
+british,Flamethrower,Flamethrower,NA|NA|NA|NA|NA|12,5,6,0,,,
+british,5 CM Mortar,Mortar,0|0|0|0|0|2/0|0|0|0|0|2,5/4,1,4,1|0|0-1|0-2|0-3|NA/3|2|1|0|0-1|NA,2,
+british,Anti-Tank Rifle,Anti-Tank Rifle,1|1|1|1|1|1,6,1,5,6|5|5|4|4|3,,0
+british,Q.F. 2 pr/L52,Infantry Gun,0|0|0|0|0|0,5,0,6,0|0-1|0-2|0-3|0-4|0-5,0r,2
+british,Q.F. 6 pr/L45,Infantry Gun,0|0|0|0|0|0,5,0,6,0|0-1|0-2|0-3|0-4|0-5,0r,3
+french,Bolt-Action Rifle,Bolt-Action Rifle,0|1|1|2|2|3,6,0,6,,,
+french,Light Machinegun,Light Machinegun,2|3|4|5|6|7,6,1,4,,,
+french,Medium Machinegun,Medium Machinegun,6|7|8|9|10|11/3|4|4|5|5|6,6/5,0,5,,,
+french,Flamethrower,Flamethrower,NA|NA|NA|NA|NA|12,5,6,0,,,
+french,5 CM Mortar,Mortar,0|0|0|0|0|2/0|0|0|0|0|2,5/4,1,4,1|0|0-1|0-2|0-3|NA/3|2|1|0|0-1|NA,2,
+french,6 CM Mortar,Mortar,0|0|0|0|1|2/0|0|0|0|1|2,5/4,1,4,0|0-1|0-2|0-3|NA|NA/2|1|0|0-1|NA|NA,3,
+french,37mm Mle 16 TRP,Infantry Gun,0|0|0|0|0|0,5,0,6,1|0-1|0-2|0-3|0-4|0-5,1,1
+french,47mm SA Mle 37,Infantry Gun,0|0|0|0|0|0,5,0,6,1|0-1|0-2|0-3|0-4|0-5,2,2
+french,75mm Mle 19,Infantry Gun,0|0|0|0|0|0,5,0,6,0|0-1|0-2|0-3|0-4|0-5,4,4
+italian,Machine Pistol,Machine Pistol,0|0|0|1|3|5,6,0,4,,,
+italian,Bolt-Action Rifle,Bolt-Action Rifle,0|0|1|2|2|3,6,0,6,,,
+italian,Light Machinegun,Light Machinegun,2|3|4|5|5|6,5,1,4,,,
+italian,45mm Mortar,Mortar,0|0|0|0|0|2/0|0|0|0|0|2,5/4,1,4,0|0-1|0-2|0-3|0-3|NA/2|1|0|0-1|0-1|NA,1,
+italian,Flamethrower,Flamethrower,0|0|0|0|0|12,5,6,0,,,
+italian,Medium Machinegun,Medium Machinegun,6|7|8|9|10|11/3|4|4|5|5|6,5/4,2,4,,,
+italian,Anti-Tank Rifle,Anti-Tank Rifle,1|1|1|1|1|1/1|1|1|1|1|1,6/5,1,4,5|4|4|3|3|3/4|3|3|2|2|1,,0
+italian,20mm ATG M35,Infantry Gun,0|0|0|0|0|0,4,0,6,1|0-1|0-2|0-3|0-4|0-5,1,0
+italian,47mm ATG M35,Infantry Gun,0|0|0|0|0|0,5,0,6,1|0-1|0-2|0-3|0-4|0-5,2,2
+japanese,Bolt-Action Rifle,Bolt-Action Rifle,0|0|1|2|2|3,6,0,6,,,
+japanese,Light Machinegun,Light Machinegun,2|3|4|5|6|6,5,1,4,,,
+japanese,Medium Machinegun,Medium Machinegun,6|7|8|9|10|11/3|4|4|5|5|6,6/5,1,5,,,
+japanese,Flamethrower,Flamethrower,NA|NA|NA|NA|NA|12,5,6,0,,,
+japanese,Machine Pistol,Machine Pistol,0|0|0|1|3|5,6,2,4,,,
+japanese,Grenade Launcher,Mortar,0|0|0|0|0|2/0|0|0|0|0|2,5/4,1,4,1|0|0-1|0-2|0-3|NA/3|1|0|0-1|0-2|NA,2|2|2|1|1|NA,
+japanese,Anti-Tank Rifle,Anti-Tank Rifle,1|1|1|1|1|1/1|1|1|1|1|1,6/5,1,4,1|0|0|0-1|0-1|0-2/2|1|1|0|0|0-1,,0
+japanese,37mm Type 94,Infantry Gun,0|0|0|0|0|0,5,0,6,1|0-1|0-2|0-3|0-4|0-5,1,1
+japanese,47mm Type 1,Infantry Gun,0|0|0|0|0|0,5,0,6,1|0-1|0-2|0-3|0-4|0-5,2,2
+russian,Semi-Automatic Rifle,Semi-Automatic Rifle,0|0|1|2|2|3,6,1,5,,,
+russian,Light Machinegun,Light Machinegun,3|4|5|6|7|8/2|2|3|3|4|4,6/5,1,4,,,
+russian,Bolt-Action Rifle,Bolt-Action Rifle,0|0|1|2|2|3,6,0,6,,,
+russian,Medium Machinegun,Medium Machinegun,6|7|8|9|10|11/3|4|4|5|5|6,6/5,1,5,,,
+russian,Flamethrower,Flamethrower,NA|NA|NA|NA|NA|12,5,6,0,,,
+russian,Anti-Tank Rifle,Anti-Tank Rifle,1|1|1|1|1|1,6,1,4,5|4|4|3|3|2,,0
+russian,Machine Pistol,Machine Pistol,0|0|0|1|3|5,6,0,5,,,
+russian,5 CM Mortar,Mortar,0|0|0|0|1|2/0|0|0|0|1|2,5/4,2,3,1|0-1|0-2|0-3|NA|NA/3|1|0|0-1|NA|NA,2,
+russian,45mm M32,Infantry Gun,0|0|0|0|0|0,5,0,6,1|0-1|0-2|0-3|0-4|0-5,2,2
+russian,57mm M43,Infantry Gun,0|0|0|0|0|0,5,0,6,1|0-1|0-2|0-3|0-4|0-5,2,4
