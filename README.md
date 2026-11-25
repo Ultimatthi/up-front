@@ -32,7 +32,7 @@ The following rules are deliberately not implemented, either because they cover 
 * **Cumulative Smoke and Wire (13.25, 13.6):** A group holds at most one Smoke and one Wire card; a second one is rejected.
 * **Losing the Squad Leader (15.2):** The Assistant Squad Leader takes over his role immediately.
 * **Deck running out during an attack (16.2):** Action cards played during the current turn stay on the table until the end of the turn and are not shuffled into the new deck.
-* **Malfunction of pinned units (19.14):** Only unpinned units without the assistant role are subject to malfunction; pinned units and designated assistants are not.
+* **Malfunction of pinned units (19.14):** Only unpinned units without the assistant role are subject to malfunction; pinned units, designated assistants and medium machine guns moving or in water are not.
 * **Malfunction effect (19.13):** The RPC picks only among weapons that can break on the drawn number; there is no momentary stoppage. Instead of reducing the Fire Strength, the attack ends once the firepower falls below the fire card's requirement.
 * **Russian entrenchment (36.5):** An entrenchment attempt does not reduce the Russian's discard capability.
 * **Repair of rifles (19.3):** A red 0 does not repair a bolt-action or semi-automatic rifle; only black RNCs repair.

@@ -160,9 +160,13 @@ class Unit:
         else:
             values = self.firepower[self.mode]
 
-        # Crew-served light machine guns moving, in water or on wire: bracketed values, only when fully crewed
+        # Medium machine guns never fire while moving or in water
         in_water = group.terrain in ["marsh", "stream"]
-        if self.crew_served and self.weapon == "Light Machinegun" and (group.moving or in_water or group.wire):
+        if self.weapon == "Medium Machinegun" and (group.moving or in_water):
+            return 0
+
+        # Crew-served weapons moving, in water or on wire: bracketed values, only when fully crewed
+        if self.crew_served and (group.moving or in_water or group.wire):
             if self.mode != "crewed" or (group.moving and (in_water or group.wire)):
                 return 0
             values = self.firepower["uncrewed"]
@@ -194,9 +198,9 @@ class Unit:
         else:
             value = self.malfunction[self.mode]
 
-        # Crew-served light machine guns moving, in water or on wire: always bracketed numbers
+        # Crew-served weapons moving, in water or on wire: always bracketed numbers
         in_water = group.terrain in ["marsh", "stream"]
-        if self.crew_served and self.weapon == "Light Machinegun" and (group.moving or in_water or group.wire):
+        if self.crew_served and (group.moving or in_water or group.wire):
             value = self.malfunction["uncrewed"]
 
         return value
@@ -1509,6 +1513,10 @@ class GameServer:
         if rnc_card.color != "red":
             return 0
 
+        # Medium machine guns moving or in water take no part in the fire
+        in_water = offensive_group.terrain in ["marsh", "stream"]
+        mmg_inactive = offensive_group.moving or in_water
+
         # Get subjected units (units taking part in the fire, even when malfunctioned)
         units = [
             unit for unit in self.unit_list
@@ -1516,6 +1524,7 @@ class GameServer:
             and unit.weapon is not None
             and unit.state == "rallied"
             and unit.mode != "assistant"
+            and not (mmg_inactive and unit.weapon == "Medium Machinegun")
             and abs(rnc_card.rnc) >= unit.get_malfunction_value(offensive_group)
         ]
 
