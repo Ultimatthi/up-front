@@ -259,7 +259,7 @@ class GameServer:
         self.client_list = []
         self.current_turn = None
         self.first_turn = None
-        self.current_sound = None
+        self.current_sounds = []
         self.rnc_cards = [] # ids of cards drawn as RNC in the current action
         self.help_text = None # reason for a rejected card
         self.action_deck_counter = 0
@@ -389,7 +389,7 @@ class GameServer:
                         self.client_list.append(client)
 
                     # Reset state
-                    self.current_sound = None
+                    self.current_sounds = []
                     self.rnc_cards = []
 
                     # Send board state
@@ -635,7 +635,7 @@ class GameServer:
                 if data:
 
                     # Reset state
-                    self.current_sound = None
+                    self.current_sounds = []
                     self.rnc_cards = []
                     self.help_text = None
 
@@ -750,7 +750,7 @@ class GameServer:
             client.discard_count = MAX_DISCARD[client.nation]
 
         # Set sound
-        self.current_sound = "play_card"
+        self.current_sounds.append("play_card")
 
 
 
@@ -912,7 +912,7 @@ class GameServer:
             client.discard_count = MAX_DISCARD[client.nation]
 
         # Set sound
-        self.current_sound = "play_card"
+        self.current_sounds.append("play_card")
 
 
 
@@ -1129,7 +1129,7 @@ class GameServer:
             self.pending_action[key] = None
 
         # Set sound
-        self.current_sound = "play_card"
+        self.current_sounds.append("play_card")
 
 
 
@@ -1185,7 +1185,7 @@ class GameServer:
             self.pending_action[key] = None
 
         # Set sound
-        self.current_sound = "play_card"
+        self.current_sounds.append("play_card")
 
 
 
@@ -1223,7 +1223,7 @@ class GameServer:
         self.current_turn = next(c.name for c in self.client_list if c is not client)
 
         # Set sound
-        self.current_sound = "play_card"
+        self.current_sounds.append("play_card")
 
 
 
@@ -1235,7 +1235,7 @@ class GameServer:
             return
 
         # Set sound
-        self.current_sound = "tick"
+        self.current_sounds.append("tick")
 
         # Switch turn
         opponent = next(c for c in self.client_list if c is not client)
@@ -1445,7 +1445,7 @@ class GameServer:
         played_card.group = target_groups[0].id
 
         # Set sound
-        self.current_sound = "play_card"
+        self.current_sounds.append("play_card")
 
 
 
@@ -1536,6 +1536,7 @@ class GameServer:
         firepower = unit.get_firepower(offensive_group, relative_range)
 
         # Break weapon (a malfunctioned weapon breaking again is lost)
+        self.current_sounds.append("click")
         if unit.malfunctioned:
             unit.weapon = None
         else:
@@ -1572,7 +1573,7 @@ class GameServer:
             return
 
         # Set sound
-        self.current_sound = "tick"
+        self.current_sounds.append("tick")
 
         # Advance turn
         if self.game_subphase == "action":
@@ -1649,9 +1650,8 @@ class GameServer:
                 "game_phase": self.game_phase,
                 "game_subphase": self.game_subphase,
                 "current_turn": "player" if client.name == self.current_turn else "opponent",
-                "sound": self.current_sound,
+                "sounds": self.current_sounds,
                 "rnc_cards": self.rnc_cards,
-                "breeze": self.breeze,
                 "side": client.side,
                 "nation": client.nation,
                 "ready": client.ready,
@@ -1685,7 +1685,7 @@ class GameServer:
                     "state": unit.state,
                     "mode": unit.mode,
                     "malfunctioned": unit.malfunctioned,
-                    "unarmed": unit.weapon is None
+                    "weapon": unit.weapon
                 }
                 game_state["units"].append(unit_info)
 
@@ -1830,7 +1830,7 @@ class GameServer:
             played_card.owner = target_groups[1].owner
 
         # Set sound
-        self.current_sound = "play_card"
+        self.current_sounds.append("play_card")
 
 
 
@@ -2048,7 +2048,7 @@ class GameServer:
 
         # Set sound
         if units:
-            self.current_sound = "play_card"
+            self.current_sounds.append("play_card")
 
 
 
@@ -2093,6 +2093,8 @@ class GameServer:
         self.rnc_cards.append(rnc_card.id)
 
         # Check for breeze
+        if rnc_card.breeze and not self.breeze:
+            self.current_sounds.append("breeze")
         if rnc_card.breeze:
             self.breeze = True
             for card in self.card_list:

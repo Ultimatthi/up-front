@@ -185,7 +185,7 @@ class Unit(arcade.Sprite):
         self.selected = False
         self.mode = "uncrewed" # crewed, uncrewed, assistant
         self.malfunctioned = False
-        self.unarmed = False
+        self.weapon = None
 
         base = f'assets/units/{nation}/{unit_id}'
 
@@ -227,10 +227,10 @@ class Unit(arcade.Sprite):
 
         # Chits of this unit: weapon state first (lost or malfunctioned weapon), then crew
         unit_chits = []
-        if self.unarmed:
+        if self.weapon is None:
             unit_chits.append(chits["unarmed"])
         elif self.malfunctioned:
-            unit_chits.append(chits["malfunction"])
+            unit_chits.append(chits[f"malfunction.{self.nation}.{self.weapon}"])
         if self.mode == "crewed":
             unit_chits.append(chits["crewed"])
         elif self.mode == "assistant":
@@ -493,6 +493,7 @@ class GameView(arcade.View):
         self.sound_tick = arcade.load_sound(r'assets/sounds/tick.mp3')
         self.sound_reject = arcade.load_sound(r'assets/sounds/reject.mp3')
         self.sound_breeze = arcade.load_sound(r'assets/sounds/breeze.mp3')
+        self.sound_click = arcade.load_sound(r'assets/sounds/click.mp3')
 
         # Layout
         self.layout = Layout(self.window.width, self.window.height)
@@ -569,7 +570,6 @@ class GameView(arcade.View):
 
         # Init game state
         self.current_turn = None
-        self.breeze = False
 
         # Card sent to the server, not yet answered
         self.card_sent = None
@@ -681,12 +681,20 @@ class GameView(arcade.View):
 
         # Overlay elements
         self.unit_overlay = arcade.Sprite("assets/overlays/unit.overlay.png", self.layout.unit_scale)
+        
+        # Unit chits
         self.unit_chits = {
-            "malfunction": Chit("malfunction"),
             "unarmed": Chit("unarmed"),
             "crewed": Chit("crewed"),
             "assistant": Chit("assistant"),
         }
+        
+        # Malfunction chits
+        weapon_table = pd.read_csv("assets/units/weapon_table.csv", sep=",")
+        for row in weapon_table.itertuples():
+            self.unit_chits[f"malfunction.{row.nation}.{row.weapon}"] = Chit(f"malfunction.{row.repair}{row.eliminate}")
+            
+        # Group chits
         self.group_chits = {
             "entrenched": Chit("entrenched"),
         }
@@ -1316,25 +1324,24 @@ class GameView(arcade.View):
         self.player_nation = game_state.get("nation")
         self.ready = game_state.get("ready")
 
-        # Play sound (a played card the server answers without a sound was rejected)
-        sound = game_state.get("sound")
-        if self.card_sent is not None and sound is None:
-            sound = "reject"
+        # Get sound effects
+        sounds = game_state.get("sounds")
+        
+        # Handle rejected card
+        if self.card_sent is not None and not sounds:
+            sounds = ["reject"]
             self.card_sent.shake_time = 0.0
             self.help_text = game_state.get("help_text")
         self.card_sent = None
-        self.play_sound(sound)
+        
+        # Play sound effect (each sound once)
+        for sound in set(sounds):
+            self.play_sound(sound)
 
         # Reason why an own action was rejected (only in the answer to it)
         if self.action_sent:
             self.help_text = game_state.get("help_text")
             self.action_sent = False
-
-        # Breeze sounds once when it comes up, on top of the sound of the action that drew it
-        breeze = game_state.get("breeze")
-        if breeze and not self.breeze:
-            self.play_sound("breeze")
-        self.breeze = breeze
 
         # Get logical card variables
         logical_card_list = game_state.get("cards")
@@ -1386,7 +1393,7 @@ class GameView(arcade.View):
             unit.state = logical_unit["state"]
             unit.mode = logical_unit["mode"]
             unit.malfunctioned = logical_unit["malfunctioned"]
-            unit.unarmed = logical_unit["unarmed"]
+            unit.weapon = logical_unit["weapon"]
 
         # Get logical group variables
         logical_group_list = game_state.get("groups")
@@ -1476,6 +1483,8 @@ class GameView(arcade.View):
             arcade.play_sound(self.sound_reject)
         elif sound == 'breeze':
             arcade.play_sound(self.sound_breeze)
+        elif sound == 'click':
+            arcade.play_sound(self.sound_click)
 
 
 
