@@ -652,7 +652,7 @@ class GameView(arcade.View):
         image_path =  r'assets/boardelements/board.contour.png'
         self.board_contour = BoardElement(image_path, self.layout.scale)
         self.board_contour.alpha = 30
-        self.board_elements.append(self.board_contour)
+        #self.board_elements.append(self.board_contour)
 
         # Create board element: Group frame (player)
         image_path =  r'assets/boardelements/board.group.player.png'
@@ -1953,13 +1953,22 @@ class GameView(arcade.View):
                 continue
             column_cards[keys.index(key)].append(card)
 
-        # 2. Geometry: labels below the piles, 24 rows, several dots per row if needed
+        # 2. Geometry: labels in the bottom strip of the piles area, 24 rows above, several dots per row if needed
         column_width = piles.width / len(columns)
         label_height = 24 * self.layout.scale
-        dot_spacing = (piles.height - 10 * self.layout.scale) / 24
+        dot_spacing = (piles.height - label_height - 10 * self.layout.scale) / 24
         dot_size = dot_spacing - 2 * self.layout.scale
         highest_column = max(len(cards) for cards in column_cards)
         dots_per_row = math.ceil(highest_column / 24)
+
+        # Frame hint: corner angles at the piles area
+        corner_length = 36 * self.layout.scale
+        stroke_width = 2 * self.layout.scale
+        corners = [(piles.left, piles.top, 1, -1), (piles.right, piles.top, -1, -1),
+                   (piles.left, piles.bottom, 1, 1), (piles.right, piles.bottom, -1, 1)]
+        for x, y, x_direction, y_direction in corners:
+            arcade.draw_line(x, y, x + x_direction * corner_length, y, arcade.color.WHITE, stroke_width)
+            arcade.draw_line(x, y, x, y + y_direction * corner_length, arcade.color.WHITE, stroke_width)
 
         # 3. Labels
         for column, (key, label) in enumerate(columns):
@@ -1967,7 +1976,7 @@ class GameView(arcade.View):
             if self.display_mode == "rnc" and key[0] == "red":
                 color = arcade.color.RED
             x = piles.left + (column + 0.5) * column_width
-            y = piles.bottom - label_height / 2
+            y = piles.bottom + label_height / 2
             text = self.annotate_text(label, x, y, 0, 11, color)
             text.draw()
 
@@ -1992,7 +2001,7 @@ class GameView(arcade.View):
                 row_offset = (position_in_row - (dots_per_row - 1) / 2) * dot_spacing
                 dot = self.histogram_dots[dot_index]
                 dot.center_x = piles.left + (column + 0.5) * column_width + row_offset
-                dot.center_y = piles.bottom + (row + 0.5) * dot_spacing
+                dot.center_y = piles.bottom + label_height + (row + 0.5) * dot_spacing
                 dot.width = dot_size
                 dot.height = dot_size
                 dot.color = dot_colors[state]
